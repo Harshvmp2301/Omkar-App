@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "gallery:download": "node scripts/download-gallery.mjs",
     "deploy": "vercel deploy --prod",
     "deploy:preview": "vercel deploy"
   },

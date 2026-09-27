@@ -16,8 +16,8 @@ export default function EventsView({ t, lang, notify, onToggleNotify, flash }) {
   };
 
   return (
-    <div className="section" style={{ maxWidth: 720 }}>
-      <div className="section-head">
+    <div className="section section--narrow">
+      <div className="section-head reveal">
         <h2 className="section-title display">{t.upcomingPrograms}</h2>
         <span className="note">{t.sampleDates}</span>
       </div>
@@ -84,7 +84,7 @@ export default function EventsView({ t, lang, notify, onToggleNotify, flash }) {
       </div>
 
       {/* Full month-grid festival calendar (yellow wall-calendar style) */}
-      <div className="section-head" style={{ marginTop: 40 }}>
+      <div className="section-head section-head--gap reveal">
         <h2 className="section-title display">{t.festivalCalendar}</h2>
         <span className="note">{t.festivalNote}</span>
       </div>

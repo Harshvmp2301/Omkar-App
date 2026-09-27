@@ -10,7 +10,6 @@ const Header = forwardRef(function Header(
     onToggleLang,
     notificationsEnabled,
     onRequestNotify,
-    logoRef,
     slotRef,
   },
   ref
@@ -28,7 +27,8 @@ const Header = forwardRef(function Header(
     <header className="header" ref={ref}>
       <div className="header-left">
         {/* Invisible slot reserving the logo's final resting place in the navbar.
-            The ONE logo element (rendered below, fixed-positioned) flies into it. */}
+            The ONE logo element (rendered at page level, fixed-positioned) flies
+            into it — see App.jsx. */}
         <span className="logo-slot" ref={slotRef} aria-hidden="true" />
         <div className="wordmark display">{t.appName}</div>
       </div>
@@ -50,8 +50,11 @@ const Header = forwardRef(function Header(
           aria-label={t.enableNotifications}
           aria-pressed={notificationsEnabled}
         >
-          {notificationsEnabled ? <BellRing size={14} aria-hidden="true" /> : <BellOff size={14} aria-hidden="true" />}
-          {notificationsEnabled ? "🔔" : "🔕"}
+          {notificationsEnabled ? (
+            <BellRing size={14} aria-hidden="true" />
+          ) : (
+            <BellOff size={14} aria-hidden="true" />
+          )}
         </button>
         <nav className="tabs" aria-label="Primary">
           {tabs.map((tb) => (
@@ -67,10 +70,6 @@ const Header = forwardRef(function Header(
           ))}
         </nav>
       </div>
-
-      {/* The single Omkar logo for the entire app: starts centred in the
-          viewport at scrollY=0 and animates into the slot above. */}
-      <img ref={logoRef} src="/Omkar Logo Final Transparent.png" alt="Omkar Samithi" className="app-logo" />
     </header>
   );
 });

@@ -4,15 +4,48 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#170B10" />
+    <meta name="color-scheme" content="dark" />
     <meta
       name="description"
       content="Omkar Samithi — bilingual (English/Kannada) community platform for the Oman Karnataka Aradhana Samithi, Muscat. Programs, events, recordings and festival notes."
     />
+
+    <!-- Social preview — absolute URLs required by scrapers -->
+    <link rel="canonical" href="https://omkar-app.vercel.app/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://omkar-app.vercel.app/" />
+    <meta property="og:site_name" content="Omkar Samithi" />
+    <meta property="og:title" content="Omkar Samithi · Oman Karnataka Aradhana Samithi, Muscat" />
+    <meta
+      property="og:description"
+      content="Programs, upcoming events, festival calendar, recordings and seva opportunities — bilingual English & Kannada."
+    />
+    <meta property="og:image" content="https://omkar-app.vercel.app/icon-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Omkar Samithi · Muscat" />
+    <meta
+      name="twitter:description"
+      content="Programs, events, festival calendar and recordings — bilingual English & Kannada."
+    />
+    <meta name="twitter:image" content="https://omkar-app.vercel.app/icon-512.png" />
+
     <link rel="icon" type="image/png" href="/Omkar Logo Final Transparent.png" />
-    <link rel="apple-touch-icon" href="/Omkar Logo Final Transparent.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icon-180.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- Fonts: preconnected + render-blocking link (was a late @import inside CSS) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Karla:wght@400;500;700&family=Noto+Sans+Kannada:wght@400;600&display=swap"
+    />
+
     <title>Omkar Samithi · Muscat</title>
   </head>
   <body>

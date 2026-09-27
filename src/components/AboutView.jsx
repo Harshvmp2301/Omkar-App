@@ -8,8 +8,8 @@ export default function AboutView({ t }) {
   ];
 
   return (
-    <div className="section" style={{ maxWidth: 780 }}>
-      <div className="section-head">
+    <div className="section section--narrow">
+      <div className="section-head reveal">
         <h2 className="section-title display">{t.aboutTitle}</h2>
       </div>
 
@@ -19,7 +19,7 @@ export default function AboutView({ t }) {
         <p>{t.aboutP2}</p>
       </div>
 
-      <div className="pillar-grid">
+      <div className="pillar-grid reveal">
         {pillars.map(({ icon: Icon, title, body }) => (
           <div key={title} className="pillar-card">
             <Icon size={24} className="pillar-icon" aria-hidden="true" />
@@ -29,7 +29,7 @@ export default function AboutView({ t }) {
         ))}
       </div>
 
-      <div className="support-card">
+      <div className="support-card reveal">
         <Heart size={24} className="pillar-icon" aria-hidden="true" />
         <h3 className="pillar-title display">{t.supportTitle}</h3>
         <p className="pillar-body">{t.supportBody}</p>
