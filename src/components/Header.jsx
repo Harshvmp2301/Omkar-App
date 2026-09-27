@@ -1,25 +1,36 @@
+import { forwardRef } from "react";
 import { Globe, BellRing, BellOff } from "lucide-react";
 
-export default function Header({
-  t,
-  lang,
-  tab,
-  onTab,
-  onToggleLang,
-  notificationsEnabled,
-  onRequestNotify,
-}) {
+const Header = forwardRef(function Header(
+  {
+    t,
+    lang,
+    tab,
+    onTab,
+    onToggleLang,
+    notificationsEnabled,
+    onRequestNotify,
+    logoRef,
+    slotRef,
+  },
+  ref
+) {
   const tabs = [
     { id: "hub", label: t.contentHub },
     { id: "events", label: t.events },
     { id: "gallery", label: t.galleryTab },
     { id: "about", label: t.aboutTab },
+    { id: "donate", label: t.donateTab },
+    { id: "seva", label: t.sevaTab },
+    { id: "contact", label: t.contactTab },
   ];
 
   return (
-    <header className="header">
+    <header className="header" ref={ref}>
       <div className="header-left">
-        <img src="/Omkar Logo Final Transparent.png" alt="" className="logo" />
+        {/* Invisible slot reserving the logo's final resting place in the navbar.
+            The ONE logo element (rendered below, fixed-positioned) flies into it. */}
+        <span className="logo-slot" ref={slotRef} aria-hidden="true" />
         <div className="wordmark display">{t.appName}</div>
       </div>
       <div className="header-actions">
@@ -57,6 +68,12 @@ export default function Header({
           ))}
         </nav>
       </div>
+
+      {/* The single Omkar logo for the entire app: starts centred in the
+          viewport at scrollY=0 and animates into the slot above. */}
+      <img ref={logoRef} src="/Omkar Logo Final Transparent.png" alt="Omkar Samithi" className="app-logo" />
     </header>
   );
-}
+});
+
+export default Header;

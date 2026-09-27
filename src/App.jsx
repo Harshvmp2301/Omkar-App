@@ -5,11 +5,14 @@ import ContentHub from "./components/ContentHub.jsx";
 import EventsView from "./components/EventsView.jsx";
 import GalleryView from "./components/GalleryView.jsx";
 import AboutView from "./components/AboutView.jsx";
+import DonateView from "./components/DonateView.jsx";
+import SevaView from "./components/SevaView.jsx";
+import ContactView from "./components/ContactView.jsx";
 import Contact from "./components/Contact.jsx";
 import { translations } from "./data/content.js";
 import useLocalStorage from "./hooks/useLocalStorage.js";
 
-const TABS = ["hub", "events", "gallery", "about"];
+const TABS = ["hub", "events", "gallery", "about", "donate", "seva", "contact"];
 
 function tabFromHash() {
   const h = (typeof window !== "undefined" ? window.location.hash : "").replace(/^#\/?/, "");
@@ -24,6 +27,9 @@ export default function OmkarSamithiApp() {
   const [toast, setToast] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const toastTimer = useRef(null);
+  const logoRef = useRef(null);
+  const slotRef = useRef(null);
+  const headerRef = useRef(null);
 
   const t = translations[lang] || translations.en;
 
@@ -60,6 +66,87 @@ export default function OmkarSamithiApp() {
       });
     }
   }, []);
+
+  // --- single-logo scroll animation ----------------------------------------
+  // The ONE logo (rendered in the Header) starts centred in the viewport at
+  // scrollY=0 and flies into its slot in the sticky navbar over the first
+  // 15% of the page's scrollable range, then stays there.
+  useEffect(() => {
+    const logo = logoRef.current;
+    const slot = slotRef.current;
+    if (!logo || !slot) return undefined;
+
+    const NAV_H = 45;
+    let raf = 0;
+    let aspect = 1; // width / height, measured once the image loads
+
+    const update = () => {
+      raf = 0;
+      const doc = document.documentElement;
+      const maxScroll = Math.max(0, doc.scrollHeight - window.innerHeight);
+      let p = maxScroll > 0 ? window.scrollY / (maxScroll * 0.15) : 0;
+      p = Math.min(1, Math.max(0, p));
+      p = p * p * (3 - 2 * p); // smoothstep for a natural glide
+
+      const bigH = Math.max(140, Math.min(window.innerHeight * 0.3, 220));
+      const h = bigH + (NAV_H - bigH) * p;
+      const w = h * aspect;
+
+      const rect = slot.getBoundingClientRect();
+      const targetX = rect.left + rect.width / 2;
+      const targetY = rect.top + rect.height / 2;
+      const cx = window.innerWidth / 2 + (targetX - window.innerWidth / 2) * p;
+      const cy = window.innerHeight / 2 + (targetY - window.innerHeight / 2) * p;
+
+      logo.style.left = "0";
+      logo.style.top = "0";
+      logo.style.height = `${h}px`;
+      logo.style.width = `${w}px`;
+      logo.style.transform = `translate3d(${cx - w / 2}px, ${cy - h / 2}px, 0)`;
+    };
+
+    const measure = () => {
+      if (logo.naturalWidth && logo.naturalHeight) {
+        aspect = logo.naturalWidth / logo.naturalHeight;
+      }
+      slot.style.width = `${Math.round(NAV_H * aspect)}px`;
+      update();
+    };
+
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+
+    if (logo.complete) measure();
+    else logo.addEventListener("load", measure);
+    update();
+
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      logo.removeEventListener("load", measure);
+    };
+  }, []);
+
+  // Keep --header-h in sync so the hero is exactly viewport-height at the top.
+  useEffect(() => {
+    const setH = () =>
+      document.documentElement.style.setProperty(
+        "--header-h",
+        `${headerRef.current?.offsetHeight || 80}px`
+      );
+    setH();
+    window.addEventListener("resize", setH);
+    return () => window.removeEventListener("resize", setH);
+  }, [lang, tab]);
+
+  // Page height changes with tabs — re-sync the logo position.
+  useEffect(() => {
+    window.dispatchEvent(new Event("resize"));
+  }, [tab]);
 
   const flash = useCallback((msg) => {
     setToast(msg);
@@ -134,6 +221,9 @@ export default function OmkarSamithiApp() {
   return (
     <div className="app">
       <Header
+        ref={headerRef}
+        logoRef={logoRef}
+        slotRef={slotRef}
         t={t}
         lang={lang}
         tab={tab}
@@ -160,9 +250,12 @@ export default function OmkarSamithiApp() {
         )}
         {tab === "gallery" && <GalleryView t={t} />}
         {tab === "about" && <AboutView t={t} />}
+        {tab === "donate" && <DonateView t={t} flash={flash} />}
+        {tab === "seva" && <SevaView t={t} flash={flash} />}
+        {tab === "contact" && <ContactView t={t} flash={flash} />}
       </main>
 
-      <Contact t={t} />
+      {tab !== "contact" && <Contact t={t} />}
 
       <footer className="footer">
         <p>{t.pranaams}</p>
