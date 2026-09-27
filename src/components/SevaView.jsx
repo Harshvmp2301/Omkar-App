@@ -1,11 +1,11 @@
 import { useState } from "react";
+import { formatFullDate } from "../utils/calendar.js";
 
-export default function SevaView({ t, flash }) {
+export default function SevaView({ t, lang, flash }) {
   const [selected, setSelected] = useState(null);
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [details, setDetails] = useState("");
-  const [date, setDate] = useState("");
 
   const submit = (e) => {
     e.preventDefault();
@@ -21,10 +21,10 @@ export default function SevaView({ t, flash }) {
     const subject = `Omkar Samithi Seva — ${seva.title}`;
     const body = [
       `Seva: ${seva.title} (${seva.sub})`,
+      `Function: ${t.sevaFunction}`,
       `Name: ${name}`,
       `Contact: ${contact}`,
       `Quantity / Details: ${details || "—"}`,
-      `Preferred date: ${date || "—"}`,
       "",
       "Sent from the Omkar Samithi app.",
     ].join("\n");
@@ -38,6 +38,19 @@ export default function SevaView({ t, flash }) {
         <h2 className="section-title display">{t.sevaTitle}</h2>
       </div>
       <p className="view-sub">{t.sevaSub}</p>
+
+      {/* The three yearly programs and their announced dates (read-only) */}
+      <div className="seva-programs">
+        <span className="seva-programs-label">{t.sevaProgramsLabel}</span>
+        <div className="seva-chips">
+          {t.eventsList.map((e) => (
+            <span key={e.id} className="seva-chip">
+              {e.title}
+              <b>{e.date ? formatFullDate(e.date, lang) : t.tbaDate}</b>
+            </span>
+          ))}
+        </div>
+      </div>
 
       <div className="seva-grid" role="radiogroup" aria-label={t.sevaTitle}>
         {t.sevaCards.map((card, i) => (
@@ -57,6 +70,12 @@ export default function SevaView({ t, flash }) {
       </div>
 
       <form className="form-card" onSubmit={submit}>
+        {/* Seva is offered for Sri Anjaneya Pooja only — fixed, no date field */}
+        <div className="function-row">
+          <span className="function-key">{t.sevaFunctionLabel}</span>
+          <span className="function-val">🕉 {t.sevaFunction}</span>
+        </div>
+
         <div className="field">
           <label htmlFor="seva-name">{t.fullName}</label>
           <input
@@ -89,16 +108,6 @@ export default function SevaView({ t, flash }) {
             value={details}
             onChange={(e) => setDetails(e.target.value)}
             placeholder={t.sevaDetailsPh}
-          />
-        </div>
-
-        <div className="field">
-          <label htmlFor="seva-date">{t.preferredDate}</label>
-          <input
-            id="seva-date"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
           />
         </div>
 

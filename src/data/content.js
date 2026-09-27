@@ -13,8 +13,6 @@ export const translations = {
     fromBlog: "From the Blog",
     festivalNotes: "Festival Notes",
     upcomingPrograms: "Upcoming Programs",
-    rsvp: "RSVP",
-    going: "Going",
     remindersOn: "Reminders on",
     remindersOff: "Reminders off",
     pranaams: "Pranaams · Omkar Samithi",
@@ -22,9 +20,6 @@ export const translations = {
     sampleLayout: "Sample layout — connect YouTube Data API for live videos",
     sampleDates: "Sample dates — connect a real calendar to go live",
     sampleGallery: "Sample photos — replace with your community's pictures",
-    rsvpCount: "You're RSVP'd to",
-    program: "program",
-    programs: "programs",
     toggleLanguage: "Toggle Language",
     enableNotifications: "Enable Notifications",
     notificationsEnabled: "Notifications Enabled!",
@@ -44,6 +39,8 @@ export const translations = {
     daysToGo: "days to go",
     festivalCalendar: "Festival Calendar",
     festivalNote: "Panchang-based dates — regional variations may apply",
+    calPrev: "Previous month",
+    calNext: "Next month",
     galleryTitle: "Moments & Memories",
     lightboxHint: "Use ← → keys or click to browse · Esc to close",
     prevPhoto: "Previous photo",
@@ -71,7 +68,6 @@ export const translations = {
     supportCta: "Write to us",
     donateTab: "Donate",
     sevaTab: "Seva",
-    contactTab: "Contact",
     donateTitle: "Donation Tracker",
     donateSub: "Fill in the form below and proceed to payment.",
     donateDisclaimer:
@@ -99,7 +95,9 @@ export const translations = {
     chooseSeva: "Please choose a Seva option first",
     sevaDetailsLabel: "Quantity / Details",
     sevaDetailsPh: "e.g., 50 people, 100 flowers",
-    preferredDate: "Preferred Date",
+    sevaFunctionLabel: "Function",
+    sevaFunction: "Sri Anjaneya Pooja",
+    sevaProgramsLabel: "Our yearly programs",
     registerSeva: "Register Seva",
     sevaNote:
       "🙏 Seva (service) is a beautiful way to contribute to our spiritual community. Every act of service is valued!",
@@ -113,7 +111,7 @@ export const translations = {
     eventsList: [
       { id: "e1", date: "2026-10-27", day: "27", mon: "OCT", title: "Omkar Jnanamrutha", guest: "Smt. Amrutha Naidu", venue: "Sri Krishna Temple, Darsait, Muscat" },
       { id: "e2", date: "", day: "—", mon: "2026", title: "Omkar Naadamrutha", guest: "Guest TBA", venue: "Sri Krishna Temple, Darsait, Muscat" },
-      { id: "e3", date: "", day: "—", mon: "2026", title: "Sri Anjaneya Pooje", guest: "Guest TBA", venue: "Sri Krishna Temple, Darsait, Muscat" },
+      { id: "e3", date: "", day: "—", mon: "2026", title: "Sri Anjaneya Pooje", guest: null, venue: "Sri Krishna Temple, Darsait, Muscat" },
     ],
     videos: [
       {
@@ -213,8 +211,6 @@ export const translations = {
     fromBlog: "ಬ್ಲಾಗ್‌ನಿಂದ",
     festivalNotes: "ಹಬ್ಬದ ಟಿಪ್ಪಣಿಗಳು",
     upcomingPrograms: "ಮುಂಬರುವ ಕಾರ್ಯಕ್ರಮಗಳು",
-    rsvp: "ಹಾಜರಿ",
-    going: "ಹಾಜರಾಗುತ್ತೇನೆ",
     remindersOn: "ಜ್ಞಾಪನೆ ಆನ್",
     remindersOff: "ಜ್ಞಾಪನೆ ಆಫ್",
     pranaams: "ಪ್ರಣಾಮಗಳು · ಓಂಕಾರ ಸಮಿತಿ",
@@ -222,9 +218,6 @@ export const translations = {
     sampleLayout: "ಮಾದರಿ ವಿನ್ಯಾಸ — YouTube Data API ಮೂಲಕ ಲೈವ್ ವೀಡಿಯೊಗಳನ್ನು ಸಂಪರ್ಕಿಸಿ",
     sampleDates: "ಮಾದರಿ ದಿನಾಂಕಗಳು — ನೈಜ ಕ್ಯಾಲೆಂಡರ್ ಸಂಪರ್ಕಿಸಿ",
     sampleGallery: "ಮಾದರಿ ಫೋಟೋಗಳು — ನಿಮ್ಮ ಸಮುದಾಯದ ಚಿತ್ರಗಳಿಂದ ಬದಲಾಯಿಸಿ",
-    rsvpCount: "ನೀವು ಇವುಗಳಿಗೆ ಹಾಜರಿ ಸೂಚಿಸಿದ್ದೀರಿ",
-    program: "ಕಾರ್ಯಕ್ರಮ",
-    programs: "ಕಾರ್ಯಕ್ರಮಗಳು",
     toggleLanguage: "ಭಾಷೆ ಬದಲಾಯಿಸಿ",
     enableNotifications: "ಅಧಿಸೂಚನೆಗಳನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ",
     notificationsEnabled: "ಅಧಿಸೂಚನೆಗಳು ಸಕ್ರಿಯಗೊಂಡಿವೆ!",
@@ -244,6 +237,8 @@ export const translations = {
     daysToGo: "ದಿನಗಳು ಬಾಕಿ",
     festivalCalendar: "ಹಬ್ಬಗಳ ಕ್ಯಾಲೆಂಡರ್",
     festivalNote: "ದಿನಾಂಕಗಳು ಪಂಚಾಂಗದ ಪ್ರಕಾರ — ಪ್ರಾದೇಶಿಕ ವ್ಯತ್ಯಾಸಗಳಿರಬಹುದು",
+    calPrev: "ಹಿಂದಿನ ತಿಂಗಳು",
+    calNext: "ಮುಂದಿನ ತಿಂಗಳು",
     galleryTitle: "ಕ್ಷಣಗಳು ಮತ್ತು ನೆನಪುಗಳು",
     lightboxHint: "← → ಕೀಗಳನ್ನು ಬಳಸಿ ಅಥವಾ ಕ್ಲಿಕ್ ಮಾಡಿ · Esc ಮುಚ್ಚಲು",
     prevPhoto: "ಹಿಂದಿನ ಫೋಟೋ",
@@ -271,7 +266,6 @@ export const translations = {
     supportCta: "ನಮಗೆ ಬರೆಯಿರಿ",
     donateTab: "ದೇಣಿಗೆ",
     sevaTab: "ಸೇವೆ",
-    contactTab: "ಸಂಪರ್ಕ",
     donateTitle: "ದೇಣಿಗೆ ಟ್ರ್ಯಾಕರ್",
     donateSub: "ಕೆಳಗಿನ ಫಾರ್ಮ್ ಭರ್ತಿ ಮಾಡಿ ಪಾವತಿಗೆ ಮುಂದುವರಿಸಿ.",
     donateDisclaimer:
@@ -299,7 +293,9 @@ export const translations = {
     chooseSeva: "ಮೊದಲು ಒಂದು ಸೇವೆ ಆಯ್ಕೆ ಮಾಡಿ",
     sevaDetailsLabel: "ಪ್ರಮಾಣ / ವಿವರ",
     sevaDetailsPh: "ಉದಾ., 50 ಜನ, 100 ಹೂವುಗಳು",
-    preferredDate: "ಆದ್ಯತಾ ದಿನಾಂಕ",
+    sevaFunctionLabel: "ಕಾರ್ಯಕ್ರಮ",
+    sevaFunction: "ಶ್ರೀ ಆಂಜನೇಯ ಪೂಜೆ",
+    sevaProgramsLabel: "ನಮ್ಮ ವಾರ್ಷಿಕ ಕಾರ್ಯಕ್ರಮಗಳು",
     registerSeva: "ಸೇವೆ ನೋಂದಾಯಿಸಿ",
     sevaNote:
       "🙏 ಸೇವೆ ನಮ್ಮ ಆಧ್ಯಾತ್ಮಿಕ ಸಮುದಾಯಕ್ಕೆ ಕೊಡುಗೆ ನೀಡುವ ಸುಂದರ ಮಾರ್ಗ. ಪ್ರತಿ ಸೇವೆಯೂ ಮೌಲ್ಯಯುತ!",
@@ -313,7 +309,7 @@ export const translations = {
     eventsList: [
       { id: "e1", date: "2026-10-27", day: "೨೭", mon: "ಅಕ್ಟೋ", title: "ಓಂಕಾರ ಜ್ಞಾನಾಮೃತ", guest: "ಶ್ರೀಮತಿ ಅಮೃತಾ ನಾಯ್ಡು", venue: "ಶ್ರೀ ಕೃಷ್ಣ ದೇವಸ್ಥಾನ, ದಾರ್ಸೈತ್, ಮಸ್ಕತ್" },
       { id: "e2", date: "", day: "—", mon: "೨೦೨೬", title: "ಓಂಕಾರ ನಾದಾಮೃತ", guest: "ಅತಿಥಿ ಪ್ರಕಟಣೆ ಬಾಕಿ", venue: "ಶ್ರೀ ಕೃಷ್ಣ ದೇವಸ್ಥಾನ, ದಾರ್ಸೈತ್, ಮಸ್ಕತ್" },
-      { id: "e3", date: "", day: "—", mon: "೨೦೨೬", title: "ಶ್ರೀ ಆಂಜನೇಯ ಪೂಜೆ", guest: "ಅತಿಥಿ ಪ್ರಕಟಣೆ ಬಾಕಿ", venue: "ಶ್ರೀ ಕೃಷ್ಣ ದೇವಸ್ಥಾನ, ದಾರ್ಸೈತ್, ಮಸ್ಕತ್" },
+      { id: "e3", date: "", day: "—", mon: "೨೦೨೬", title: "ಶ್ರೀ ಆಂಜನೇಯ ಪೂಜೆ", guest: null, venue: "ಶ್ರೀ ಕೃಷ್ಣ ದೇವಸ್ಥಾನ, ದಾರ್ಸೈತ್, ಮಸ್ಕತ್" },
     ],
     videos: [
       {

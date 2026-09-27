@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import Header from "./components/Header.jsx";
 import Hero from "./components/Hero.jsx";
 import ContentHub from "./components/ContentHub.jsx";
@@ -12,35 +12,44 @@ import Contact from "./components/Contact.jsx";
 import { translations } from "./data/content.js";
 import useLocalStorage from "./hooks/useLocalStorage.js";
 
-const TABS = ["hub", "events", "gallery", "about", "donate", "seva", "contact"];
+const TABS = ["hub", "events", "gallery", "about", "donate", "seva"];
 
 function tabFromHash() {
   const h = (typeof window !== "undefined" ? window.location.hash : "").replace(/^#\/?/, "");
+  if (h === "contact") return "about"; // legacy deep-link: Contact merged into About
   return TABS.includes(h) ? h : "hub";
 }
 
 export default function OmkarSamithiApp() {
   const [tab, setTabState] = useState(tabFromHash);
-  const [rsvps, setRsvps] = useLocalStorage("omkar:rsvps", {});
   const [notify, setNotify] = useLocalStorage("omkar:notify", {});
   const [lang, setLang] = useLocalStorage("omkar:lang", "en");
   const [toast, setToast] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  // The centred-logo greeting flight belongs to the FIRST OPEN only: the
+  // moment the user navigates to any tab it stays docked in the navbar for
+  // the rest of the visit (a reload starts the greeting fresh).
+  const [greeting, setGreeting] = useState(true);
   const toastTimer = useRef(null);
   const logoRef = useRef(null);
   const slotRef = useRef(null);
   const headerRef = useRef(null);
+  const aspectRef = useRef(1); // logo aspect survives effect re-runs
 
   const t = translations[lang] || translations.en;
 
   // --- hash routing (deep-linkable: #/hub, #/events, #/gallery, #/about) -----
   useEffect(() => {
-    const onHash = () => setTabState(tabFromHash());
+    const onHash = () => {
+      setGreeting(false); // any navigation ends the greeting flight
+      setTabState(tabFromHash());
+    };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
   const setTab = useCallback((next) => {
+    setGreeting(false); // clicking a tab ends the greeting flight
     setTabState(next);
     const target = `#/${next}`;
     if (window.location.hash !== target) window.location.hash = target;
@@ -67,26 +76,34 @@ export default function OmkarSamithiApp() {
     }
   }, []);
 
-  // --- single-logo scroll animation ----------------------------------------
+  // --- single-logo greeting flight (first open only) -----------------------
   // The ONE logo (rendered in the Header) starts centred in the viewport at
-  // scrollY=0 and flies into its slot in the sticky navbar over the first
-  // 15% of the page's scrollable range, then stays there.
-  useEffect(() => {
+  // scrollY=0 on the very first open and flies into its slot in the sticky
+  // navbar over the first 15% of the page's scrollable range. As soon as the
+  // user navigates to any tab, `greeting` flips false and the logo is pinned
+  // in the navbar — no transition anywhere else, ever.
+  useLayoutEffect(() => {
     const logo = logoRef.current;
     const slot = slotRef.current;
     if (!logo || !slot) return undefined;
 
     const NAV_H = 45;
     let raf = 0;
-    let aspect = 1; // width / height, measured once the image loads
+    if (!aspectRef.current && logo.naturalWidth && logo.naturalHeight) {
+      aspectRef.current = logo.naturalWidth / logo.naturalHeight;
+    }
+    let aspect = aspectRef.current || 1; // width / height, measured once
 
     const update = () => {
       raf = 0;
-      const doc = document.documentElement;
-      const maxScroll = Math.max(0, doc.scrollHeight - window.innerHeight);
-      let p = maxScroll > 0 ? window.scrollY / (maxScroll * 0.15) : 0;
-      p = Math.min(1, Math.max(0, p));
-      p = p * p * (3 - 2 * p); // smoothstep for a natural glide
+      let p = 1;
+      if (greeting) {
+        const doc = document.documentElement;
+        const maxScroll = Math.max(0, doc.scrollHeight - window.innerHeight);
+        p = maxScroll > 0 ? window.scrollY / (maxScroll * 0.15) : 0;
+        p = Math.min(1, Math.max(0, p));
+        p = p * p * (3 - 2 * p); // smoothstep for a natural glide
+      }
 
       const bigH = Math.max(140, Math.min(window.innerHeight * 0.3, 220));
       const h = bigH + (NAV_H - bigH) * p;
@@ -108,6 +125,7 @@ export default function OmkarSamithiApp() {
     const measure = () => {
       if (logo.naturalWidth && logo.naturalHeight) {
         aspect = logo.naturalWidth / logo.naturalHeight;
+        aspectRef.current = aspect;
       }
       slot.style.width = `${Math.round(NAV_H * aspect)}px`;
       update();
@@ -129,7 +147,7 @@ export default function OmkarSamithiApp() {
       window.removeEventListener("resize", schedule);
       logo.removeEventListener("load", measure);
     };
-  }, []);
+  }, [greeting]);
 
   // Keep --header-h in sync so the hero is exactly viewport-height at the top.
   useEffect(() => {
@@ -191,17 +209,7 @@ export default function OmkarSamithiApp() {
     }
   }, [flash, t]);
 
-  // --- RSVP / reminders -----------------------------------------------------
-  const toggleRsvp = useCallback(
-    (id, title) => {
-      const next = { ...rsvps, [id]: !rsvps[id] };
-      setRsvps(next);
-      flash(next[id] ? `RSVP'd for ${title}` : `RSVP cancelled for ${title}`);
-      if (next[id]) sendNotification(title);
-    },
-    [rsvps, setRsvps, flash, sendNotification]
-  );
-
+  // --- reminders -------------------------------------------------------------
   const toggleNotify = useCallback(
     (id, title) => {
       const next = { ...notify, [id]: !notify[id] };
@@ -241,21 +249,23 @@ export default function OmkarSamithiApp() {
           <EventsView
             t={t}
             lang={lang}
-            rsvps={rsvps}
             notify={notify}
-            onToggleRsvp={toggleRsvp}
             onToggleNotify={toggleNotify}
             flash={flash}
           />
         )}
         {tab === "gallery" && <GalleryView t={t} />}
-        {tab === "about" && <AboutView t={t} />}
+        {tab === "about" && (
+          <>
+            <AboutView t={t} />
+            <ContactView t={t} flash={flash} />
+          </>
+        )}
         {tab === "donate" && <DonateView t={t} flash={flash} />}
-        {tab === "seva" && <SevaView t={t} flash={flash} />}
-        {tab === "contact" && <ContactView t={t} flash={flash} />}
+        {tab === "seva" && <SevaView t={t} lang={lang} flash={flash} />}
       </main>
 
-      {tab !== "contact" && <Contact t={t} />}
+      <Contact t={t} />
 
       <footer className="footer">
         <p>{t.pranaams}</p>

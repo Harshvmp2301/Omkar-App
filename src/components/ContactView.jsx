@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Contact from "./Contact.jsx";
 
 export default function ContactView({ t, flash }) {
   const [name, setName] = useState("");
@@ -86,7 +85,6 @@ export default function ContactView({ t, flash }) {
           </button>
         </form>
       </div>
-      <Contact t={t} />
     </>
   );
 }

@@ -22,7 +22,6 @@ const Header = forwardRef(function Header(
     { id: "about", label: t.aboutTab },
     { id: "donate", label: t.donateTab },
     { id: "seva", label: t.sevaTab },
-    { id: "contact", label: t.contactTab },
   ];
 
   return (
