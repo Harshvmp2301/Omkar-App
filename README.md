@@ -4,7 +4,7 @@ Omkar Samithi is a bilingual (English/Kannada) community platform for the Oman K
 
 ## Features
 
-- ✨ **Greeting logo animation (first open only)** — at `scrollY = 0` the single Omkar logo sits large and exactly centred over the page; scrolling shrinks and glides it into its slot in the sticky navbar within the first 15% of the page's scroll. The flight runs once per visit (completing it — or clicking any tab — pins the logo in the navbar), and the hero is compact so the title is always the topmost content with no dead space (one element, no duplicates)
+- ✨ **Scroll-driven logo animation (every tab)** — at `scrollY = 0` the single Omkar logo sits large and exactly centred over the page; scrolling shrinks and glides it into its slot in the sticky navbar within the first 15% of the page's scroll, and scrolling back up glides it out again — the transition works on every tab, wherever you are. The hero is compact so the title stays the topmost content with no dead space (one element, no duplicates)
 - 📅 **Upcoming programs** with live countdowns, per-event reminders and a permanent one-click **Add to Calendar** (.ics) button — dimmed until the date is announced
 - 🗓️ **Festival calendar** — a dark-themed wall-calendar month grid (Google-Calendar-style) covering all of 2026, with every announced festival and program listed under its date and today highlighted in gold; click a chip to download the .ics
 - 💝 **Donate** — donation tracker form (purpose picker: General, Seva, Food/Langar, Aarti Supplies, Temple Maintenance) with amount in OMR

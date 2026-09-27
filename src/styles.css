@@ -126,8 +126,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 /* ------------------------------------------------------------------ hero */
 /* Compact first view: the title sits right under the navbar — NO full-screen
-   dead space. At scrollY=0 the fixed greeting logo floats over the content
-   and flies into the navbar on the first scroll (first open only). */
+   dead space. At scrollY=0 the fixed logo floats centred over the content
+   and flies into the navbar as the user scrolls — on every tab. */
 .hero {
   text-align: center;
   display: flex;

@@ -27,11 +27,6 @@ export default function OmkarSamithiApp() {
   const [lang, setLang] = useLocalStorage("omkar:lang", "en");
   const [toast, setToast] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  // The centred-logo greeting belongs to the FIRST OPEN only: it ends the
-  // moment the flight completes (p reaches 1) OR the user clicks a tab —
-  // whichever comes first. From then on the logo stays docked for the rest
-  // of the visit; a page reload starts the greeting fresh.
-  const [greeting, setGreeting] = useState(true);
   const toastTimer = useRef(null);
   const logoRef = useRef(null);
   const slotRef = useRef(null);
@@ -42,16 +37,12 @@ export default function OmkarSamithiApp() {
 
   // --- hash routing (deep-linkable: #/hub, #/events, #/gallery, #/about) -----
   useEffect(() => {
-    const onHash = () => {
-      setGreeting(false); // any navigation ends the greeting flight
-      setTabState(tabFromHash());
-    };
+    const onHash = () => setTabState(tabFromHash());
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
   const setTab = useCallback((next) => {
-    setGreeting(false); // clicking a tab ends the greeting flight
     setTabState(next);
     const target = `#/${next}`;
     if (window.location.hash !== target) window.location.hash = target;
@@ -78,12 +69,12 @@ export default function OmkarSamithiApp() {
     }
   }, []);
 
-  // --- single-logo greeting flight (first open only) -----------------------
+  // --- single-logo scroll transition (every tab) ---------------------------
   // The ONE logo (rendered in the Header) starts centred in the viewport at
-  // scrollY=0 on the very first open and flies into its slot in the sticky
-  // navbar over the first 15% of the page's scrollable range. As soon as the
-  // user navigates to any tab, `greeting` flips false and the logo is pinned
-  // in the navbar — no transition anywhere else, ever.
+  // scrollY=0 and flies into its slot in the sticky navbar over the first
+  // 15% of the page's scrollable range — on EVERY tab, exactly as before.
+  // Scroll back to the top and it glides back to the centre; it follows the
+  // scroll wherever you are.
   useLayoutEffect(() => {
     const logo = logoRef.current;
     const slot = slotRef.current;
@@ -98,14 +89,11 @@ export default function OmkarSamithiApp() {
 
     const update = () => {
       raf = 0;
-      let p = 1;
-      if (greeting) {
-        const doc = document.documentElement;
-        const maxScroll = Math.max(0, doc.scrollHeight - window.innerHeight);
-        p = maxScroll > 0 ? window.scrollY / (maxScroll * 0.15) : 0;
-        p = Math.min(1, Math.max(0, p));
-        p = p * p * (3 - 2 * p); // smoothstep for a natural glide
-      }
+      const doc = document.documentElement;
+      const maxScroll = Math.max(0, doc.scrollHeight - window.innerHeight);
+      let p = maxScroll > 0 ? window.scrollY / (maxScroll * 0.15) : 0;
+      p = Math.min(1, Math.max(0, p));
+      p = p * p * (3 - 2 * p); // smoothstep for a natural glide
 
       const bigH = Math.max(140, Math.min(window.innerHeight * 0.3, 220));
       const h = bigH + (NAV_H - bigH) * p;
@@ -122,11 +110,6 @@ export default function OmkarSamithiApp() {
       logo.style.height = `${h}px`;
       logo.style.width = `${w}px`;
       logo.style.transform = `translate3d(${cx - w / 2}px, ${cy - h / 2}px, 0)`;
-
-      // One-shot: the moment the flight completes (p hits 1) the greeting is
-      // over for good — scrolling back to the top shows only the page title,
-      // the logo stays docked until the next reload.
-      if (greeting && p >= 1) setGreeting(false);
     };
 
     const measure = () => {
@@ -154,7 +137,7 @@ export default function OmkarSamithiApp() {
       window.removeEventListener("resize", schedule);
       logo.removeEventListener("load", measure);
     };
-  }, [greeting]);
+  }, []);
 
   // Keep --header-h in sync so the hero is exactly viewport-height at the top.
   useEffect(() => {
