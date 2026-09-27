@@ -125,16 +125,15 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .header-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 
 /* ------------------------------------------------------------------ hero */
-/* Full-screen first view: the logo (fixed, from the header) sits exactly at
-   the viewport centre while the hero content is anchored to the bottom. */
+/* Compact first view: the title sits right under the navbar — NO full-screen
+   dead space. At scrollY=0 the fixed greeting logo floats over the content
+   and flies into the navbar on the first scroll (first open only). */
 .hero {
   text-align: center;
-  min-height: calc(100dvh - var(--header-h, 80px));
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
   align-items: center;
-  padding: 0 20px clamp(24px, 7vh, 90px);
+  padding: 18px 20px 6px;
 }
 .hero-content { display: flex; flex-direction: column; align-items: center; }
 .hero h1 { font-size: 1.3rem; color: #F3E9D6; margin: 6px 0 2px; }
@@ -333,64 +332,66 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .ics-btn.dimmed:hover { opacity: 1; }
 
 /* ---------------------------------------------------- festival calendar */
-/* Warm yellow wall-calendar with a Google-Calendar-style month grid.
-   Announced festivals/programs appear as chips under their dates. */
+/* Dark wall-calendar with a Google-Calendar-style month grid, matching the
+   site's maroon/gold theme. Announced festivals/programs appear as chips
+   under their dates; today's date is highlighted in solid gold. */
 .festival-cal {
-  background: #FDF3D7;
-  border: 1px solid #C9972C;
+  background: #1C1017;
+  border: 1px solid #5A3E1C;
   border-radius: 6px;
   overflow: hidden;
   margin-bottom: 24px;
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
 }
 .cal-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  background: #C9972C;
-  color: #2A1418;
+  background: #2C1620;
+  color: #E8B84B;
   padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
 }
-.cal-month { font-size: 1rem; font-weight: 800; letter-spacing: 0.02em; }
+.cal-month { font-size: 1rem; font-weight: 800; letter-spacing: 0.02em; color: #E8B84B; }
 .cal-nav {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(23, 11, 16, 0.12);
-  border: 1px solid rgba(23, 11, 16, 0.35);
-  color: #2A1418;
+  background: #231219;
+  border: 1px solid #C9972C;
+  color: #E8B84B;
   border-radius: 3px;
   padding: 3px 6px;
   cursor: pointer;
 }
-.cal-nav:hover { background: #2A1418; color: #F3DFA8; border-color: #2A1418; }
+.cal-nav:hover { background: #C9972C; color: #170B10; }
 .cal-weekhead {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  background: #F1DCA4;
-  color: #6B4A12;
+  background: #231219;
+  color: #B7A28A;
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   text-align: center;
   padding: 6px 0;
-  border-bottom: 1px solid #E0C888;
+  border-bottom: 1px solid var(--line);
 }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
 .cal-cell {
   min-height: 64px;
   padding: 4px 4px 6px;
-  border-right: 1px solid #EBD9A8;
-  border-bottom: 1px solid #EBD9A8;
+  border-right: 1px solid #3A2430;
+  border-bottom: 1px solid #3A2430;
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 .cal-cell:nth-child(7n) { border-right: none; }
-.cal-cell.blank { background: #F8ECC8; }
-.cal-cell.today { background: #FFF9E6; }
+.cal-cell.blank { background: rgba(16, 8, 12, 0.6); }
+.cal-cell.today { background: rgba(201, 151, 44, 0.13); }
 .cal-num {
   display: flex;
   align-items: center;
@@ -399,12 +400,13 @@ button, a { -webkit-tap-highlight-color: transparent; }
   height: 22px;
   font-size: 0.78rem;
   font-weight: 700;
-  color: #3A1E10;
+  color: #F3E9D6;
   border-radius: 50%;
   align-self: flex-start;
 }
-.cal-num.has { color: #170B10; background: rgba(201, 151, 44, 0.35); }
-.cal-cell.today .cal-num { background: #B77F16; color: #FFF8E1; }
+.cal-num.has { background: rgba(201, 151, 44, 0.3); }
+/* Today = solid gold circle so it reads at a glance */
+.cal-cell.today .cal-num { background: #C9972C; color: #170B10; }
 .cal-chip {
   display: block;
   width: 100%;
@@ -422,9 +424,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
   font-family: 'Karla', sans-serif;
 }
 .cal-chip.festival { background: #C9972C; color: #170B10; }
-.cal-chip.festival:hover { background: #B77F16; }
-.cal-chip.event { background: transparent; border-color: #B77F16; color: #6B4A12; }
-.cal-chip.event:hover { background: #B77F16; color: #FFF8E1; }
+.cal-chip.festival:hover { background: #E8B84B; }
+.cal-chip.event { background: transparent; border-color: #C9972C; color: #E8B84B; }
+.cal-chip.event:hover { background: rgba(201, 151, 44, 0.25); color: #F3E9D6; }
 
 /* --------------------------------------------------------------- gallery */
 .gallery-grid {
@@ -675,6 +677,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 /* ---------------------------------------------------------------- footer */
 .footer { text-align: center; padding: 20px; border-top: 1px solid var(--line); }
 .footer p { color: #B7A28A; font-size: 0.7rem; margin: 0; }
+.footer .footer-links { margin-top: 10px; }
+.footer .social-link { font-size: 0.72rem; padding: 4px 12px; }
 
 /* ----------------------------------------------------------------- toast */
 .toast {

@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { Facebook, Youtube, ExternalLink } from "lucide-react";
 import Header from "./components/Header.jsx";
 import Hero from "./components/Hero.jsx";
 import ContentHub from "./components/ContentHub.jsx";
@@ -26,9 +27,10 @@ export default function OmkarSamithiApp() {
   const [lang, setLang] = useLocalStorage("omkar:lang", "en");
   const [toast, setToast] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  // The centred-logo greeting flight belongs to the FIRST OPEN only: the
-  // moment the user navigates to any tab it stays docked in the navbar for
-  // the rest of the visit (a reload starts the greeting fresh).
+  // The centred-logo greeting belongs to the FIRST OPEN only: it ends the
+  // moment the flight completes (p reaches 1) OR the user clicks a tab —
+  // whichever comes first. From then on the logo stays docked for the rest
+  // of the visit; a page reload starts the greeting fresh.
   const [greeting, setGreeting] = useState(true);
   const toastTimer = useRef(null);
   const logoRef = useRef(null);
@@ -120,6 +122,11 @@ export default function OmkarSamithiApp() {
       logo.style.height = `${h}px`;
       logo.style.width = `${w}px`;
       logo.style.transform = `translate3d(${cx - w / 2}px, ${cy - h / 2}px, 0)`;
+
+      // One-shot: the moment the flight completes (p hits 1) the greeting is
+      // over for good — scrolling back to the top shows only the page title,
+      // the logo stays docked until the next reload.
+      if (greeting && p >= 1) setGreeting(false);
     };
 
     const measure = () => {
@@ -259,13 +266,43 @@ export default function OmkarSamithiApp() {
           <>
             <AboutView t={t} />
             <ContactView t={t} flash={flash} />
+            <Contact t={t} />
           </>
         )}
         {tab === "donate" && <DonateView t={t} flash={flash} />}
         {tab === "seva" && <SevaView t={t} lang={lang} flash={flash} />}
       </main>
 
-      <Contact t={t} />
+      <footer className="footer">
+        <p>{t.pranaams}</p>
+        {/* Social & feedback links live with the Pranaams box on every page */}
+        <div className="social-icons footer-links">
+          <a
+            href="https://www.facebook.com/groups/omkarsamithi/"
+            target="_blank"
+            rel="noreferrer"
+            className="social-link"
+          >
+            <Facebook size={16} aria-hidden="true" /> Facebook Group
+          </a>
+          <a
+            href="https://www.youtube.com/@OmkarSamithi"
+            target="_blank"
+            rel="noreferrer"
+            className="social-link"
+          >
+            <Youtube size={16} aria-hidden="true" /> YouTube Channel
+          </a>
+          <a
+            href="https://omkarfeedback.blogspot.com/"
+            target="_blank"
+            rel="noreferrer"
+            className="social-link"
+          >
+            <ExternalLink size={16} aria-hidden="true" /> Feedback Form
+          </a>
+        </div>
+      </footer>
 
       <footer className="footer">
         <p>{t.pranaams}</p>

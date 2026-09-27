@@ -35,20 +35,9 @@ export default function FestivalCalendar({ t, lang, flash }) {
   }, [t]);
 
   const [view, setView] = useState(() => {
+    // Always open on the month containing TODAY so the highlight is visible.
     const now = new Date();
-    const y = now.getFullYear();
-    const m = now.getMonth();
-    const nowHasItems = Object.keys(itemsByDate).some((d) => {
-      const [yy, mm] = d.split("-").map(Number);
-      return yy === y && mm === m + 1;
-    });
-    if (nowHasItems) return { y, m };
-    const first = Object.keys(itemsByDate).sort()[0];
-    if (first) {
-      const [fy, fm] = first.split("-").map(Number);
-      return { y: fy, m: fm - 1 };
-    }
-    return { y, m };
+    return { y: now.getFullYear(), m: now.getMonth() };
   });
 
   const step = (dir) => {

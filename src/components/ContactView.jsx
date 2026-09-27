@@ -29,7 +29,7 @@ export default function ContactView({ t, flash }) {
     <>
       <div className="section" style={{ maxWidth: 760 }}>
         <div className="section-head">
-          <h2 className="section-title display">{t.contactUs}</h2>
+          <h2 className="section-title display">{t.messageFormTitle}</h2>
         </div>
         <p className="view-sub">{t.contactSub}</p>
 
