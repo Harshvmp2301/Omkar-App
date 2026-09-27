@@ -52,12 +52,15 @@ jobs:
             exit 1
           fi
           echo "Token present (length=${#VERCEL_TOKEN} characters)."
-          if ! whoami=$(vercel whoami --token="$VERCEL_TOKEN" 2>&1); then
-            echo "::error title=Token rejected::vercel whoami said: $whoami"
+          out=$(vercel whoami --token="$VERCEL_TOKEN" 2>&1); status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "$out"
+            flat=$(printf '%s' "$out" | tr '\n' ' ' | tr -s ' ')
+            echo "::error title=Token rejected (exit $status)::$flat"
             echo "Likely causes: token revoked, copied incompletely, or extra whitespace/newline when pasted. Recreate at https://vercel.com/account/tokens and re-add the secret."
             exit 1
           fi
-          echo "Authenticated as: $whoami"
+          echo "Authenticated: $out"
 
       - name: Link Vercel project (Omkar-App)
         run: |
