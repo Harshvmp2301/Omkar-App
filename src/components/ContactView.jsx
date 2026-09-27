@@ -1,12 +1,13 @@
 import { useState } from "react";
+import { submitForm } from "../utils/submitForm.js";
 
-export default function ContactView({ t, flash }) {
+export default function ContactView({ t, lang, flash }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (!message.trim()) {
       flash(t.messageRequired);
@@ -21,14 +22,30 @@ export default function ContactView({ t, flash }) {
       "",
       "Sent from the Omkar Samithi app.",
     ].join("\n");
-    window.location.href = `mailto:info@omkarsamithi.com?subject=${encodeURIComponent(mailSubject)}&body=${encodeURIComponent(body)}`;
-    flash(t.emailPrepared);
+    const mailto = `mailto:info@omkarsamithi.com?subject=${encodeURIComponent(mailSubject)}&body=${encodeURIComponent(body)}`;
+
+    const res = await submitForm({
+      form: "contact",
+      lang,
+      payload: { name, email, subject: mailSubject, message, body },
+    });
+    if (res.ok) {
+      setName("");
+      setEmail("");
+      setSubject("");
+      setMessage("");
+      flash(t.formSent);
+      return;
+    }
+    // No endpoint (default) or delivery failed → mailto never loses a message.
+    window.location.href = mailto;
+    flash(res.reason === "no-endpoint" ? t.emailPrepared : t.formFailed);
   };
 
   return (
     <>
-      <div className="section" style={{ maxWidth: 760 }}>
-        <div className="section-head">
+      <div className="section section--narrow">
+        <div className="section-head reveal">
           <h2 className="section-title display">{t.messageFormTitle}</h2>
         </div>
         <p className="view-sub">{t.contactSub}</p>
@@ -77,6 +94,8 @@ export default function ContactView({ t, flash }) {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder={t.messagePh}
+              required
+              aria-required="true"
             />
           </div>
 

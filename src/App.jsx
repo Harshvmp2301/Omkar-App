@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
-import { Facebook, Youtube, ExternalLink } from "lucide-react";
+import { Facebook, Youtube, ExternalLink, MapPin } from "lucide-react";
 import Header from "./components/Header.jsx";
 import Hero from "./components/Hero.jsx";
 import ContentHub from "./components/ContentHub.jsx";
@@ -48,11 +48,49 @@ export default function OmkarSamithiApp() {
     if (window.location.hash !== target) window.location.hash = target;
   }, []);
 
-  // --- document metadata follows language ----------------------------------
+  // --- document metadata follows language + active tab ---------------------
+  const TAB_LABELS = {
+    hub: t.contentHub,
+    events: t.events,
+    gallery: t.galleryTab,
+    donate: t.donateTab,
+    seva: t.sevaTab,
+    about: t.aboutTab,
+  };
   useEffect(() => {
     document.documentElement.lang = lang;
-    document.title = `${t.appName} · Muscat`;
-  }, [lang, t.appName]);
+    const page = TAB_LABELS[tab];
+    document.title = page ? `${page} · ${t.appName} · Muscat` : `${t.appName} · Muscat`;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang, tab, t]);
+
+  // --- scroll-reveal: hydrate every .reveal on the active view -------------
+  // Progressive enhancement: with reduced motion (or no IntersectionObserver)
+  // everything shows immediately; otherwise elements rise in as they enter.
+  useLayoutEffect(() => {
+    const els = Array.from(document.querySelectorAll(".reveal:not(.in)"));
+    if (!els.length) return undefined;
+    const reduced =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced || !("IntersectionObserver" in window)) {
+      els.forEach((el) => el.classList.add("in"));
+      return undefined;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((en) => {
+          if (en.isIntersecting) {
+            en.target.classList.add("in");
+            io.unobserve(en.target);
+          }
+        });
+      },
+      { rootMargin: "0px 0px -6% 0px", threshold: 0.06 }
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [tab, lang]);
 
   // --- notifications --------------------------------------------------------
   useEffect(() => {
@@ -70,8 +108,8 @@ export default function OmkarSamithiApp() {
   }, []);
 
   // --- single-logo scroll transition (every tab) ---------------------------
-  // The ONE logo (rendered in the Header) starts centred in the viewport at
-  // scrollY=0 and flies into its slot in the sticky navbar over the first
+  // The ONE logo (rendered once at page level) starts centred in the viewport
+  // at scrollY=0 and flies into its slot in the sticky navbar over the first
   // 15% of the page's scrollable range — on EVERY tab, exactly as before.
   // Scroll back to the top and it glides back to the centre; it follows the
   // scroll wherever you are.
@@ -241,9 +279,11 @@ export default function OmkarSamithiApp() {
 
   return (
     <div className="app">
+      <a className="skip-link" href="#main">
+        {t.skipToContent}
+      </a>
       <Header
         ref={headerRef}
-        logoRef={logoRef}
         slotRef={slotRef}
         t={t}
         lang={lang}
@@ -254,10 +294,21 @@ export default function OmkarSamithiApp() {
         onRequestNotify={requestNotificationPermission}
       />
 
+      {/* The ONE logo for the entire app — fixed at page level (a filtered
+          ancestor such as the blurred header would trap a fixed child),
+          centred at scrollY=0 and flown into the navbar slot by the scroll
+          effect below. Never duplicated. */}
+      <img
+        ref={logoRef}
+        src="/Omkar Logo Final Transparent.png"
+        alt="Omkar Samithi"
+        className="app-logo"
+      />
+
       <Hero t={t} events={t.eventsList} onGoToEvents={() => setTab("events")} />
 
-      <main>
-        {tab === "hub" && <ContentHub t={t} />}
+      <main key={tab} id="main" tabIndex={-1} className="view">
+        {tab === "hub" && <ContentHub t={t} lang={lang} />}
         {tab === "events" && (
           <EventsView
             t={t}
@@ -271,16 +322,20 @@ export default function OmkarSamithiApp() {
         {tab === "about" && (
           <>
             <AboutView t={t} />
-            <ContactView t={t} flash={flash} />
+            <ContactView t={t} lang={lang} flash={flash} />
             <Contact t={t} />
           </>
         )}
-        {tab === "donate" && <DonateView t={t} flash={flash} />}
+        {tab === "donate" && <DonateView t={t} lang={lang} flash={flash} />}
         {tab === "seva" && <SevaView t={t} lang={lang} flash={flash} />}
       </main>
 
       <footer className="footer">
-        <p>{t.pranaams}</p>
+        <p className="footer-pranaams">{t.pranaams}</p>
+        <div className="footer-meta">
+          <MapPin size={12} aria-hidden="true" /> {t.footerLocation} · ©{" "}
+          {new Date().getFullYear()} {t.appName}
+        </div>
         {/* Social & feedback links live with the Pranaams box on every page */}
         <div className="social-icons footer-links">
           <a
@@ -308,6 +363,13 @@ export default function OmkarSamithiApp() {
             <ExternalLink size={16} aria-hidden="true" /> Feedback Form
           </a>
         </div>
+        <button
+          type="button"
+          className="to-top"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        >
+          ↑ {t.backToTop}
+        </button>
       </footer>
 
       {toast && (

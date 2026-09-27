@@ -35,6 +35,47 @@ npm run build    # production build to dist/
 npm run preview  # serve the production build
 ```
 
+### Optional: live YouTube uploads
+
+The Content Hub shows a curated video list by default. To stream the
+channel's latest uploads instead, copy [`.env.example`](.env.example) to
+`.env.local` locally, or add the two variables in Vercel → Project →
+Settings → Environment Variables:
+
+```
+VITE_YOUTUBE_API_KEY=…      # YouTube Data API v3 key
+VITE_YOUTUBE_CHANNEL_ID=…   # channel id starting with UC
+```
+
+No keys, any API error, or quota exhaustion → the curated list stays on
+screen; successful responses are cached in `localStorage` for 6 hours.
+
+### Optional: form endpoint
+
+Donate, Seva and Contact POST JSON to `VITE_FORM_ENDPOINT` when set
+(Formspree, Google Apps Script, SheetDB — any CORS JSON webhook), with
+success/failure toasts in both languages. Unset (default) or on delivery
+failure the forms fall back to the existing `mailto:` flow, so no message
+is ever lost. Envelope: `{ form, lang, page, submittedAt, …fields }`.
+
+### Local gallery photos (no hotlinks)
+
+The 8 gallery photos are downloaded from the blog CDN once, converted to
+WebP (≤1600 px, q82, EXIF stripped) into `public/gallery/`, and
+`src/data/content.js` is rewritten to local paths:
+
+```bash
+npm run gallery:download              # download → WebP → rewrite content.js
+npm run gallery:download -- --dry-run # show the plan without touching anything
+npm run gallery:download -- --force   # re-download and re-convert
+```
+
+Needs Node 18+. WebP conversion uses ImageMagick (`magick`/`convert`) or
+`cwebp`, whichever is installed (`winget install ImageMagick.ImageMagick`
+/ `winget install libwebp` / `apt install webp`). Without a converter the
+photos are still saved as `.jpg` — hotlinks go away either way. The same
+`public/gallery/` folder carries over unchanged into Next.js.
+
 ## Deployment (Vercel)
 
 The app is configured for **auto-deployment to Vercel** at `https://omkar-app.vercel.app` (i.e. [Omkar-App.vercel.app](https://Omkar-App.vercel.app)).

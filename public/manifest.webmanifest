@@ -2,15 +2,27 @@
   "name": "Omkar Samithi",
   "short_name": "Omkar",
   "description": "Bilingual community platform for Oman Karnataka Aradhana Samithi, Muscat",
-  "start_url": ".",
-  "scope": ".",
+  "start_url": "https://omkar-app.vercel.app/",
+  "scope": "https://omkar-app.vercel.app/",
   "display": "standalone",
   "background_color": "#170B10",
   "theme_color": "#170B10",
   "lang": "en",
   "icons": [
     {
-      "src": "/Omkar Logo Final Transparent.png",
+      "src": "https://omkar-app.vercel.app/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://omkar-app.vercel.app/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://omkar-app.vercel.app/Omkar Logo Final Transparent.png",
       "sizes": "any",
       "type": "image/png",
       "purpose": "any"

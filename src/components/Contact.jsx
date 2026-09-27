@@ -6,12 +6,12 @@ import { Mail } from "lucide-react";
  */
 export default function Contact({ t }) {
   return (
-    <section className="contact-section">
+    <section className="contact-section reveal">
       <h2 className="contact-title display">{t.contactUs}</h2>
       <p className="contact-sub">{t.contactMethods}</p>
 
       <div className="contact-grid">
-        <div className="contact-card">
+        <div className="contact-card reveal">
           <Mail size={28} className="icon" aria-hidden="true" />
           <div className="label">{t.emailUs}</div>
           <div className="contact-emails">

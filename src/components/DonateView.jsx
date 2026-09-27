@@ -1,12 +1,13 @@
 import { useState } from "react";
+import { submitForm } from "../utils/submitForm.js";
 
-export default function DonateView({ t, flash }) {
+export default function DonateView({ t, lang, flash }) {
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [purposeIdx, setPurposeIdx] = useState(0);
   const [amount, setAmount] = useState("");
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (!name.trim() || !contact.trim()) {
       flash(t.requiredFields);
@@ -22,13 +23,28 @@ export default function DonateView({ t, flash }) {
       "",
       "Sent from the Omkar Samithi app.",
     ].join("\n");
-    window.location.href = `mailto:info@omkarsamithi.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    flash(t.emailPrepared);
+    const mailto = `mailto:info@omkarsamithi.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    const res = await submitForm({
+      form: "donate",
+      lang,
+      payload: { name, contact, purpose, amount: amount || "0.00", subject, body },
+    });
+    if (res.ok) {
+      setName("");
+      setContact("");
+      setAmount("");
+      flash(t.formSent);
+      return;
+    }
+    // No endpoint (default) or delivery failed → mailto never loses a message.
+    window.location.href = mailto;
+    flash(res.reason === "no-endpoint" ? t.emailPrepared : t.formFailed);
   };
 
   return (
-    <div className="section" style={{ maxWidth: 760 }}>
-      <div className="section-head">
+    <div className="section section--narrow">
+      <div className="section-head reveal">
         <h2 className="section-title display">{t.donateTitle}</h2>
       </div>
       <p className="view-sub">{t.donateSub}</p>
@@ -43,6 +59,8 @@ export default function DonateView({ t, flash }) {
             onChange={(e) => setName(e.target.value)}
             placeholder={t.fullNamePh}
             autoComplete="name"
+            required
+            aria-required="true"
           />
         </div>
 
@@ -55,6 +73,8 @@ export default function DonateView({ t, flash }) {
             onChange={(e) => setContact(e.target.value)}
             placeholder={t.contactPh}
             autoComplete="email"
+            required
+            aria-required="true"
           />
         </div>
 
@@ -88,6 +108,7 @@ export default function DonateView({ t, flash }) {
         </div>
 
         <p className="form-note">{t.donateDisclaimer}</p>
+        <p className="form-note">{t.emailOpensNote}</p>
         <button type="submit" className="btn-primary">
           {t.proceedPayment}
         </button>

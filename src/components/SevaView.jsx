@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { formatFullDate } from "../utils/calendar.js";
+import { submitForm } from "../utils/submitForm.js";
 
 export default function SevaView({ t, lang, flash }) {
   const [selected, setSelected] = useState(null);
@@ -7,7 +8,7 @@ export default function SevaView({ t, lang, flash }) {
   const [contact, setContact] = useState("");
   const [details, setDetails] = useState("");
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (selected === null) {
       flash(t.chooseSeva);
@@ -28,13 +29,36 @@ export default function SevaView({ t, lang, flash }) {
       "",
       "Sent from the Omkar Samithi app.",
     ].join("\n");
-    window.location.href = `mailto:info@omkarsamithi.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    flash(t.emailPrepared);
+    const mailto = `mailto:info@omkarsamithi.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    const res = await submitForm({
+      form: "seva",
+      lang,
+      payload: {
+        name,
+        contact,
+        details,
+        seva: seva.title,
+        sevaSub: seva.sub,
+        subject,
+        body,
+      },
+    });
+    if (res.ok) {
+      setName("");
+      setContact("");
+      setDetails("");
+      flash(t.formSent);
+      return;
+    }
+    // No endpoint (default) or delivery failed → mailto never loses a message.
+    window.location.href = mailto;
+    flash(res.reason === "no-endpoint" ? t.emailPrepared : t.formFailed);
   };
 
   return (
-    <div className="section" style={{ maxWidth: 760 }}>
-      <div className="section-head">
+    <div className="section section--narrow">
+      <div className="section-head reveal">
         <h2 className="section-title display">{t.sevaTitle}</h2>
       </div>
       <p className="view-sub">{t.sevaSub}</p>
@@ -85,6 +109,8 @@ export default function SevaView({ t, lang, flash }) {
             onChange={(e) => setName(e.target.value)}
             placeholder={t.fullNamePh}
             autoComplete="name"
+            required
+            aria-required="true"
           />
         </div>
 
@@ -97,6 +123,8 @@ export default function SevaView({ t, lang, flash }) {
             onChange={(e) => setContact(e.target.value)}
             placeholder={t.contactPh}
             autoComplete="email"
+            required
+            aria-required="true"
           />
         </div>
 
@@ -111,6 +139,7 @@ export default function SevaView({ t, lang, flash }) {
           />
         </div>
 
+        <p className="form-note">{t.emailOpensNote}</p>
         <button type="submit" className="btn-primary">
           {t.registerSeva}
         </button>
