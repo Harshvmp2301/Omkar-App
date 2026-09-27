@@ -59,19 +59,17 @@ jobs:
           norm="${norm#\'}"; norm="${norm%\'}"
           norm="${norm#VERCEL_TOKEN=}"
           norm="${norm#Bearer }"
+          echo "VERCEL_TOKEN=$norm" >> "$GITHUB_ENV"
           if [ "$norm" != "$VERCEL_TOKEN" ]; then
             echo "Note: cleaned paste artefacts from the secret value (content unchanged otherwise)."
           fi
           if ! out=$(vercel whoami --token="$norm" 2>&1); then
-            echo "Raw whoami output:"
-            echo "$out"
+            echo "whoami output:"; echo "$out"
             flat=$(printf '%s' "$out" | tr '\n' ' ' | tr -s ' ')
-            echo "::error title=Token rejected::$flat"
-            echo "Recreate the token at https://vercel.com/account/tokens (use the COPY button on the token that is shown only once), then update the VERCEL_TOKEN secret."
-            exit 1
+            echo "::warning title=whoami check failed (continuing)::$flat — project-scoped tokens legitimately fail this account-level check. If the deploy step also fails, recreate the token with scope 'All Projects' at https://vercel.com/account/tokens."
+          else
+            echo "Authenticated: $out"
           fi
-          echo "VERCEL_TOKEN=$norm" >> "$GITHUB_ENV"
-          echo "Authenticated: $out"
 
       - name: Link Vercel project (Omkar-App)
         run: |
@@ -85,11 +83,18 @@ jobs:
       - name: Deploy to Vercel
         id: deploy
         run: |
-          if [ "$GITHUB_REF_NAME" = "main" ]; then
-            URL=$(vercel deploy --prod --yes --token="$VERCEL_TOKEN" | tail -n 1)
-          else
-            URL=$(vercel deploy --yes --token="$VERCEL_TOKEN" | tail -n 1)
+          EXTRA=""
+          if [ "$GITHUB_REF_NAME" = "main" ]; then EXTRA="--prod"; fi
+          if ! out=$(vercel deploy --yes --token="$VERCEL_TOKEN" $EXTRA 2>&1); then
+            echo "Deploy output:"
+            echo "$out"
+            flat=$(printf '%s' "$out" | tr '\n' ' ' | tr -s ' ')
+            echo "::error title=Vercel deploy failed::$flat"
+            exit 1
           fi
+          echo "Deploy output (tail):"
+          printf '%s\n' "$out" | tail -n 6
+          URL=$(printf '%s\n' "$out" | tail -n 1)
           echo "url=$URL" >> "$GITHUB_OUTPUT"
           echo "Deployed: $URL"
 
