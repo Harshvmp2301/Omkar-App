@@ -96,31 +96,37 @@ export default function OmkarSamithiApp() {
       p = p * p * (3 - 2 * p); // smoothstep for a natural glide
 
       const bigH = Math.max(140, Math.min(window.innerHeight * 0.3, 220));
-      const h = bigH + (NAV_H - bigH) * p;
-      const w = h * aspect;
 
       const rect = slot.getBoundingClientRect();
       const targetX = rect.left + rect.width / 2;
       const targetY = rect.top + rect.height / 2;
-      const heroContent = document.querySelector(".hero-content");
-      const textBottom = heroContent
-        ? heroContent.getBoundingClientRect().bottom
-        : -Infinity;
       const headerH = headerRef.current ? headerRef.current.offsetHeight : 0;
-      // Start Y = viewport centre, pushed down when necessary so the big logo
-      // NEVER starts on top of the top-anchored hero text (text + clearance).
-      let startY = window.innerHeight / 2;
+      const heroContent = document.querySelector(".hero-content");
+
+      // First-deployment composition: the big logo starts exactly at the
+      // viewport centre while the hero copy is anchored BELOW it. If any
+      // visible copy would otherwise slide into the logo's path, lift the
+      // progress analytically (continuous + fully reversible) so the logo
+      // simply reaches its navbar slot a little sooner — it never covers
+      // text or the content underneath it.
+      const startY = window.innerHeight / 2;
+      let pEff = p;
       if (heroContent) {
-        startY = Math.max(startY, textBottom + h / 2 + 16);
+        const hc = heroContent.getBoundingClientRect();
+        const visibleTop = Math.max(hc.top, headerH);
+        const A = startY + bigH / 2; // logo bottom at p = 0
+        const B =
+          targetY - startY + (NAV_H - bigH) / 2; // change of bottom per unit p (< 0)
+        if (B < 0) {
+          const need = (visibleTop - 8 - A) / B; // p at which the bottom clears
+          if (Number.isFinite(need)) pEff = Math.min(1, Math.max(pEff, need));
+        }
       }
-      const cx = window.innerWidth / 2 + (targetX - window.innerWidth / 2) * p;
-      let cy = startY + (targetY - startY) * p;
-      // Mid-flight safety floor: while hero text is still visible below the
-      // header, hold the logo just beneath it until its natural path clears —
-      // the logo then continues up to the slot with no jump.
-      if (textBottom > headerH && cy + h / 2 > headerH && cy - h / 2 < textBottom + 8) {
-        cy = textBottom + 8 + h / 2;
-      }
+
+      const h = bigH + (NAV_H - bigH) * pEff;
+      const w = h * aspect;
+      const cx = window.innerWidth / 2 + (targetX - window.innerWidth / 2) * pEff;
+      const cy = startY + (targetY - startY) * pEff;
 
       logo.style.left = "0";
       logo.style.top = "0";

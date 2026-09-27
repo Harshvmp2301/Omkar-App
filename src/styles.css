@@ -125,19 +125,19 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .header-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 
 /* ------------------------------------------------------------------ hero */
-/* Full-viewport greeting stage with TOP-anchored content: the title sits
-   right under the navbar (nothing above it), and the fixed scroll-driven
-   logo floats over the empty lower part of the hero at scrollY=0 — so the
-   big logo never covers real content. Once you scroll past the hero the
-   logo is docked in the navbar. */
+/* Full-screen first view (first-deployment composition): the hero copy is
+   anchored to the BOTTOM of the screen while the big fixed logo sits
+   exactly at the viewport centre at scrollY=0, over the empty upper stage —
+   so it never covers real content. Clearance logic keeps the logo off the
+   copy at every scroll position; it docks into the navbar as you scroll. */
 .hero {
   text-align: center;
   min-height: calc(100dvh - var(--header-h, 80px));
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: flex-end;
   align-items: center;
-  padding: 18px 20px clamp(20px, 5vh, 60px);
+  padding: 0 20px clamp(24px, 7vh, 90px);
 }
 .hero-content { display: flex; flex-direction: column; align-items: center; }
 .hero h1 { font-size: 1.3rem; color: #F3E9D6; margin: 6px 0 2px; }
