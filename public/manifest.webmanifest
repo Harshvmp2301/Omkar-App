@@ -1,0 +1,19 @@
+{
+  "name": "Omkar Samithi",
+  "short_name": "Omkar",
+  "description": "Bilingual community platform for Oman Karnataka Aradhana Samithi, Muscat",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#170B10",
+  "theme_color": "#170B10",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/Omkar Logo Final Transparent.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
