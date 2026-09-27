@@ -47,11 +47,17 @@ jobs:
 
       - name: Verify Vercel token
         run: |
-          if [ -z "$VERCEL_TOKEN" ]; then
-            echo "::error::VERCEL_TOKEN secret is not set. Create one at https://vercel.com/account/tokens and add it as a repository secret (Settings → Secrets and variables → Actions)."
+          if [ -z "${VERCEL_TOKEN}" ]; then
+            echo "::error title=Secret not visible::VERCEL_TOKEN is EMPTY for this run. In GitHub: Settings → Secrets and variables → Actions → tab 'Actions' → 'Repository secrets' must list VERCEL_TOKEN. (Check you are not on the Variables/Dependabot/Codespaces tab, and that you are in Harshvmp2301/Omkar-App, not a fork.)"
             exit 1
           fi
-          vercel whoami --token="$VERCEL_TOKEN"
+          echo "Token present (length=${#VERCEL_TOKEN} characters)."
+          if ! whoami=$(vercel whoami --token="$VERCEL_TOKEN" 2>&1); then
+            echo "::error title=Token rejected::vercel whoami said: $whoami"
+            echo "Likely causes: token revoked, copied incompletely, or extra whitespace/newline when pasted. Recreate at https://vercel.com/account/tokens and re-add the secret."
+            exit 1
+          fi
+          echo "Authenticated as: $whoami"
 
       - name: Link Vercel project (Omkar-App)
         run: |
