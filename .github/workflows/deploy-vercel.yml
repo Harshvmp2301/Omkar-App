@@ -52,14 +52,25 @@ jobs:
             exit 1
           fi
           echo "Token present (length=${#VERCEL_TOKEN} characters)."
-          if ! out=$(vercel whoami --token="$VERCEL_TOKEN" 2>&1); then
+          # Normalise common paste artefacts: surrounding whitespace/quotes,
+          # a pasted "VERCEL_TOKEN=" prefix, or a "Bearer " prefix.
+          norm=$(printf '%s' "$VERCEL_TOKEN" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+          norm="${norm#\"}"; norm="${norm%\"}"
+          norm="${norm#\'}"; norm="${norm%\'}"
+          norm="${norm#VERCEL_TOKEN=}"
+          norm="${norm#Bearer }"
+          if [ "$norm" != "$VERCEL_TOKEN" ]; then
+            echo "Note: cleaned paste artefacts from the secret value (content unchanged otherwise)."
+          fi
+          if ! out=$(vercel whoami --token="$norm" 2>&1); then
             echo "Raw whoami output:"
             echo "$out"
             flat=$(printf '%s' "$out" | tr '\n' ' ' | tr -s ' ')
             echo "::error title=Token rejected::$flat"
-            echo "Likely causes: token revoked, copied incompletely, or extra whitespace/newline when pasted. Recreate at https://vercel.com/account/tokens and re-add the secret."
+            echo "Recreate the token at https://vercel.com/account/tokens (use the COPY button on the token that is shown only once), then update the VERCEL_TOKEN secret."
             exit 1
           fi
+          echo "VERCEL_TOKEN=$norm" >> "$GITHUB_ENV"
           echo "Authenticated: $out"
 
       - name: Link Vercel project (Omkar-App)
