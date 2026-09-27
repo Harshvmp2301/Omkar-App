@@ -102,8 +102,25 @@ export default function OmkarSamithiApp() {
       const rect = slot.getBoundingClientRect();
       const targetX = rect.left + rect.width / 2;
       const targetY = rect.top + rect.height / 2;
+      const heroContent = document.querySelector(".hero-content");
+      const textBottom = heroContent
+        ? heroContent.getBoundingClientRect().bottom
+        : -Infinity;
+      const headerH = headerRef.current ? headerRef.current.offsetHeight : 0;
+      // Start Y = viewport centre, pushed down when necessary so the big logo
+      // NEVER starts on top of the top-anchored hero text (text + clearance).
+      let startY = window.innerHeight / 2;
+      if (heroContent) {
+        startY = Math.max(startY, textBottom + h / 2 + 16);
+      }
       const cx = window.innerWidth / 2 + (targetX - window.innerWidth / 2) * p;
-      const cy = window.innerHeight / 2 + (targetY - window.innerHeight / 2) * p;
+      let cy = startY + (targetY - startY) * p;
+      // Mid-flight safety floor: while hero text is still visible below the
+      // header, hold the logo just beneath it until its natural path clears —
+      // the logo then continues up to the slot with no jump.
+      if (textBottom > headerH && cy + h / 2 > headerH && cy - h / 2 < textBottom + 8) {
+        cy = textBottom + 8 + h / 2;
+      }
 
       logo.style.left = "0";
       logo.style.top = "0";
@@ -285,10 +302,6 @@ export default function OmkarSamithiApp() {
             <ExternalLink size={16} aria-hidden="true" /> Feedback Form
           </a>
         </div>
-      </footer>
-
-      <footer className="footer">
-        <p>{t.pranaams}</p>
       </footer>
 
       {toast && (
