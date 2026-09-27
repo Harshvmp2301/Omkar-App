@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { Facebook, Youtube, ExternalLink } from "lucide-react";
 import Header from "./components/Header.jsx";
 import Hero from "./components/Hero.jsx";
 import ContentHub from "./components/ContentHub.jsx";
@@ -12,16 +13,16 @@ import Contact from "./components/Contact.jsx";
 import { translations } from "./data/content.js";
 import useLocalStorage from "./hooks/useLocalStorage.js";
 
-const TABS = ["hub", "events", "gallery", "about", "donate", "seva", "contact"];
+const TABS = ["hub", "events", "gallery", "about", "donate", "seva"];
 
 function tabFromHash() {
   const h = (typeof window !== "undefined" ? window.location.hash : "").replace(/^#\/?/, "");
+  if (h === "contact") return "about"; // legacy deep-link: Contact merged into About
   return TABS.includes(h) ? h : "hub";
 }
 
 export default function OmkarSamithiApp() {
   const [tab, setTabState] = useState(tabFromHash);
-  const [rsvps, setRsvps] = useLocalStorage("omkar:rsvps", {});
   const [notify, setNotify] = useLocalStorage("omkar:notify", {});
   const [lang, setLang] = useLocalStorage("omkar:lang", "en");
   const [toast, setToast] = useState("");
@@ -30,6 +31,7 @@ export default function OmkarSamithiApp() {
   const logoRef = useRef(null);
   const slotRef = useRef(null);
   const headerRef = useRef(null);
+  const aspectRef = useRef(1); // logo aspect survives effect re-runs
 
   const t = translations[lang] || translations.en;
 
@@ -67,18 +69,23 @@ export default function OmkarSamithiApp() {
     }
   }, []);
 
-  // --- single-logo scroll animation ----------------------------------------
+  // --- single-logo scroll transition (every tab) ---------------------------
   // The ONE logo (rendered in the Header) starts centred in the viewport at
   // scrollY=0 and flies into its slot in the sticky navbar over the first
-  // 15% of the page's scrollable range, then stays there.
-  useEffect(() => {
+  // 15% of the page's scrollable range — on EVERY tab, exactly as before.
+  // Scroll back to the top and it glides back to the centre; it follows the
+  // scroll wherever you are.
+  useLayoutEffect(() => {
     const logo = logoRef.current;
     const slot = slotRef.current;
     if (!logo || !slot) return undefined;
 
     const NAV_H = 45;
     let raf = 0;
-    let aspect = 1; // width / height, measured once the image loads
+    if (!aspectRef.current && logo.naturalWidth && logo.naturalHeight) {
+      aspectRef.current = logo.naturalWidth / logo.naturalHeight;
+    }
+    let aspect = aspectRef.current || 1; // width / height, measured once
 
     const update = () => {
       raf = 0;
@@ -89,14 +96,37 @@ export default function OmkarSamithiApp() {
       p = p * p * (3 - 2 * p); // smoothstep for a natural glide
 
       const bigH = Math.max(140, Math.min(window.innerHeight * 0.3, 220));
-      const h = bigH + (NAV_H - bigH) * p;
-      const w = h * aspect;
 
       const rect = slot.getBoundingClientRect();
       const targetX = rect.left + rect.width / 2;
       const targetY = rect.top + rect.height / 2;
-      const cx = window.innerWidth / 2 + (targetX - window.innerWidth / 2) * p;
-      const cy = window.innerHeight / 2 + (targetY - window.innerHeight / 2) * p;
+      const headerH = headerRef.current ? headerRef.current.offsetHeight : 0;
+      const heroContent = document.querySelector(".hero-content");
+
+      // First-deployment composition: the big logo starts exactly at the
+      // viewport centre while the hero copy is anchored BELOW it. If any
+      // visible copy would otherwise slide into the logo's path, lift the
+      // progress analytically (continuous + fully reversible) so the logo
+      // simply reaches its navbar slot a little sooner — it never covers
+      // text or the content underneath it.
+      const startY = window.innerHeight / 2;
+      let pEff = p;
+      if (heroContent) {
+        const hc = heroContent.getBoundingClientRect();
+        const visibleTop = Math.max(hc.top, headerH);
+        const A = startY + bigH / 2; // logo bottom at p = 0
+        const B =
+          targetY - startY + (NAV_H - bigH) / 2; // change of bottom per unit p (< 0)
+        if (B < 0) {
+          const need = (visibleTop - 8 - A) / B; // p at which the bottom clears
+          if (Number.isFinite(need)) pEff = Math.min(1, Math.max(pEff, need));
+        }
+      }
+
+      const h = bigH + (NAV_H - bigH) * pEff;
+      const w = h * aspect;
+      const cx = window.innerWidth / 2 + (targetX - window.innerWidth / 2) * pEff;
+      const cy = startY + (targetY - startY) * pEff;
 
       logo.style.left = "0";
       logo.style.top = "0";
@@ -108,6 +138,7 @@ export default function OmkarSamithiApp() {
     const measure = () => {
       if (logo.naturalWidth && logo.naturalHeight) {
         aspect = logo.naturalWidth / logo.naturalHeight;
+        aspectRef.current = aspect;
       }
       slot.style.width = `${Math.round(NAV_H * aspect)}px`;
       update();
@@ -191,17 +222,7 @@ export default function OmkarSamithiApp() {
     }
   }, [flash, t]);
 
-  // --- RSVP / reminders -----------------------------------------------------
-  const toggleRsvp = useCallback(
-    (id, title) => {
-      const next = { ...rsvps, [id]: !rsvps[id] };
-      setRsvps(next);
-      flash(next[id] ? `RSVP'd for ${title}` : `RSVP cancelled for ${title}`);
-      if (next[id]) sendNotification(title);
-    },
-    [rsvps, setRsvps, flash, sendNotification]
-  );
-
+  // --- reminders -------------------------------------------------------------
   const toggleNotify = useCallback(
     (id, title) => {
       const next = { ...notify, [id]: !notify[id] };
@@ -241,24 +262,52 @@ export default function OmkarSamithiApp() {
           <EventsView
             t={t}
             lang={lang}
-            rsvps={rsvps}
             notify={notify}
-            onToggleRsvp={toggleRsvp}
             onToggleNotify={toggleNotify}
             flash={flash}
           />
         )}
         {tab === "gallery" && <GalleryView t={t} />}
-        {tab === "about" && <AboutView t={t} />}
+        {tab === "about" && (
+          <>
+            <AboutView t={t} />
+            <ContactView t={t} flash={flash} />
+            <Contact t={t} />
+          </>
+        )}
         {tab === "donate" && <DonateView t={t} flash={flash} />}
-        {tab === "seva" && <SevaView t={t} flash={flash} />}
-        {tab === "contact" && <ContactView t={t} flash={flash} />}
+        {tab === "seva" && <SevaView t={t} lang={lang} flash={flash} />}
       </main>
-
-      {tab !== "contact" && <Contact t={t} />}
 
       <footer className="footer">
         <p>{t.pranaams}</p>
+        {/* Social & feedback links live with the Pranaams box on every page */}
+        <div className="social-icons footer-links">
+          <a
+            href="https://www.facebook.com/groups/omkarsamithi/"
+            target="_blank"
+            rel="noreferrer"
+            className="social-link"
+          >
+            <Facebook size={16} aria-hidden="true" /> Facebook Group
+          </a>
+          <a
+            href="https://www.youtube.com/@OmkarSamithi"
+            target="_blank"
+            rel="noreferrer"
+            className="social-link"
+          >
+            <Youtube size={16} aria-hidden="true" /> YouTube Channel
+          </a>
+          <a
+            href="https://omkarfeedback.blogspot.com/"
+            target="_blank"
+            rel="noreferrer"
+            className="social-link"
+          >
+            <ExternalLink size={16} aria-hidden="true" /> Feedback Form
+          </a>
+        </div>
       </footer>
 
       {toast && (

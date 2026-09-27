@@ -4,22 +4,21 @@ Omkar Samithi is a bilingual (English/Kannada) community platform for the Oman K
 
 ## Features
 
-- ✨ **Scroll-driven logo animation** — at `scrollY = 0` the single Omkar logo sits large and exactly centred in a full-screen hero; scrolling shrinks and glides it into its slot in the sticky navbar, completing within the first 15% of the page's scroll (one element, no duplicates)
-- 📅 **Upcoming programs** with RSVP, live countdowns, per-event reminders and one-click **Add to Calendar** (.ics) downloads
-- 🗓️ **Festival calendar** with countdowns for upcoming Hindu festivals (Navratri, Dussehra, Deepavali …)
+- ✨ **Scroll-driven logo animation (every tab)** — at `scrollY = 0` the single Omkar logo sits large and exactly centred over the full-screen hero while the title, tagline and diya row are anchored to the bottom of the screen (the original first-deployment composition); scrolling shrinks and glides the logo into its slot in the sticky navbar within the first 15% of the page's scroll, and scrolling back up glides it out again — on every tab. Clearance logic lifts the flight only when needed, so the logo never overlaps the hero copy or the content below it (one element, no duplicates)
+- 📅 **Upcoming programs** with live countdowns, per-event reminders and a permanent one-click **Add to Calendar** (.ics) button — dimmed until the date is announced
+- 🗓️ **Festival calendar** — a dark-themed wall-calendar month grid (Google-Calendar-style) covering all of 2026, with every announced festival and program listed under its date and today highlighted in gold; click a chip to download the .ics
 - 💝 **Donate** — donation tracker form (purpose picker: General, Seva, Food/Langar, Aarti Supplies, Temple Maintenance) with amount in OMR
-- 🙏 **Seva** — volunteer opportunities (Food, Flowers, Oil Lamps, Incense, Temple Bells, Cleaning) with registration form
-- ✉️ **Contact** — message form plus the usual emails, feedback form and social links
+- 🙏 **Seva** — volunteer opportunities (Food, Flowers, Oil Lamps, Incense, Temple Bells, Cleaning) with a registration form fixed to **Sri Anjaneya Pooja** (yearly program dates shown; no date picker)
+- ✉️ **About & Contact** — one merged tab (last in the nav): mission pillars, support call-out, message form and the contact emails. Contact details appear nowhere else
 - 🔔 Browser notifications for event reminders
 - 🎥 YouTube video recordings of past programs
 - 📝 Blog and festival notes integration
-- 🖼️ **Photo gallery** with a keyboard-navigable lightbox
-- 🪔 **About the Samithi** — mission pillars and a support/donation call-out
+- 🖼️ **Photo gallery** — real photos pulled from the Samithi blog posts, with a keyboard-navigable lightbox
 - 🇬🇧🇮🇳 Bilingual support (English/Kannada), persisted between visits
 - 📱 Mobile-responsive, dark gold-accented design with accessibility support (focus states, reduced motion)
 - 📲 **PWA-ready** — web app manifest + service worker for offline fallback
-- 🔗 Contact & social media links
-- #️⃣ Hash-based routing (`#/hub`, `#/events`, `#/gallery`, `#/about`) so views are deep-linkable
+- 🔗 Facebook Group, YouTube Channel and Feedback Form links live in the Pranaams footer on every page
+- #️⃣ Hash-based routing (`#/hub`, `#/events`, `#/gallery`, `#/donate`, `#/seva`, `#/about`) so views are deep-linkable
 
 ## Tech
 
@@ -80,14 +79,17 @@ src/
     ├── Header.jsx          # logo, language toggle, notifications, nav tabs
     ├── Hero.jsx / Diya.jsx
     ├── ContentHub.jsx      # videos, blog, festival notes
-    ├── EventsView.jsx      # RSVP + countdowns + add-to-calendar + festival calendar
+    ├── EventsView.jsx      # countdowns + add-to-calendar + festival calendar
+    ├── FestivalCalendar.jsx # yellow month-grid festival calendar
     ├── GalleryView.jsx     # gallery grid + lightbox
     ├── AboutView.jsx       # mission, pillars, support CTA
-    └── Contact.jsx
+    ├── DonateView.jsx      # donation tracker form
+    ├── SevaView.jsx        # seva cards + registration form
+    ├── ContactView.jsx     # contact form (merged into the About tab)
+    └── Contact.jsx         # contact emails (About tab only)
 public/
 ├── manifest.webmanifest    # PWA manifest
-├── sw.js                   # offline-capable service worker
-└── gallery/                # gallery photos
+└── sw.js                   # offline-capable service worker
 vercel.json                 # Vercel build config (Vite → dist/)
 .github/workflows/
 └── deploy-vercel.yml       # auto-deploy pipeline (main → prod, branches → preview)

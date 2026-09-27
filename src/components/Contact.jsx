@@ -1,5 +1,9 @@
-import { Mail, Send, Facebook, Youtube, ExternalLink } from "lucide-react";
+import { Mail } from "lucide-react";
 
+/**
+ * Contact details (emails). Shown ONLY inside the merged About tab —
+ * the social/feedback links moved into the Pranaams footer.
+ */
 export default function Contact({ t }) {
   return (
     <section className="contact-section">
@@ -19,47 +23,6 @@ export default function Contact({ t }) {
             </span>
           </div>
         </div>
-
-        <a
-          href="https://omkarfeedback.blogspot.com/"
-          target="_blank"
-          rel="noreferrer"
-          className="contact-card"
-        >
-          <Send size={28} className="icon" aria-hidden="true" />
-          <div className="label">{t.feedbackForm}</div>
-          <div className="value">omkarfeedback.blogspot.com</div>
-        </a>
-      </div>
-
-      <div className="social-icons">
-        <a
-          href="https://www.facebook.com/groups/omkarsamithi/"
-          target="_blank"
-          rel="noreferrer"
-          className="social-link"
-        >
-          <Facebook size={18} className="social-icon" aria-hidden="true" />
-          Facebook Group
-        </a>
-        <a
-          href="https://www.youtube.com/@OmkarSamithi"
-          target="_blank"
-          rel="noreferrer"
-          className="social-link"
-        >
-          <Youtube size={18} className="social-icon" aria-hidden="true" />
-          YouTube Channel
-        </a>
-        <a
-          href="https://omkarfeedback.blogspot.com/"
-          target="_blank"
-          rel="noreferrer"
-          className="social-link"
-        >
-          <ExternalLink size={18} className="social-icon" aria-hidden="true" />
-          Feedback Form
-        </a>
       </div>
     </section>
   );
