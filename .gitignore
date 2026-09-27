@@ -12,6 +12,9 @@ build/
 .vite/
 .cache/
 
+# Vercel CLI (contains project/org ids — never commit)
+.vercel/
+
 # Environment variables
 .env
 .env.local
