@@ -1,0 +1,83 @@
+name: Deploy to Vercel
+
+# Auto-deploys every push:
+#   - main        → production  (https://omkar-app.vercel.app)
+#   - other branches (arena/**) → preview deployments
+# One-time setup: add a VERCEL_TOKEN repository secret
+# (Settings → Secrets and variables → Actions), created at
+# https://vercel.com/account/tokens
+
+on:
+  push:
+    branches:
+      - main
+      - "arena/**"
+  workflow_dispatch:
+
+concurrency:
+  group: vercel-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        # Explicit bash enables -eo pipefail so `vercel deploy | tail`
+        # fails the step when the deploy itself fails.
+        shell: bash
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      # Ensure non-interactive CLI behaviour everywhere
+      CI: "true"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Verify Vercel token
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::VERCEL_TOKEN secret is not set. Create one at https://vercel.com/account/tokens and add it as a repository secret (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          vercel whoami --token="$VERCEL_TOKEN"
+
+      - name: Link Vercel project (Omkar-App)
+        run: |
+          if vercel link --yes --project "omkar-app" --token="$VERCEL_TOKEN"; then
+            echo "Linked to the existing 'omkar-app' project."
+          else
+            echo "Project not found in the account yet — it will be created automatically on first deploy."
+            rm -rf .vercel
+          fi
+
+      - name: Deploy to Vercel
+        id: deploy
+        run: |
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            URL=$(vercel deploy --prod --yes --token="$VERCEL_TOKEN" | tail -n 1)
+          else
+            URL=$(vercel deploy --yes --token="$VERCEL_TOKEN" | tail -n 1)
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Deployed: $URL"
+
+      - name: Deployment summary
+        run: |
+          {
+            echo "## Vercel deployment"
+            echo ""
+            echo "- **Ref:** \`$GITHUB_REF_NAME\`"
+            echo "- **URL:** ${{ steps.deploy.outputs.url }}"
+          } >> "$GITHUB_STEP_SUMMARY"

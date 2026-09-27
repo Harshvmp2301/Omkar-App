@@ -32,6 +32,36 @@ npm run build    # production build to dist/
 npm run preview  # serve the production build
 ```
 
+## Deployment (Vercel)
+
+The app is configured for **auto-deployment to Vercel** at `https://omkar-app.vercel.app` (i.e. [Omkar-App.vercel.app](https://Omkar-App.vercel.app)).
+
+**How it works** — [`.github/workflows/deploy-vercel.yml`](.github/workflows/deploy-vercel.yml) runs on every push:
+
+| Push target | Deployment |
+|---|---|
+| `main` | 🟢 **Production** → `omkar-app.vercel.app` |
+| `arena/**` (or any other branch) | 🟡 Preview deployment |
+| manual (`workflow_dispatch`) | Runs from the Actions tab |
+
+Build settings live in [`vercel.json`](vercel.json) (framework: Vite → `npm run build` → `dist/`, plus cache-control headers for the service worker and security headers), so Vercel's native Git integration works out of the box too if you prefer connecting the repo in the dashboard instead of using Actions.
+
+**One-time setup** (only needed for the GitHub Actions route):
+
+1. Create an access token at [vercel.com/account/tokens](https://vercel.com/account/tokens)
+2. In the GitHub repo: **Settings → Secrets and variables → Actions → New repository secret**
+   - Name: `VERCEL_TOKEN`, Value: *your token*
+3. Push to `main` (or run the workflow manually) — the first run links/creates the `Omkar-App` project automatically.
+
+No tokens are stored in this repository; the workflow reads `VERCEL_TOKEN` from GitHub's encrypted secrets at runtime.
+
+Locally you can also deploy with the Vercel CLI:
+
+```bash
+npm run deploy          # production (vercel deploy --prod)
+npm run deploy:preview  # preview deployment
+```
+
 ## Project structure
 
 ```
@@ -54,6 +84,9 @@ public/
 ├── manifest.webmanifest    # PWA manifest
 ├── sw.js                   # offline-capable service worker
 └── gallery/                # gallery photos
+vercel.json                 # Vercel build config (Vite → dist/)
+.github/workflows/
+└── deploy-vercel.yml       # auto-deploy pipeline (main → prod, branches → preview)
 ```
 
 ## Content updates
