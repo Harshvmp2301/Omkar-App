@@ -33,7 +33,7 @@ export default function EventsView({ t, lang, notify, onToggleNotify, flash }) {
                 <span className="event-mon">{parts.mon}</span>
               </div>
               <div className="event-info">
-                <p className="event-title">{e.title}</p>
+                <p className="event-title display">{e.title}</p>
                 <div className="event-sub">
                   {e.guest && (
                     <span>
@@ -62,9 +62,9 @@ export default function EventsView({ t, lang, notify, onToggleNotify, flash }) {
                   aria-pressed={!!notify[e.id]}
                 >
                   {notify[e.id] ? (
-                    <BellRing size={18} color="#E8B84B" aria-hidden="true" />
+                    <BellRing size={18} color="var(--gold-bright)" aria-hidden="true" />
                   ) : (
-                    <Bell size={18} color="#B7A28A" aria-hidden="true" />
+                    <Bell size={18} color="var(--muted)" aria-hidden="true" />
                   )}
                 </button>
                 {/* Add-to-Calendar is always present; dimmed until the date is known */}
@@ -75,7 +75,8 @@ export default function EventsView({ t, lang, notify, onToggleNotify, flash }) {
                   title={e.date ? t.addToCalendar : t.tbaDate}
                   aria-label={`${t.addToCalendar}: ${e.title}`}
                 >
-                  <CalendarPlus size={16} aria-hidden="true" />
+                  <CalendarPlus size={15} aria-hidden="true" />
+                  <span className="ics-label">{t.addToCalendar}</span>
                 </button>
               </div>
             </div>

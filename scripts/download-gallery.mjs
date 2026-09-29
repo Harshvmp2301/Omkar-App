@@ -213,7 +213,6 @@ if (converter) {
 
 await mkdir(OUT_DIR, { recursive: true });
 const tmp = await mkdtemp(join(tmpdir(), "omkar-gallery-"));
-const usedNames = new Set(tasks.map(nameFor));
 const results = [];
 let failures = 0;
 let content = content0;

@@ -1,10 +1,12 @@
-import { Flame, Music, Users, Heart, Mail } from "lucide-react";
+import { Heart, Mail } from "lucide-react";
 
 export default function AboutView({ t }) {
-  const pillars = [
-    { icon: Flame, title: t.pillarBhakti, body: t.pillarBhaktiBody },
-    { icon: Music, title: t.pillarHeritage, body: t.pillarHeritageBody },
-    { icon: Users, title: t.pillarCommunity, body: t.pillarCommunityBody },
+  // Item-7 copy: three accurate, user-authored sections rendered from content
+  // (bilingual) — replaces the old lead/paragraphs + three-pillar cards.
+  const sections = [
+    { heading: t.aboutS1H, body: t.aboutS1 },
+    { heading: t.aboutS2H, body: t.aboutS2 },
+    { heading: t.aboutS3H, body: t.aboutS3 },
   ];
 
   return (
@@ -13,19 +15,12 @@ export default function AboutView({ t }) {
         <h2 className="section-title display">{t.aboutTitle}</h2>
       </div>
 
-      <div className="about-prose">
-        <p className="about-lead">{t.aboutLead}</p>
-        <p>{t.aboutP1}</p>
-        <p>{t.aboutP2}</p>
-      </div>
-
-      <div className="pillar-grid reveal">
-        {pillars.map(({ icon: Icon, title, body }) => (
-          <div key={title} className="pillar-card">
-            <Icon size={24} className="pillar-icon" aria-hidden="true" />
-            <h3 className="pillar-title display">{title}</h3>
-            <p className="pillar-body">{body}</p>
-          </div>
+      <div className="about-prose reveal">
+        {sections.map(({ heading, body }) => (
+          <section className="about-block" key={heading}>
+            <h3 className="display">{heading}</h3>
+            <p>{body}</p>
+          </section>
         ))}
       </div>
 
@@ -33,7 +28,7 @@ export default function AboutView({ t }) {
         <Heart size={24} className="pillar-icon" aria-hidden="true" />
         <h3 className="pillar-title display">{t.supportTitle}</h3>
         <p className="pillar-body">{t.supportBody}</p>
-        <a className="support-cta" href="mailto:info@omkarsamithi.com">
+        <a className="support-cta magnetic" href={`mailto:${t.contactEmail}`}>
           <Mail size={14} aria-hidden="true" /> {t.supportCta}
         </a>
       </div>
