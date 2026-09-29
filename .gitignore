@@ -20,6 +20,12 @@ build/
 .env.local
 .env.production
 
+# Credentials live in config/.env.local and are never committed.
+# The blank template (config/.env.example) IS committed on purpose.
+config/.env
+config/.env.local
+config/.env.*.local
+
 # IDE folders
 .idea/
 .vscode/

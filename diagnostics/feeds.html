@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Omkar App — feeds diagnostic</title>
+    <style>
+      :root {
+        --bg: #170b10;
+        --panel: #231219;
+        --panel-light: #2c1620;
+        --gold: #c9972c;
+        --gold-bright: #e8b84b;
+        --ivory: #f3e9d6;
+        --muted: #b7a28a;
+        --ok: #6fcf97;
+        --bad: #eb5757;
+        --warn: #f2c660;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 28px 20px 60px;
+        background: var(--bg);
+        color: var(--ivory);
+        font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      }
+      .wrap { max-width: 860px; margin: 0 auto; }
+      h1 { font-size: 1.3rem; color: var(--gold-bright); margin: 0 0 6px; }
+      .sub { color: var(--muted); font-size: 0.85rem; margin: 0 0 22px; }
+      h2 { font-size: 0.95rem; color: var(--gold-bright); margin: 26px 0 10px; }
+      .card {
+        background: var(--panel);
+        border: 1px solid rgba(201, 151, 44, 0.28);
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-bottom: 12px;
+      }
+      .row { display: flex; gap: 10px; align-items: baseline; }
+      .label { color: var(--muted); min-width: 210px; font-size: 0.84rem; }
+      .val { word-break: break-all; font-size: 0.84rem; }
+      .test-title { font-weight: 700; font-size: 0.9rem; margin: 0 0 4px; }
+      .status { font-weight: 700; }
+      .ok { color: var(--ok); }
+      .bad { color: var(--bad); }
+      .warn { color: var(--warn); }
+      .url {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.74rem;
+        color: var(--muted);
+        word-break: break-all;
+        margin-top: 6px;
+      }
+      pre {
+        background: #120a0e;
+        border: 1px solid rgba(201, 151, 44, 0.2);
+        border-radius: 10px;
+        padding: 14px;
+        overflow-x: auto;
+        font-size: 0.76rem;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      button {
+        background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+        color: #170b10;
+        border: 0;
+        border-radius: 999px;
+        padding: 10px 20px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: pointer;
+        margin-right: 8px;
+      }
+      button.ghost {
+        background: transparent;
+        color: var(--ivory);
+        border: 1px solid rgba(201, 151, 44, 0.4);
+      }
+      .hint { color: var(--muted); font-size: 0.82rem; margin-top: 8px; }
+      .badge {
+        display: inline-block;
+        font-size: 0.7rem;
+        padding: 2px 9px;
+        border-radius: 999px;
+        border: 1px solid rgba(201, 151, 44, 0.4);
+        color: var(--muted);
+        margin-left: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Omkar App — feeds diagnostic</h1>
+      <p class="sub">
+        Runs in <strong>your</strong> browser, which is the only place that can
+        reach Google. If a feed fails, this page says why. Copy the report at
+        the bottom and send it back.
+      </p>
+
+      <h2>1. What the app is reading from config/.env.local</h2>
+      <div class="card" id="config"></div>
+
+      <h2>2. Tests</h2>
+      <div id="tests"></div>
+
+      <h2>3. Report — copy this and send it back</h2>
+      <pre id="report">running…</pre>
+      <p>
+        <button id="again">Run again</button>
+        <button class="ghost" id="copy">Copy report</button>
+      </p>
+      <p class="hint" id="copyNote"></p>
+    </div>
+
+    <script>
+      const CFG = /*__OMKAR_DIAGNOSTICS__*/;
+
+      const el = (id) => document.getElementById(id);
+      const esc = (s) => String(s == null ? "" : s).replace(/[<>&]/g, (c) =>
+        ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]));
+
+      /* Same JSONP technique the app uses: a temporary <script>, accepting
+         both the named callback and Google's default GData wrapper. */
+      function jsonp(url, timeoutMs = 12000) {
+        return new Promise((resolve) => {
+          const cb = "__diag" + Math.random().toString(36).slice(2, 10);
+          const s = document.createElement("script");
+          let done = false;
+          const finish = (data, error) => {
+            if (done) return;
+            done = true;
+            clearTimeout(t);
+            try { delete window[cb]; } catch { window[cb] = undefined; }
+            try { delete window.gdata.io.handleScriptLoaded; } catch {}
+            if (s.remove) s.remove();
+            const apiError = data && data.error
+              ? (data.error.message || JSON.stringify(data.error))
+              : null;
+            resolve({ data: error || apiError ? null : data, error: error || apiError });
+          };
+          const t = setTimeout(() => finish(null, "timed out after " + timeoutMs + "ms"), timeoutMs);
+          window[cb] = (d) => finish(d, null);
+          window.gdata = window.gdata || {};
+          window.gdata.io = window.gdata.io || {};
+          window.gdata.io.handleScriptLoaded = (d) => finish(d, null);
+          s.onerror = () => finish(null, "script failed to load (blocked, DNS, or offline)");
+          s.src = url + "&callback=" + cb;
+          document.head.appendChild(s);
+        });
+      }
+
+      // The app uses its built-in default when nothing is configured, so the
+      // tests must do the same or they would report a failure that the real
+      // app would not have.
+      const usingDefault = !CFG.blogUrl;
+      const host = String(CFG.blogUrl || CFG.blogDefault || "")
+        .trim()
+        .replace(/^https?:\/\//i, "")
+        .replace(/\/.*$/, "");
+
+      const results = [];
+      function record(name, status, detail, url) {
+        results.push({ name, status, detail, url });
+        const cls = status === "PASS" ? "ok" : status === "SKIP" ? "warn" : "bad";
+        const icon = status === "PASS" ? "✅" : status === "SKIP" ? "⏭️" : "❌";
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML =
+          '<p class="test-title">' + esc(name) +
+          '<span class="badge">' + status + "</span></p>" +
+          '<p class="status ' + cls + '">' + icon + " " + esc(detail) + "</p>" +
+          (url ? '<p class="url">' + esc(url) + "</p>" : "");
+        el("tests").appendChild(div);
+      }
+
+      function renderConfig() {
+        const rows = [
+          [
+            "blog being read",
+            usingDefault
+              ? CFG.blogDefault + "  (built-in default — nothing configured)"
+              : CFG.blogUrl,
+          ],
+          ["VITE_BLOGGER_MAX", CFG.max],
+          ["VITE_BLOGGER_API_KEY", CFG.bloggerKey || "(empty — not needed)"],
+          ["VITE_YOUTUBE_API_KEY", CFG.youtubeKey || "(empty)"],
+          ["VITE_YOUTUBE_CHANNEL_ID", CFG.youtubeChannel || "(empty)"],
+          ["VITE_FORM_ENDPOINT", CFG.formEndpoint || "(empty)"],
+          ["VITE_SUPABASE_URL", CFG.supabaseUrl || "(empty)"],
+        ];
+        el("config").innerHTML = rows
+          .map(([k, v]) =>
+            '<div class="row"><span class="label">' + esc(k) +
+            '</span><span class="val">' + esc(v) + "</span></div>")
+          .join("");
+      }
+
+      /* The key the app would actually use: a dedicated Blogger key, else the
+         shared YouTube key. */
+      const KEY = CFG.rawBloggerKey || "";
+      const whichKey = CFG.bloggerKey
+        ? "VITE_BLOGGER_API_KEY"
+        : CFG.youtubeKey
+        ? "VITE_YOUTUBE_API_KEY (shared)"
+        : "none";
+
+      // Strips the key from a URL so it is safe to show and to paste back.
+      const safe = (u) => String(u).replace(/key=[^&]+/, "key=***");
+
+      async function run() {
+        el("tests").innerHTML = "";
+        results.length = 0;
+        el("report").textContent = "running…";
+        renderConfig();
+
+        if (!host) {
+          record("Config", "FAIL", "No blog host available at all — the curated blog list is shown.");
+          return finishReport();
+        }
+
+        // ── Test 1: the deprecated keyless feed ──────────────────────────
+        const legacyUrl =
+          "https://" + host + "/feeds/posts/default?alt=json-in-script&max-results=" + CFG.max;
+        {
+          const r = await jsonp(legacyUrl);
+          if (r.error) {
+            record("Legacy Blogger feed (no key needed)", "FAIL", r.error, legacyUrl);
+          } else {
+            const n = (r.data && r.data.feed && r.data.feed.entry ? r.data.feed.entry.length : 0);
+            if (n) {
+              const titles = r.data.feed.entry.slice(0, 3).map((e) => e.title && e.title.$t);
+              record("Legacy Blogger feed (no key needed)", "PASS", n + " posts — e.g. " + titles.join(" · "), legacyUrl);
+            } else {
+              record("Legacy Blogger feed (no key needed)", "FAIL", "Loaded, but returned no posts.", legacyUrl);
+            }
+          }
+        }
+
+        // ── Test 2 + 3: Blogger API v3 (needs a key) ─────────────────────
+        if (!KEY) {
+          record("Blogger API v3 (optional fallback)", "SKIP", "No API key set — that is fine, it is not needed. The open feed above is the primary route; this v3 test only matters if that one ever fails.");
+          record("Blogger API v3 (optional fallback) — list posts", "SKIP", "Skipped — no API key set (not required).");
+          return finishReport();
+        }
+
+        const byUrl =
+          "https://www.googleapis.com/blogger/v3/blogs/byurl?url=" +
+          encodeURIComponent("https://" + host + "/") + "&key=" + KEY;
+        let blogId = null;
+        {
+          const r = await jsonp(byUrl);
+          if (r.error) {
+            record("Blogger API v3 — resolve blog id", "FAIL", r.error, safe(byUrl));
+          } else if (r.data && r.data.id) {
+            blogId = r.data.id;
+            record("Blogger API v3 (optional fallback) — resolve blog id", "PASS",
+              'Blog "' + (r.data.name || host) + '" → id ' + blogId, safe(byUrl));
+          } else {
+            record("Blogger API v3 — resolve blog id", "FAIL", "No id in the response.", safe(byUrl));
+          }
+        }
+
+        if (!blogId) {
+          record("Blogger API v3 — list posts", "SKIP", "Skipped — could not resolve the blog id.");
+          return finishReport();
+        }
+
+        const postsUrl =
+          "https://www.googleapis.com/blogger/v3/blogs/" + blogId + "/posts?key=" + KEY +
+          "&maxResults=" + CFG.max + "&fetchBodies=true&orderBy=published";
+        {
+          const r = await jsonp(postsUrl);
+          if (r.error) {
+            record("Blogger API v3 — list posts", "FAIL", r.error, safe(postsUrl));
+          } else {
+            const items = (r.data && r.data.items) || [];
+            if (items.length) {
+              record("Blogger API v3 — list posts", "PASS",
+                items.length + " posts — e.g. " + items.slice(0, 3).map((i) => i.title).join(" · "),
+                safe(postsUrl));
+            } else {
+              record("Blogger API v3 — list posts", "FAIL", "Loaded, but the blog returned no posts.", safe(postsUrl));
+            }
+          }
+        }
+
+        finishReport();
+      }
+
+      function finishReport() {
+        const lines = [];
+        lines.push("OMKAR APP — FEEDS DIAGNOSTIC REPORT");
+        lines.push("date: " + new Date().toISOString());
+        lines.push("page: " + location.href);
+        lines.push("");
+        lines.push("CONFIG");
+        lines.push("  blog url        : " + (usingDefault
+          ? CFG.blogDefault + "  (built-in default)"
+          : CFG.blogUrl));
+        lines.push("  max posts       : " + CFG.max);
+        lines.push("  blogger key     : " + (CFG.bloggerKey || "(empty)"));
+        lines.push("  youtube key     : " + (CFG.youtubeKey || "(empty)"));
+        lines.push("  youtube channel : " + (CFG.youtubeChannel || "(empty)"));
+        lines.push("  using key from  : " + whichKey);
+        lines.push("");
+        lines.push("TESTS");
+        results.forEach((r) => {
+          lines.push("  [" + r.status + "] " + r.name);
+          lines.push("      " + r.detail);
+          if (r.url) lines.push("      " + r.url);
+        });
+        lines.push("");
+        lines.push("browser: " + navigator.userAgent);
+        el("report").textContent = lines.join("\n");
+      }
+
+      el("again").onclick = run;
+      el("copy").onclick = async () => {
+        const text = el("report").textContent;
+        try {
+          await navigator.clipboard.writeText(text);
+          el("copyNote").textContent = "Copied — paste it into the chat.";
+        } catch {
+          const range = document.createRange();
+          range.selectNodeContents(el("report"));
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          el("copyNote").textContent = "Selected — press Ctrl/Cmd+C to copy.";
+        }
+      };
+
+      run();
+    </script>
+  </body>
+</html>
