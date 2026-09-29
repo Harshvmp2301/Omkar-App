@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { Facebook, Youtube, ExternalLink, MapPin } from "lucide-react";
 import Header from "./components/Header.jsx";
 import Hero from "./components/Hero.jsx";
@@ -6,21 +6,23 @@ import ContentHub from "./components/ContentHub.jsx";
 import EventsView from "./components/EventsView.jsx";
 import GalleryView from "./components/GalleryView.jsx";
 import AboutView from "./components/AboutView.jsx";
-import DonateView from "./components/DonateView.jsx";
 import SevaView from "./components/SevaView.jsx";
 import ContactView from "./components/ContactView.jsx";
 import Contact from "./components/Contact.jsx";
 import { translations } from "./data/content.js";
 import useLocalStorage from "./hooks/useLocalStorage.js";
 import { initMagnetic } from "./utils/magnetic.js";
+import { tabFromHash } from "./utils/route.js";
 
-const TABS = ["hub", "events", "gallery", "about", "donate", "seva"];
+// The admin dashboard is code-split: it pulls in the Supabase SDK and a lot of
+// UI that no ordinary visitor needs. Loading it lazily keeps all of that out of
+// the bundle the public site downloads — `npm run build` shows it as its own
+// chunk. It is only fetched when someone opens #/admin.
+const AdminApp = lazy(() => import("./admin/AdminApp.jsx"));
 
-function tabFromHash() {
-  const h = (typeof window !== "undefined" ? window.location.hash : "").replace(/^#\/?/, "");
-  if (h === "contact") return "about"; // legacy deep-link: Contact merged into About
-  return TABS.includes(h) ? h : "hub";
-}
+// Routing lives in src/utils/route.js so it can be tested without a browser —
+// see route.test.js, which covers the fragment, the sign-in return marker and
+// the OAuth callback shapes.
 
 export default function OmkarSamithiApp() {
   const [tab, setTabState] = useState(tabFromHash);
@@ -61,7 +63,6 @@ export default function OmkarSamithiApp() {
     hub: t.contentHub,
     events: t.events,
     gallery: t.galleryTab,
-    donate: t.donateTab,
     seva: t.sevaTab,
     about: t.aboutTab,
   };
@@ -319,6 +320,22 @@ export default function OmkarSamithiApp() {
     flash(nextLang === "kn" ? "ಭಾಷೆ ಬದಲಾಯಿಸಲಾಗಿದೆ" : "Language changed");
   }, [lang, setLang, flash]);
 
+  if (tab === "admin") {
+    return (
+      <div className="app">
+        <Suspense
+          fallback={
+            <div className="admin">
+              <p className="admin-muted admin-inline-loading">Loading dashboard…</p>
+            </div>
+          }
+        >
+          <AdminApp />
+        </Suspense>
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <a className="skip-link" href="#main">
@@ -375,7 +392,6 @@ export default function OmkarSamithiApp() {
             <Contact t={t} />
           </>
         )}
-        {tab === "donate" && <DonateView t={t} lang={lang} flash={flash} />}
         {tab === "seva" && <SevaView t={t} lang={lang} flash={flash} />}
       </main>
 
