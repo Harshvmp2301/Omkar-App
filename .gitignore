@@ -2,9 +2,9 @@
 node_modules/
 .pnpm-store/
 yarn-error.log
-package-lock.json
 yarn.lock
 pnpm-lock.yaml
+# package-lock.json IS committed — CI runs `npm ci` for reproducible installs.
 
 # Build outputs
 dist/
@@ -44,3 +44,8 @@ coverage/
 # Temporary files
 tmp/
 temp/
+# History backup — survives workspace re-provisions (inside repo = preserved)
+.backup/
+
+# Visible staging folder for manual file transfer (Method B)
+transfer/

@@ -22,7 +22,13 @@
       "purpose": "any"
     },
     {
-      "src": "https://omkar-app.vercel.app/Omkar Logo Final Transparent.png",
+      "src": "https://omkar-app.vercel.app/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "https://omkar-app.vercel.app/omkar-logo.png",
       "sizes": "any",
       "type": "image/png",
       "purpose": "any"

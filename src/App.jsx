@@ -12,6 +12,7 @@ import ContactView from "./components/ContactView.jsx";
 import Contact from "./components/Contact.jsx";
 import { translations } from "./data/content.js";
 import useLocalStorage from "./hooks/useLocalStorage.js";
+import { initMagnetic } from "./utils/magnetic.js";
 
 const TABS = ["hub", "events", "gallery", "about", "donate", "seva"];
 
@@ -26,8 +27,15 @@ export default function OmkarSamithiApp() {
   const [notify, setNotify] = useLocalStorage("omkar:notify", {});
   const [lang, setLang] = useLocalStorage("omkar:lang", "en");
   const [toast, setToast] = useState("");
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  // Permission granted on a previous visit → reminders are on at first
+  // paint (lazy init instead of a mount-effect setState).
+  const [notificationsEnabled, setNotificationsEnabled] = useState(
+    () => "Notification" in window && Notification.permission === "granted"
+  );
   const toastTimer = useRef(null);
+  const mainRef = useRef(null);
+  const firstViewFocus = useRef(true);
+  const resyncLogo = useRef(null); // imperative handle set by the logo effect
   const logoRef = useRef(null);
   const slotRef = useRef(null);
   const headerRef = useRef(null);
@@ -57,6 +65,17 @@ export default function OmkarSamithiApp() {
     seva: t.sevaTab,
     about: t.aboutTab,
   };
+  // View change → move focus into the new view so screen readers announce
+  // it; preventScroll keeps the current scroll position (no hero jump).
+  useEffect(() => {
+    if (firstViewFocus.current) {
+      firstViewFocus.current = false;
+      return undefined;
+    }
+    mainRef.current?.focus({ preventScroll: true });
+    return undefined;
+  }, [tab]);
+
   useEffect(() => {
     document.documentElement.lang = lang;
     const page = TAB_LABELS[tab];
@@ -92,13 +111,6 @@ export default function OmkarSamithiApp() {
     return () => io.disconnect();
   }, [tab, lang]);
 
-  // --- notifications --------------------------------------------------------
-  useEffect(() => {
-    if ("Notification" in window && Notification.permission === "granted") {
-      setNotificationsEnabled(true);
-    }
-  }, []);
-
   useEffect(() => {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {
@@ -106,6 +118,23 @@ export default function OmkarSamithiApp() {
       });
     }
   }, []);
+
+  // --- magnetic CTAs (round-10 wow): spring-physics hover pull --------------
+  // Views remount per tab, so magnetic surfaces are (re)bound after each
+  // switch. Fine pointers only; reduced-motion users get plain buttons.
+  useEffect(() => {
+    const fine =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(pointer: fine)").matches;
+    const reduced =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!fine || reduced) return undefined;
+    const cleanups = Array.from(document.querySelectorAll(".magnetic")).map((el) =>
+      initMagnetic(el)
+    );
+    return () => cleanups.forEach((fn) => fn());
+  }, [tab, lang]);
 
   // --- single-logo scroll transition (every tab) ---------------------------
   // The ONE logo (rendered once at page level) starts centred in the viewport
@@ -125,10 +154,20 @@ export default function OmkarSamithiApp() {
     }
     let aspect = aspectRef.current || 1; // width / height, measured once
 
+    // Cached once per mount — the hero never unmounts, so the per-frame
+    // querySelector is unnecessary (audit item 5).
+    const heroContent = document.querySelector(".hero-content");
+
     const update = () => {
       raf = 0;
       const doc = document.documentElement;
       const maxScroll = Math.max(0, doc.scrollHeight - window.innerHeight);
+      // Round-10 scroll progress: full-range progress feeds the header
+      // hairline (--scroll-p) while `p` below stays the 15% logo-flight ramp.
+      doc.style.setProperty(
+        "--scroll-p",
+        String(maxScroll > 0 ? Math.min(1, window.scrollY / maxScroll) : 0)
+      );
       let p = maxScroll > 0 ? window.scrollY / (maxScroll * 0.15) : 0;
       p = Math.min(1, Math.max(0, p));
       p = p * p * (3 - 2 * p); // smoothstep for a natural glide
@@ -139,7 +178,6 @@ export default function OmkarSamithiApp() {
       const targetX = rect.left + rect.width / 2;
       const targetY = rect.top + rect.height / 2;
       const headerH = headerRef.current ? headerRef.current.offsetHeight : 0;
-      const heroContent = document.querySelector(".hero-content");
 
       // First-deployment composition: the big logo starts exactly at the
       // viewport centre while the hero copy is anchored BELOW it. If any
@@ -185,6 +223,7 @@ export default function OmkarSamithiApp() {
     const schedule = () => {
       if (!raf) raf = requestAnimationFrame(update);
     };
+    resyncLogo.current = schedule;
 
     if (logo.complete) measure();
     else logo.addEventListener("load", measure);
@@ -197,6 +236,7 @@ export default function OmkarSamithiApp() {
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
       logo.removeEventListener("load", measure);
+      resyncLogo.current = null;
     };
   }, []);
 
@@ -212,9 +252,11 @@ export default function OmkarSamithiApp() {
     return () => window.removeEventListener("resize", setH);
   }, [lang, tab]);
 
-  // Page height changes with tabs — re-sync the logo position.
+  // Page height changes with tabs — re-sync the logo position directly.
+  // Round-10: no more synthetic global "resize" events (audit item 17);
+  // the logo effect hands us its scheduler via ref.
   useEffect(() => {
-    window.dispatchEvent(new Event("resize"));
+    resyncLogo.current?.();
   }, [tab]);
 
   const flash = useCallback((msg) => {
@@ -251,7 +293,7 @@ export default function OmkarSamithiApp() {
       setNotificationsEnabled(true);
       flash(t.notificationsEnabled);
       new Notification(t.notificationTitle, {
-        body: "You'll now receive reminders for upcoming programs!",
+        body: "Browser alerts are on — notifications sound while this site is open in a tab.",
         icon: "🔔",
       });
     } else {
@@ -300,14 +342,21 @@ export default function OmkarSamithiApp() {
           effect below. Never duplicated. */}
       <img
         ref={logoRef}
-        src="/Omkar Logo Final Transparent.png"
+        src="/omkar-logo.png"
         alt="Omkar Samithi"
         className="app-logo"
       />
 
       <Hero t={t} events={t.eventsList} onGoToEvents={() => setTab("events")} />
 
-      <main key={tab} id="main" tabIndex={-1} className="view">
+      <main
+          key={tab}
+          ref={mainRef}
+          id="main"
+          tabIndex={-1}
+          className="view"
+          aria-label={TAB_LABELS[tab]}
+        >
         {tab === "hub" && <ContentHub t={t} lang={lang} />}
         {tab === "events" && (
           <EventsView
@@ -333,8 +382,7 @@ export default function OmkarSamithiApp() {
       <footer className="footer">
         <p className="footer-pranaams">{t.pranaams}</p>
         <div className="footer-meta">
-          <MapPin size={12} aria-hidden="true" /> {t.footerLocation} · ©{" "}
-          {new Date().getFullYear()} {t.appName}
+          <MapPin size={12} aria-hidden="true" /> {t.footerLocation} · © {t.appName}
         </div>
         {/* Social & feedback links live with the Pranaams box on every page */}
         <div className="social-icons footer-links">
@@ -365,8 +413,16 @@ export default function OmkarSamithiApp() {
         </div>
         <button
           type="button"
-          className="to-top"
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="to-top magnetic"
+          onClick={() =>
+            window.scrollTo({
+              top: 0,
+              behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)")
+                .matches
+                ? "auto"
+                : "smooth",
+            })
+          }
         >
           ↑ {t.backToTop}
         </button>

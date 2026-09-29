@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ChevronLeft, ChevronRight, X, ImageOff } from "lucide-react";
+import useFocusTrap from "../hooks/useFocusTrap.js";
 
 export default function GalleryView({ t }) {
   const items = t.galleryItems;
@@ -7,8 +8,16 @@ export default function GalleryView({ t }) {
   const [loaded, setLoaded] = useState({}); // src → decoded
   const [failed, setFailed] = useState({}); // src → permanently broken
   const touchX = useRef(null);
+  const openerRef = useRef(null); // card that opened the lightbox
+  const lightboxRef = useRef(null);
 
   const close = useCallback(() => setOpenIndex(null), []);
+  // Shared trap (hooks/useFocusTrap — also used by the mobile nav drawer):
+  // Tab containment, Escape-to-close, and focus restore to the opening card.
+  useFocusTrap(lightboxRef, openIndex !== null, {
+    onEscape: close,
+    restoreRef: openerRef,
+  });
   const next = useCallback(
     () => setOpenIndex((i) => (i === null ? i : (i + 1) % items.length)),
     [items.length]
@@ -18,28 +27,13 @@ export default function GalleryView({ t }) {
     [items.length]
   );
 
+  // Escape + Tab containment now live in useFocusTrap; this effect owns only
+  // arrow-key navigation and the background scroll lock.
   useEffect(() => {
     if (openIndex === null) return undefined;
     const onKey = (e) => {
-      if (e.key === "Escape") close();
-      else if (e.key === "ArrowRight") next();
+      if (e.key === "ArrowRight") next();
       else if (e.key === "ArrowLeft") prev();
-      else if (e.key === "Tab") {
-        // Keep focus inside the dialog (skip link and page behind stay unreachable).
-        const root = document.querySelector(".lightbox");
-        if (!root) return;
-        const focusables = root.querySelectorAll("button");
-        if (!focusables.length) return;
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
     };
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
@@ -47,7 +41,7 @@ export default function GalleryView({ t }) {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
-  }, [openIndex, close, next, prev]);
+  }, [openIndex, next, prev]);
 
   const markLoaded = (src) =>
     setLoaded((m) => (m[src] ? m : { ...m, [src]: true }));
@@ -69,7 +63,10 @@ export default function GalleryView({ t }) {
             key={item.id}
             type="button"
             className="gallery-card"
-            onClick={() => setOpenIndex(i)}
+            onClick={(e) => {
+              openerRef.current = e.currentTarget;
+              setOpenIndex(i);
+            }}
             aria-label={item.caption}
           >
             {failed[item.src] ? (
@@ -95,6 +92,7 @@ export default function GalleryView({ t }) {
 
       {open && (
         <div
+          ref={lightboxRef}
           className="lightbox"
           role="dialog"
           aria-modal="true"
@@ -135,7 +133,7 @@ export default function GalleryView({ t }) {
                 src={open.src}
                 alt={open.caption}
                 decoding="async"
-                onLoad={(e) => markLoaded(open.src)}
+                onLoad={() => markLoaded(open.src)}
                 onError={() => markFailed(open.src)}
               />
             )}

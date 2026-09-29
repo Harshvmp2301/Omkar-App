@@ -16,7 +16,7 @@ export default function Contact({ t }) {
           <div className="label">{t.emailUs}</div>
           <div className="contact-emails">
             <span className="value">
-              <a href="mailto:info@omkarsamithi.com">info@omkarsamithi.com</a>
+              <a href={`mailto:${t.contactEmail}`}>{t.contactEmail}</a>
             </span>
             <span className="value">
               <a href="mailto:omkarsamithi@gmail.com">omkarsamithi@gmail.com</a>

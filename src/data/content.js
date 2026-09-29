@@ -13,8 +13,8 @@ export const translations = {
     fromBlog: "From the Blog",
     festivalNotes: "Festival Notes",
     upcomingPrograms: "Upcoming Programs",
-    remindersOn: "Reminders on",
-    remindersOff: "Reminders off",
+    remindersOn: "Browser alert on",
+    remindersOff: "Browser alert off",
     pranaams: "Pranaams · Omkar Samithi",
     diyaHint: "The next lit diya marks your soonest upcoming program",
     sampleLayout: "Latest recordings from our YouTube channel",
@@ -22,6 +22,11 @@ export const translations = {
     sampleGallery: "Real photos from our Samithi blog — click to view",
     toggleLanguage: "Toggle Language",
     enableNotifications: "Enable Notifications",
+    openMenu: "Open menu",
+    themeToLight: "Switch to light mode",
+    themeToDark: "Switch to dark mode",
+    closeMenu: "Close menu",
+    contactEmail: "info@omkarsamithi.com",
     notificationsEnabled: "Notifications Enabled!",
     notificationsDisabled: "Notifications Disabled",
     notificationTitle: "Omkar Samithi Reminder",
@@ -48,29 +53,23 @@ export const translations = {
     nextPhoto: "Next photo",
     closePhoto: "Close photo viewer",
     aboutTitle: "About the Samithi",
-    aboutLead:
-      "Oman Karnataka Aradhana Samithi (Omkar Samithi) is a cultural and spiritual organization based in Muscat, Oman.",
-    aboutP1:
-      "For years, families from the Karnataka community and beyond have gathered through the Samithi to celebrate festivals, offer prayers and keep our heritage alive — far from home. From discourses and devotional music to grand poojas and festive gatherings, every program is an offering of devotion and friendship.",
-    aboutP2:
-      "Ours is a volunteer-run, member-supported community. Everyone is welcome — bring your family, your questions and your helping hands.",
-    pillarBhakti: "Bhakti & Devotion",
-    pillarBhaktiBody:
-      "Regular poojas, discourses and devotional music programs dedicated to Sri Anjaneya Swamy and the divine.",
-    pillarHeritage: "Karnataka Heritage",
-    pillarHeritageBody:
-      "Literature, music and festival celebrations that keep our motherland's traditions thriving in Oman.",
-    pillarCommunity: "Community & Seva",
-    pillarCommunityBody:
-      "Bringing families together through volunteering, mutual support and lasting friendship.",
+    aboutS1H: "About Omkar Samithi",
+    aboutS1:
+      "The Oman Karnataka Aradhana Samithi, commonly known as Omkar Samithi, is a prominent spiritual and cultural organization based in Muscat, Oman. Operating entirely through the dedication of community volunteers, the Samithi serves as a vital home-away-from-home for the Karnataka diaspora and the broader Hindu community in the region. They are highly active in organizing grand cultural events and maintain a robust digital presence — most notably through their YouTube channel, which archives their programs for “divine educational and divine entertainment purposes.” The organization frequently hosts renowned scholars and artists from India for its flagship event series: Omkar Jnaanamrutha (spiritual discourses by figures like Dr. Gururaj Karajagi and Dr. Arati V.B.) and Omkar Naadamrutha (musical evenings featuring artists like Sri Rahul Vellal and Sri Raichuru Sheshagiridas). In recognition of outstanding contributions to art and spirituality, the Samithi also confers the prestigious “Omkara Shree” award.",
+    aboutS2H: "Bhakti & Devotion and Karnataka Heritage",
+    aboutS2:
+      "At the core of the Samithi’s mission is the preservation of Bhakti (devotion) and the rich heritage of Karnataka. The organization hosts an extensive religious gathering, the grand Anjaneya Pooja dedicated to the deity Sri Anjaneya Swamy, guided by traditional Panchang dates. Their online blogs and channels actively share devotional literature, Kannada festival notes, and music, ensuring that the younger generation growing up in Oman remains deeply connected to their mother tongue and ancestral traditions. Through classical music (Carnatic vocal and instrumental), philosophical discourses, and traditional rituals, the Samithi keeps the spiritual essence of Karnataka thriving on foreign soil.",
+    aboutS3H: "Community & Seva",
+    aboutS3:
+      "Omkar Samithi operates fundamentally on the principles of Seva (selfless service) and community fellowship. Because it is a volunteer-run and member-supported organization, every event — from organizing massive temple gatherings at venues like the Sri Krishna Temple in Darsait to the loving preparation of prasada — is a collective effort. The Samithi not only provides a space for spiritual fulfillment but also acts as a powerful support network. By bringing families together to volunteer their time and resources, Omkar Samithi fosters lasting friendships and a profound sense of shared identity and mutual support within the expatriate community in Muscat.",
     supportTitle: "Support the Samithi",
     supportBody:
       "The Samithi runs entirely on the support of its members. To contribute towards programs, venue and prasada, write to us — every contribution, small or large, lights a lamp.",
     supportCta: "Write to us",
     donateTab: "Donate",
     sevaTab: "Seva",
-    donateTitle: "Donation Tracker",
-    donateSub: "Fill in the form below and proceed to payment.",
+    donateTitle: "Support the Samithi",
+    donateSub: "Share your donation details below — our team will contact you to confirm the transfer.",
     donateDisclaimer:
       "Online payments are being set up — when you submit, we prepare an email to our team with your details.",
     fullName: "Full Name",
@@ -80,7 +79,7 @@ export const translations = {
     purposeLabel: "Donation Purpose",
     purposes: ["General Donation", "Seva (Service)", "Food/Langar", "Aarti Supplies", "Temple Maintenance"],
     amountLabel: "Amount (OMR)",
-    proceedPayment: "Proceed to Payment",
+    proceedPayment: "Submit Donation Details",
     requiredFields: "Please fill in your name and contact first",
     emailPrepared: "Email prepared with your details — we'll be in touch soon",
     skipToContent: "Skip to content",
@@ -91,7 +90,7 @@ export const translations = {
     formSent: "Thank you! Your details were sent — we'll be in touch soon.",
     formFailed: "Couldn't send — opening your email app instead so nothing is lost.",
     sevaTitle: "Seva Opportunities",
-    sevaSub: "Participate in temple service. Choose a Seva and let us know your availability.",
+    sevaSub: "Participate in temple service. Choose a Seva and confirm your availability.",
     sevaCards: [
       { id: "s1", title: "Food/Langar", sub: "Sponsor a meal" },
       { id: "s2", title: "Flowers", sub: "Flower decorations" },
@@ -245,8 +244,8 @@ export const translations = {
     fromBlog: "ಬ್ಲಾಗ್‌ನಿಂದ",
     festivalNotes: "ಹಬ್ಬದ ಟಿಪ್ಪಣಿಗಳು",
     upcomingPrograms: "ಮುಂಬರುವ ಕಾರ್ಯಕ್ರಮಗಳು",
-    remindersOn: "ಜ್ಞಾಪನೆ ಆನ್",
-    remindersOff: "ಜ್ಞಾಪನೆ ಆಫ್",
+    remindersOn: "ಬ್ರೌಸರ್ ಅಲರ್ಟ್ ಆನ್",
+    remindersOff: "ಬ್ರೌಸರ್ ಅಲರ್ಟ್ ಆಫ್",
     pranaams: "ಪ್ರಣಾಮಗಳು · ಓಂಕಾರ ಸಮಿತಿ",
     diyaHint: "ಮುಂದಿನ ಉರಿಯುತ್ತಿರುವ ದೀಪವು ನಿಮ್ಮ ಮುಂದಿನ ಕಾರ್ಯಕ್ರಮವನ್ನು ಸೂಚಿಸುತ್ತದೆ",
     sampleLayout: "ನಮ್ಮ YouTube ಚಾನೆಲ್‌ನ ಇತ್ತೀಚಿನ ದಾಖಲೆಗಳು",
@@ -254,6 +253,11 @@ export const translations = {
     sampleGallery: "ನಮ್ಮ ಸಮಿತಿಯ ಬ್ಲಾಗ್‌ನ ನೈಜ ಫೋಟೋಗಳು — ನೋಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ",
     toggleLanguage: "ಭಾಷೆ ಬದಲಾಯಿಸಿ",
     enableNotifications: "ಅಧಿಸೂಚನೆಗಳನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ",
+    openMenu: "ಮೆನು ತೆರೆಯಿರಿ",
+    themeToLight: "ಲೈಟ್ ಮೋಡ್‌ಗೆ ಬದಲಿಸಿ",
+    themeToDark: "ಡಾರ್ಕ್ ಮೋಡ್‌ಗೆ ಬದಲಿಸಿ",
+    closeMenu: "ಮೆನು ಮುಚ್ಚಿರಿ",
+    contactEmail: "info@omkarsamithi.com",
     notificationsEnabled: "ಅಧಿಸೂಚನೆಗಳು ಸಕ್ರಿಯಗೊಂಡಿವೆ!",
     notificationsDisabled: "ಅಧಿಸೂಚನೆಗಳು ನಿಷ್ಕ್ರಿಯಗೊಂಡಿವೆ",
     notificationTitle: "ಓಂಕಾರ ಸಮಿತಿ ಜ್ಞಾಪನೆ",
@@ -287,29 +291,23 @@ export const translations = {
     nextPhoto: "ಮುಂದಿನ ಫೋಟೋ",
     closePhoto: "ಫೋಟೋ ವ್ಯೂವರ್ ಮುಚ್ಚಿ",
     aboutTitle: "ಸಮಿತಿಯ ಪರಿಚಯ",
-    aboutLead:
-      "ಓಮನ್ ಕರ್ನಾಟಕ ಅರಾಧನಾ ಸಮಿತಿ (ಓಂಕಾರ ಸಮಿತಿ) ಮಸ್ಕತ್, ಓಮನ್‌ನಲ್ಲಿರುವ ಸಾಂಸ್ಕೃತಿಕ ಮತ್ತು ಆಧ್ಯಾತ್ಮಿಕ ಸಂಸ್ಥೆ.",
-    aboutP1:
-      "ಹಲವು ವರ್ಷಗಳಿಂದ ಕರ್ನಾಟಕ ಸಮುದಾಯದ ಕುಟುಂಬಗಳು ಮತ್ತು ಇತರರು ಸಮಿತಿಯ ಮೂಲಕ ಹಬ್ಬಗಳನ್ನು ಆಚರಿಸಲು, ಪ್ರಾರ್ಥನೆ ಸಲ್ಲಿಸಲು ಮತ್ತು ತವರಿನಿಂದ ದೂರವಿದ್ದೂ ನಮ್ಮ ಸಂಸ್ಕೃತಿಯನ್ನು ಬದುಕಿಡಲು ಒಟ್ಟಾಗಿ ಬಂದಿದ್ದಾರೆ. ಪ್ರವಚನಗಳು, ಭಕ್ತಿ ಸಂಗೀತ, ಭವ್ಯ ಪೂಜೆಗಳು ಮತ್ತು ಹಬ್ಬದ ಸಂಭ್ರಮ — ಪ್ರತಿ ಕಾರ್ಯಕ್ರಮವೂ ಭಕ್ತಿ ಮತ್ತು ಗೆಳೆತನದ ಸಮರ್ಪಣೆ.",
-    aboutP2:
-      "ನಮ್ಮದು ಸ್ವಯಂಸೇವಕರು ನಡೆಸುವ, ಸದಸ್ಯರ ಬೆಂಬಲದಿಂದ ನಡೆಯುವ ಸಮುದಾಯ. ಎಲ್ಲರಿಗೂ ಸ್ವಾಗತ — ನಿಮ್ಮ ಕುಟುಂಬ, ಪ್ರಶ್ನೆಗಳು ಮತ್ತು ಸಹಾಯ ಹಸ್ತಗಳನ್ನು ತನ್ನಿ.",
-    pillarBhakti: "ಭಕ್ತಿ ಮತ್ತು ಆರಾಧನೆ",
-    pillarBhaktiBody:
-      "ಶ್ರೀ ಆಂಜನೇಯ ಸ್ವಾಮಿ ಮತ್ತು ದೈವಕ್ಕೆ ಅರ್ಪಿತ ನಿಯಮಿತ ಪೂಜೆಗಳು, ಪ್ರವಚನಗಳು ಮತ್ತು ಭಕ್ತಿ ಸಂಗೀತ ಕಾರ್ಯಕ್ರಮಗಳು.",
-    pillarHeritage: "ಕರ್ನಾಟಕ ಪರಂಪರೆ",
-    pillarHeritageBody:
-      "ಓಮನ್‌ನಲ್ಲಿ ನಮ್ಮ ನೆಲದ ಸಂಸ್ಕೃತಿಯನ್ನು ಬೆಳೆಸುವ ಸಾಹಿತ್ಯ, ಸಂಗೀತ ಮತ್ತು ಹಬ್ಬಗಳ ಆಚರಣೆ.",
-    pillarCommunity: "ಸಮುದಾಯ ಮತ್ತು ಸೇವೆ",
-    pillarCommunityBody:
-      "ಸ್ವಯಂಸೇವೆ, ಪರಸ್ಪರ ಬೆಂಬಲ ಮತ್ತು ಶಾಶ್ವತ ಗೆಳೆತನದ ಮೂಲಕ ಕುಟುಂಬಗಳನ್ನು ಒಗ್ಗೂಡಿಸುವುದು.",
+    aboutS1H: "ಓಂಕಾರ ಸಮಿತಿಯ ಬಗ್ಗೆ",
+    aboutS1:
+      "ಒಮಾನ್‌ನ ಮಸ್ಕತ್‌ನಲ್ಲಿ ಕೇಂದ್ರೀಕೃತವಾಗಿರುವ ಪ್ರಮುಖ ಆಧ್ಯಾತ್ಮಿಕ ಮತ್ತು ಸಾಂಸ್ಕೃತಿಕ ಸಂಸ್ಥೆಯಾದ ಒಮಾನ್ ಕರ್ನಾಟಕ ಅರಾಧನಾ ಸಮಿತಿಯನ್ನು ಸಾಮಾನ್ಯವಾಗಿ “ಓಂಕಾರ ಸಮಿತಿ” ಎಂದು ಕರೆಯಲಾಗುತ್ತದೆ. ಸಮುದಾಯದ ಸ್ವಯಂಸೇವಕರ ಸಮರ್ಪಣೆಯಿಂದ ಸಂಪೂರ್ಣವಾಗಿ ನಡೆಯುವ ಈ ಸಮಿತಿ, ಕರ್ನಾಟಕದ ವಲಸೆ ಸಮುದಾಯ ಮತ್ತು ಪ್ರದೇಶದ ವಿಶಾಲ ಹಿಂದೂ ಸಮುದಾಯದ ಮಂದಿಗೆ ಮನೆಯಂತಹ ಆಶ್ರಯ ತಾಣವಾಗಿದೆ. ಭವ್ಯ ಸಾಂಸ್ಕೃತಿಕ ಕಾರ್ಯಕ್ರಮಗಳ ಆಯೋಜನೆಯಲ್ಲಿ ಅತ್ಯಂತ ಸಕ್ರಿಯವಾಗಿರುವ ಈ ಸಮಿತಿ, ತನ್ನ YouTube ಚಾನೆಲ್‌ನಲ್ಲಿ ತನ್ನ ಕಾರ್ಯಕ್ರಮಗಳನ್ನು ದಾಖಲಿಸಿಟ್ಟಿದೆ — “ದೈವಿಕ ಶಿಕ್ಷಣ ಮತ್ತು ದೈವಿಕ ಮನರಂಜನೆಯ ಉದ್ದೇಶಗಳಿಗಾಗಿ”. ಭಾರತದ ಪ್ರಸಿದ್ಧ ವಿದ್ವಾಂಸರು ಮತ್ತು ಕಲಾವಿದರನ್ನು ತನ್ನ ಪ್ರಮುಖ ಕಾರ್ಯಕ್ರಮ ಸರಣಿಗಳಿಗೆ ಈ ಸಮಿತಿ ಆಗಾಗ್ಗೆ ಆಹ್ವಾನಿಸುತ್ತದೆ: ಓಂಕಾರ ಜ್ಞಾನಾಮೃತ (ಡಾ. ಗುರುರಾಜ್ ಕಾರಜಗಿ, ಡಾ. ಆರತಿ ವಿ. ಬಿ. ಅವರಂತಹ ವಿದ್ವಾಂಸರ ಆಧ್ಯಾತ್ಮಿಕ ಪ್ರವಚನಗಳು) ಮತ್ತು ಓಂಕಾರ ನಾದಾಮೃತ (ಶ್ರೀ ರಾಹುಲ್ ವೆಲ್ಲಾಳ್, ಶ್ರೀ ರೈಚೂರು ಶೇಷಗಿರಿದಾಸ್ ಅವರಂತಹ ಕಲಾವಿದರ ಸಂಗೀತ ಸಂಜೆಗಳು). ಕಲೆ ಮತ್ತು ಆಧ್ಯಾತ್ಮಕ್ಕೆ ಅಸಾಧಾರಣ ಕೊಡುಗೆ ನೀಡಿದವರಿಗೆ ಗೌರವಸೂಚಕವಾಗಿ ಸಮಿತಿ ಪ್ರತಿಷ್ಠಿತ “ಓಂಕಾರ ಶ್ರೀ” ಪ್ರಶಸ್ತಿಯನ್ನೂ ನೀಡುತ್ತದೆ.",
+    aboutS2H: "ಭಕ್ತಿ ಮತ್ತು ಆರಾಧನೆ ಹಾಗೂ ಕರ್ನಾಟಕ ಪರಂಪರೆ",
+    aboutS2:
+      "ಸಮಿತಿಯ ಧ್ಯೇಯದ ಕೇಂದ್ರದಲ್ಲಿ ಭಕ್ತಿ (ಆರಾಧನೆ) ಮತ್ತು ಕರ್ನಾಟಕದ ಶ್ರೀಮಂತ ಪರಂಪರೆಯ ಸಂರಕ್ಷಣೆ ಇದೆ. ಸಂಪ್ರದಾಯದ ಪಂಚಾಂಗ ದಿನಾಂಕಗಳ ಅನುಸಾರ ನಡೆಯುವ, ಶ್ರೀ ಆಂಜನೇಯ ಸ್ವಾಮಿಗೆ ಅರ್ಪಿತವಾದ ಬೃಹತ್ ಧಾರ್ಮಿಕ ಸಮಾರಂಭ — ಭವ್ಯ ಅಂಜನೇಯ ಪೂಜಾ ಮಹೋತ್ಸವವನ್ನು ಸಮಿತಿ ಆಯೋಜಿಸುತ್ತದೆ. ಸಮಿತಿಯ ಆನ್‌ಲೈನ್ ಬ್ಲಾಗ್‌ಗಳು ಮತ್ತು ಚಾನೆಲ್‌ಗಳು ಭಕ್ತಿ ಸಾಹಿತ್ಯ, ಕನ್ನಡ ಹಬ್ಬದ ಟಿಪ್ಪಣಿಗಳು ಮತ್ತು ಸಂಗೀತವನ್ನು ಹಂಚಿಕೊಳ್ಳುತ್ತವೆ — ಒಮಾನ್‌ನಲ್ಲಿ ಬೆಳೆಯುತ್ತಿರುವ ಮಕ್ಕಳು ತಮ್ಮ ಮಾತೃಭಾಷೆ ಮತ್ತು ಪೂರ್ವಜರ ಸಂಪ್ರದಾಯಗಳಿಗೆ ಆಳವಾಗಿ ಸಂಬಂಧ ಹೊಂದಿರುವಂತೆ ನೋಡಿಕೊಳ್ಳುತ್ತವೆ. ಶಾಸ್ತ್ರೀಯ ಸಂಗೀತದ (ಕರ್ನಾಟಕ ಶಾಸ್ತ್ರೀಯ ಗಾಯನ ಮತ್ತು ವಾದ್ಯ), ತಾರ್ಕಿಕ ಪ್ರವಚನಗಳು ಮತ್ತು ಸಂಪ್ರದಾಯ ಆಚರಣೆಗಳ ಮೂಲಕ ಸಮಿತಿ, ವಿದೇಶಿ ನೆಲದಲ್ಲಿ ಕರ್ನಾಟಕದ ಆಧ್ಯಾತ್ಮಿಕ ಸಾರವನ್ನು ಜೀವಂತವಾಗಿರಿಸುತ್ತದೆ.",
+    aboutS3H: "ಸಮುದಾಯ ಮತ್ತು ಸೇವೆ",
+    aboutS3:
+      "ಓಂಕಾರ ಸಮಿತಿ ಮೂಲತಃ ಸೇವೆ (ನಿಸ್ವಾರ್ಥ ಸೇವೆ) ಮತ್ತು ಸಮುದಾಯ ಬಾಂಧವ್ಯದ ತತ್ವಗಳ ಮೇಲೆ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತದೆ. ಸ್ವಯಂಸೇವಕರು ನಡೆಸುವ ಮತ್ತು ಸದಸ್ಯರ ಬೆಂಬಲದಿಂದ ನಡೆಯುವ ಸಂಸ್ಥೆಯಾದ್ದರಿಂದ, ದಾರ್ಸೈತ್‌ನ ಶ್ರೀ ಕೃಷ್ಣ ದೇವಸ್ಥಾನದಂತಹ ಸ್ಥಳಗಳಲ್ಲಿ ನಡೆಯುವ ಬೃಹತ್ ದೇವಾಲಯ ಸಮಾರಂಭಗಳ ಆಯೋಜನೆಯಿಂದ ಹಿಡಿದು ಪ್ರೀತಿಯಿಂದ ಪ್ರಸಾದ ತಯಾರಿಯವರೆಗೆ ಪ್ರತಿಯೊಂದು ಕಾರ್ಯಕ್ರಮವೂ ಸಾಮೂಹಿಕ ಪ್ರಯತ್ನ. ಸಮಿತಿ ಆಧ್ಯಾತ್ಮಿಕ ತೃಪ್ತಿಗೆ ಸ್ಥಳವನ್ನು ಮಾತ್ರ ಒದಗಿಸದೆ, ಬಲವಾದ ಬೆಂಬಲ ಜಾಲವಾಗಿಯೂ ಕೆಲಸ ಮಾಡುತ್ತದೆ. ಕುಟುಂಬಗಳನ್ನು ಒಟ್ಟುಗೂಡಿಸಿ ತಮ್ಮ ಸಮಯ ಮತ್ತು ಸಂಪನ್ನಗಳನ್ನು ಸ್ವಯಂಸೇವೆಗೆ ಮೀಸಲಿಡುವಂತೆ ಮಾಡುವ ಮೂಲಕ, ಓಂಕಾರ ಸಮಿತಿ ಮಸ್ಕತ್‌ನ ವಲಸೆ ಸಮುದಾಯದೊಳಗೆ ಶಾಶ್ವತ ಗೆಳೆತನ ಮತ್ತು ಸಮಾನ ಗುರುತಿನ ಭಾವನೆ, ಪರಸ್ಪರ ಬೆಂಬಲದ ಆಳವಾದ ಅನುಭೂತಿಯನ್ನು ಬೆಳೆಸುತ್ತದೆ.",
     supportTitle: "ಸಮಿತಿಗೆ ಬೆಂಬಲ ನೀಡಿ",
     supportBody:
       "ಸಮಿತಿಯು ತನ್ನ ಸದಸ್ಯರ ಬೆಂಬಲದಿಂದಲೇ ನಡೆಯುತ್ತದೆ. ಕಾರ್ಯಕ್ರಮಗಳು, ವೇದಿಕೆ ಮತ್ತು ಪ್ರಸಾದಕ್ಕಾಗಿ ಕೊಡುಗೆ ನೀಡಲು ನಮಗೆ ಬರೆಯಿರಿ — ಚಿಕ್ಕದಾಗಲಿ ದೊಡ್ಡದಾಗಲಿ, ಪ್ರತಿ ಕೊಡುಗೆಯೂ ಒಂದು ದೀಪವನ್ನು ಹಚ್ಚುತ್ತದೆ.",
     supportCta: "ನಮಗೆ ಬರೆಯಿರಿ",
     donateTab: "ದೇಣಿಗೆ",
     sevaTab: "ಸೇವೆ",
-    donateTitle: "ದೇಣಿಗೆ ಟ್ರ್ಯಾಕರ್",
-    donateSub: "ಕೆಳಗಿನ ಫಾರ್ಮ್ ಭರ್ತಿ ಮಾಡಿ ಪಾವತಿಗೆ ಮುಂದುವರಿಸಿ.",
+    donateTitle: "ಸಮಿತಿಗೆ ದೇಣಿಗೆ",
+    donateSub: "ಕೆಳಗಿನ ಫಾರ್ಮ್‌ನಲ್ಲಿ ನಿಮ್ಮ ದೇಣಿಗೆ ವಿವರಗಳನ್ನು ನಮೂದಿಸಿ — ನಮ್ಮ ತಂಡವು ವರ್ಗಾವಣೆಯನ್ನು ದಯವಿಟ್ಟು ನಿಮ್ಮೊಂದಿಗೆ ದೃಢೀಕರಿಸುತ್ತದೆ.",
     donateDisclaimer:
       "ಆನ್‌ಲೈನ್ ಪಾವತಿ ಸಿದ್ಧವಾಗುತ್ತಿದೆ — ಸಲ್ಲಿಸಿದಾಗ ನಿಮ್ಮ ವಿವರಗಳೊಂದಿಗೆ ನಮ್ಮ ತಂಡಕ್ಕೆ ಇಮೇಲ್ ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತದೆ.",
     fullName: "ಪೂರ್ಣ ಹೆಸರು",
@@ -319,11 +317,11 @@ export const translations = {
     purposeLabel: "ದೇಣಿಗೆಯ ಉದ್ದೇಶ",
     purposes: ["ಸಾಮಾನ್ಯ ದೇಣಿಗೆ", "ಸೇವೆ", "ಊಟ/ಲಂಗರ್", "ಆರತಿ ಸಾಮಗ್ರಿ", "ದೇವಸ್ಥಾನ ನಿರ್ವಹಣೆ"],
     amountLabel: "ಮೊತ್ತ (OMR)",
-    proceedPayment: "ಪಾವತಿಗೆ ಮುಂದುವರಿಸಿ",
+    proceedPayment: "ದೇಣಿಗೆ ವಿವರಗಳನ್ನು ಸಲ್ಲಿಸಿ",
     requiredFields: "ಮೊದಲು ಹೆಸರು ಮತ್ತು ಸಂಪರ್ಕ ಭರ್ತಿ ಮಾಡಿ",
     emailPrepared: "ನಿಮ್ಮ ವಿವರಗಳೊಂದಿಗೆ ಇಮೇಲ್ ಸಿದ್ಧವಾಗಿದೆ — ಶೀಘ್ರದಲ್ಲೇ ಸಂಪರ್ಕಿಸುತ್ತೇವೆ",
     sevaTitle: "ಸೇವಾ ಅವಕಾಶಗಳು",
-    sevaSub: "ದೇವಸ್ಥಾನದ ಸೇವೆಯಲ್ಲಿ ಭಾಗವಹಿಸಿ. ಒಂದು ಸೇವೆ ಆಯ್ಕೆ ಮಾಡಿ ನಿಮ್ಮ ಲಭ್ಯತೆ ತಿಳಿಸಿ.",
+    sevaSub: "ದೇವಸ್ಥಾನದ ಸೇವೆಯಲ್ಲಿ ಭಾಗವಹಿಸಿ. ಒಂದು ಸೇವೆ ಆಯ್ಕೆ ಮಾಡಿ ನಿಮ್ಮ ಲಭ್ಯತೆ ಖಚಿತಪಡಿಸಿ.",
     sevaCards: [
       { id: "s1", title: "ಊಟ/ಲಂಗರ್", sub: "ಊಟಕ್ಕೆ ಪ್ರಾಯೋಜಿಸಿ" },
       { id: "s2", title: "ಹೂಗಳು", sub: "ಹೂವಿನ ಅಲಂಕಾರ" },

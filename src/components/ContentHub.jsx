@@ -5,26 +5,26 @@ import { fetchLatestVideos, youtubeEnabled } from "../utils/youtube.js";
 export default function ContentHub({ t, lang }) {
   const blogPosts = t.blogPosts;
   const festivalPosts = t.festivalPosts;
-  const [videos, setVideos] = useState(t.videos);
+  // Live uploads remember WHICH language they belong to; any other language
+  // falls back to the curated list by pure derivation — no reset-effect.
+  const [liveFeed, setLiveFeed] = useState({ lang: null, videos: [] });
 
-  // Language/content switch → fall back to the curated list first…
+  // Overlay the live channel uploads when the owner has configured API keys
+  // (.env.example). Without keys — or on any failure — the curated list
+  // simply stays; the feed can never break the page.
   useEffect(() => {
-    setVideos(t.videos);
-  }, [t]);
-
-  // …then overlay the live channel uploads when the owner has configured
-  // API keys (.env.example). Without keys — or on any failure — the curated
-  // list simply stays; the feed can never break the page.
-  useEffect(() => {
-    let alive = true;
     if (!youtubeEnabled) return undefined;
+    let alive = true;
     fetchLatestVideos(lang).then((live) => {
-      if (alive && Array.isArray(live) && live.length) setVideos(live);
+      if (alive && Array.isArray(live) && live.length) setLiveFeed({ lang, videos: live });
     });
     return () => {
       alive = false;
     };
   }, [lang, t]);
+
+  const videos =
+    liveFeed.lang === lang && liveFeed.videos.length ? liveFeed.videos : t.videos;
 
   return (
     <div className="section">
@@ -56,7 +56,7 @@ export default function ContentHub({ t, lang }) {
               />
               <div className="play-overlay">
                 <div className="play-circle">
-                  <Play size={20} color="#170B10" fill="#170B10" aria-hidden="true" />
+                  <Play size={20} color="var(--on-gold)" fill="var(--on-gold)" aria-hidden="true" />
                 </div>
               </div>
             </div>

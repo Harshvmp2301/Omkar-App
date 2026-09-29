@@ -3,7 +3,17 @@
 // GET responses as a fallback so the app opens offline after the first visit.
 const CACHE = "omkar-cache-v1";
 
-self.addEventListener("install", () => {
+// Pre-cache the app shell so the FIRST offline visit works (audit E17),
+// not only after a second visit.
+const PRECACHE = ["/", "/index.html", "/omkar-logo.png", "/icon-192.png", "/icon-512.png"];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches
+      .open(CACHE)
+      .then((cache) => cache.addAll(PRECACHE))
+      .catch(() => {}) // never block install on a transient asset failure
+  );
   self.skipWaiting();
 });
 

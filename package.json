@@ -9,7 +9,10 @@
     "preview": "vite preview",
     "gallery:download": "node scripts/download-gallery.mjs",
     "deploy": "vercel deploy --prod",
-    "deploy:preview": "vercel deploy"
+    "deploy:preview": "vercel deploy",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -21,7 +24,14 @@
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@vitejs/plugin-react": "^6.0.3",
-    "vite": "^8.1.4"
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.12.0",
+    "vite": "^8.1.4",
+    "vitest": "^5.0.2"
   }
 }

@@ -22,7 +22,7 @@ export default function ContactView({ t, lang, flash }) {
       "",
       "Sent from the Omkar Samithi app.",
     ].join("\n");
-    const mailto = `mailto:info@omkarsamithi.com?subject=${encodeURIComponent(mailSubject)}&body=${encodeURIComponent(body)}`;
+    const mailto = `mailto:${t.contactEmail}?subject=${encodeURIComponent(mailSubject)}&body=${encodeURIComponent(body)}`;
 
     const res = await submitForm({
       form: "contact",
