@@ -10,12 +10,17 @@
  *   VITE_YOUTUBE_CHANNEL_ID Channel id starting with UC… (uploads playlist
  *                           is derived UCxxxx → UUxxxx)
  *
+ * The newest 3 uploads are shown (LATEST_COUNT below).
+ *
  * Any failure (no network, quota, bad key) resolves to `null` so the
  * curated list stays on screen — the feed can never break the page.
  */
 
 const KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
 const CHANNEL = import.meta.env.VITE_YOUTUBE_CHANNEL_ID;
+
+/** The owner spec: show only the newest uploads, not the whole back catalogue. */
+const LATEST_COUNT = 3;
 
 const TTL_MS = 6 * 60 * 60 * 1000;
 const CACHE_KEY = "omkar_yt_uploads_v1";
@@ -54,7 +59,7 @@ export async function fetchLatestVideos(lang = "en") {
   const playlistId = `UU${CHANNEL.slice(2)}`;
   const endpoint =
     `https://www.googleapis.com/youtube/v3/playlistItems` +
-    `?part=snippet&playlistId=${playlistId}&maxResults=8&key=${KEY}`;
+    `?part=snippet&playlistId=${playlistId}&maxResults=${LATEST_COUNT}&key=${KEY}`;
 
   try {
     const res = await fetch(endpoint);
