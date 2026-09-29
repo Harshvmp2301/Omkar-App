@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join, dirname, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -15,6 +15,15 @@ function walk(dir) {
 
 const read = (rel) => readFileSync(join(root, rel), "utf8");
 
+/**
+ * Repo-relative path, always with forward slashes.
+ *
+ * Comparing raw paths would make this test pass on macOS and Linux and fail on
+ * Windows, where separators are backslashes — which is exactly what happened
+ * the first time it ran on a Windows machine.
+ */
+const relativePosix = (abs) => relative(root, abs).split(sep).join("/");
+
 describe("public bundle stays free of the admin SDK", () => {
   const sources = walk(join(root, "src"));
 
@@ -22,9 +31,7 @@ describe("public bundle stays free of the admin SDK", () => {
     const importers = sources.filter((f) =>
       /@supabase\/supabase-js/.test(readFileSync(f, "utf8"))
     );
-    expect(importers.map((f) => f.replace(`${root}/`, ""))).toEqual([
-      "src/admin/client.js",
-    ]);
+    expect(importers.map(relativePosix)).toEqual(["src/admin/client.js"]);
   });
 
   it("loads that SDK dynamically, so it cannot enter the initial chunk", () => {
