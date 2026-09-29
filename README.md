@@ -7,7 +7,6 @@ Omkar Samithi is a bilingual (English/Kannada) community platform for the Oman K
 - ✨ **Scroll-driven logo animation (every tab)** — at `scrollY = 0` the single Omkar logo sits large and exactly centred over the full-screen hero while the title, tagline and diya row are anchored to the bottom of the screen (the original first-deployment composition); scrolling shrinks and glides the logo into its slot in the sticky navbar within the first 15% of the page's scroll, and scrolling back up glides it out again — on every tab. Clearance logic lifts the flight only when needed, so the logo never overlaps the hero copy or the content below it (one element, no duplicates)
 - 📅 **Upcoming programs** with live countdowns, per-event reminders and a permanent one-click **Add to Calendar** (.ics) button — dimmed until the date is announced
 - 🗓️ **Festival calendar** — a dark-themed wall-calendar month grid (Google-Calendar-style) covering all of 2026, with every announced festival and program listed under its date and today highlighted in gold; click a chip to download the .ics
-- 💝 **Donate** — donation tracker form (purpose picker: General, Seva, Food/Langar, Aarti Supplies, Temple Maintenance) with amount in OMR
 - 🙏 **Seva** — volunteer opportunities (Food, Flowers, Oil Lamps, Incense, Temple Bells, Cleaning) with a registration form fixed to **Sri Anjaneya Pooja** (yearly program dates shown; no date picker)
 - ✉️ **About & Contact** — one merged tab (last in the nav): mission pillars, support call-out, message form and the contact emails. Contact details appear nowhere else
 - 🔔 Browser notifications for event reminders
@@ -18,7 +17,7 @@ Omkar Samithi is a bilingual (English/Kannada) community platform for the Oman K
 - 📱 Mobile-responsive, dark gold-accented design with accessibility support (focus states, reduced motion)
 - 📲 **PWA-ready** — web app manifest + service worker for offline fallback
 - 🔗 Facebook Group, YouTube Channel and Feedback Form links live in the Pranaams footer on every page
-- #️⃣ Hash-based routing (`#/hub`, `#/events`, `#/gallery`, `#/donate`, `#/seva`, `#/about`) so views are deep-linkable
+- #️⃣ Hash-based routing (`#/hub`, `#/events`, `#/gallery`, `#/seva`, `#/about`) so views are deep-linkable
 
 ## Tech
 
@@ -35,12 +34,71 @@ npm run build    # production build to dist/
 npm run preview  # serve the production build
 ```
 
+### 🛠️ Admin dashboard — `#/admin`
+
+Open **`/#/admin`** on the site and sign in with Google. The Samithi's
+administrator can then, without touching any code:
+
+- **Seva signups** — every registration with contact details, filterable by status (new / contacted / confirmed / declined)
+- **Messages** — everything sent through the contact form, with unread counts, read/unread and replied markers
+- **Events** — add or edit programs with English *and* Kannada titles, descriptions and locations; set an exact date or a "date to be announced" label; hide or publish
+- **Photos** — upload one or many images, add bilingual captions, publish or hide, delete
+
+Access is by allow-list only: there is **no public sign-up**. An address must
+be in the `admins` table before it can open the dashboard (see
+[`supabase/README.md`](supabase/README.md), step 3, or the click-by-click
+[`supabase/SETUP-WALKTHROUGH.md`](supabase/SETUP-WALKTHROUGH.md)).
+
+**The dashboard never slows the public site down.** It is code-split behind a
+dynamic import, so the Supabase SDK and all the admin screens are fetched only
+when someone opens `#/admin`. A normal visitor's download is unaffected —
+`npm run build` shows them as separate chunks.
+
+### 🗄️ Database — where submissions are stored
+
+Seva signups and contact messages are saved to **Supabase**, and that is what
+the admin dashboard reads. One SQL file creates everything:
+
+```
+supabase/migrations/0001_init.sql   tables, security rules, photo storage
+```
+
+Setup (about 10 minutes, once) is in [`supabase/README.md`](supabase/README.md):
+create a project, run the SQL, add your email to the `admins` table, enable
+Google sign-in, then put the URL and **anon** key in `config/.env.local`.
+
+Row Level Security means the public site can only **add** submissions — the
+anon key that ships in the page cannot read seva signups or messages back.
+Never put the `service_role` key in this app.
+
+There is deliberately **no donations table**: Omkar Samithi does not accept
+donations, and the site has no donation form.
+
+With nothing configured the site works exactly as before and the forms fall
+back to email.
+
+### 🔑 Keys and credentials — all in one place
+
+**Every value lives in a single file: [`config/.env.local`](config/README.md).**
+Nothing needs to be hunted for across the code.
+
+```bash
+npm run config:init    # creates config/.env.local from the template
+```
+
+Then fill in what you have and restart the dev server. See
+[`config/README.md`](config/README.md) for where to get each value, and
+[`config/apps-script.gs`](config/apps-script.gs) for the form-notification
+script. The live site reads the same names from Vercel → Project → Settings
+→ Environment Variables.
+
+Blank values are always safe: the site falls back to the curated content.
+
 ### Optional: live YouTube uploads
 
-The Content Hub shows a curated video list by default. To stream the
-channel's latest uploads instead, copy [`.env.example`](.env.example) to
-`.env.local` locally, or add the two variables in Vercel → Project →
-Settings → Environment Variables:
+The Content Hub shows a curated video list by default. With
+`VITE_YOUTUBE_API_KEY` and `VITE_YOUTUBE_CHANNEL_ID` set, the channel's
+newest **3** uploads replace it:
 
 ```
 VITE_YOUTUBE_API_KEY=…      # YouTube Data API v3 key
@@ -50,9 +108,22 @@ VITE_YOUTUBE_CHANNEL_ID=…   # channel id starting with UC
 No keys, any API error, or quota exhaustion → the curated list stays on
 screen; successful responses are cached in `localStorage` for 6 hours.
 
+### Live blog posts — on by default, no key needed
+
+The newest 3 posts stream into the Content Hub's "From the Blog" list from
+`omkarsamithi.blogspot.com`, which is built in as the default so this works
+with no configuration at all. Blogger's public feed needs **no API key** —
+it sends no CORS headers, so it is loaded over JSONP (no proxy, no server).
+
+Override the blog with `VITE_BLOGGER_BLOG_URL` and the count with
+`VITE_BLOGGER_MAX`. If the open feed ever stops responding, the app falls
+back to Blogger API v3 when `VITE_BLOGGER_API_KEY` (or the YouTube key) is
+present. Same contract as YouTube: any failure leaves the curated list in
+place, and results are cached for 6 hours.
+
 ### Optional: form endpoint
 
-Donate, Seva and Contact POST JSON to `VITE_FORM_ENDPOINT` when set
+Seva and Contact POST JSON to `VITE_FORM_ENDPOINT` when set
 (Formspree, Google Apps Script, SheetDB — any CORS JSON webhook), with
 success/failure toasts in both languages. Unset (default) or on delivery
 failure the forms fall back to the existing `mailto:` flow, so no message
@@ -124,7 +195,6 @@ src/
     ├── FestivalCalendar.jsx # yellow month-grid festival calendar
     ├── GalleryView.jsx     # gallery grid + lightbox
     ├── AboutView.jsx       # mission, pillars, support CTA
-    ├── DonateView.jsx      # donation tracker form
     ├── SevaView.jsx        # seva cards + registration form
     ├── ContactView.jsx     # contact form (merged into the About tab)
     └── Contact.jsx         # contact emails (About tab only)

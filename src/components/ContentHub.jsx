@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
 import { Play, BookOpen, ExternalLink } from "lucide-react";
 import { fetchLatestVideos, youtubeEnabled } from "../utils/youtube.js";
+import { fetchLatestPosts, bloggerEnabled } from "../utils/blogger.js";
 
 export default function ContentHub({ t, lang }) {
-  const blogPosts = t.blogPosts;
   const festivalPosts = t.festivalPosts;
   // Live uploads remember WHICH language they belong to; any other language
   // falls back to the curated list by pure derivation — no reset-effect.
   const [liveFeed, setLiveFeed] = useState({ lang: null, videos: [] });
+  const [liveBlog, setLiveBlog] = useState({ lang: null, posts: [] });
 
   // Overlay the live channel uploads when the owner has configured API keys
-  // (.env.example). Without keys — or on any failure — the curated list
+  // (config/README.md). Without keys — or on any failure — the curated list
   // simply stays; the feed can never break the page.
   useEffect(() => {
     if (!youtubeEnabled) return undefined;
@@ -23,8 +24,24 @@ export default function ContentHub({ t, lang }) {
     };
   }, [lang, t]);
 
+  // Same contract for the blog: newest posts from the Blogger feed when the
+  // owner has set VITE_BLOGGER_BLOG_URL, curated list otherwise.
+  useEffect(() => {
+    if (!bloggerEnabled) return undefined;
+    let alive = true;
+    fetchLatestPosts(lang).then((live) => {
+      if (alive && Array.isArray(live) && live.length) setLiveBlog({ lang, posts: live });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [lang, t]);
+
   const videos =
     liveFeed.lang === lang && liveFeed.videos.length ? liveFeed.videos : t.videos;
+
+  const blogPosts =
+    liveBlog.lang === lang && liveBlog.posts.length ? liveBlog.posts : t.blogPosts;
 
   return (
     <div className="section">

@@ -11,9 +11,14 @@ describe("bilingual content parity", () => {
     expect([...knKeys].sort()).toEqual([...enKeys].sort());
   });
 
-  it("guards against accidental truncation (≥100 keys)", () => {
-    expect(enKeys.length).toBeGreaterThanOrEqual(100);
-    expect(knKeys.length).toBeGreaterThanOrEqual(100);
+  // A tripwire against accidental truncation, not a target to grow towards.
+  // It was 100 while the Donate tab existed; removing that tab deleted 8
+  // donate-only keys from each locale, so the floor moved to match. Parity
+  // between the locales is the real guard — this only catches a bad merge
+  // that wipes large parts of the dictionary.
+  it("guards against accidental truncation (≥95 keys)", () => {
+    expect(enKeys.length).toBeGreaterThanOrEqual(95);
+    expect(knKeys.length).toBeGreaterThanOrEqual(95);
   });
 
   it("has no empty string values in either locale", () => {

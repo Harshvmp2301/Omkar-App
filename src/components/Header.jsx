@@ -19,12 +19,11 @@ const Header = forwardRef(function Header(
     { id: "hub", label: t.contentHub },
     { id: "events", label: t.events },
     { id: "gallery", label: t.galleryTab },
-    { id: "donate", label: t.donateTab },
     { id: "seva", label: t.sevaTab },
     { id: "about", label: t.aboutTab },
   ];
 
-  // Round-10 / audit A1: below 768px the six tabs collapse into a focus-
+  // Round-10 / audit A1: below 768px the tabs collapse into a focus-
   // trapped drawer. Lang + bell stay visible — they're used every visit.
   const [menuOpen, setMenuOpen] = useState(false);
   const menuBtnRef = useRef(null);
@@ -79,7 +78,7 @@ const Header = forwardRef(function Header(
       /* private mode — session-only choice */
     }
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", next === "light" ? "#FFFDF7" : "#170B10");
+    if (meta) meta.setAttribute("content", next === "light" ? "#FAF7F2" : "#170B10");
     setTheme(next);
   };
 
