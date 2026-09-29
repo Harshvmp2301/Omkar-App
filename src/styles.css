@@ -201,7 +201,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 }
 
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
-/* Desktop/tablet: the six tabs own the middle of the bar and spread
+/* Desktop/tablet: the tabs own the middle of the bar and spread
    evenly across it — the drawer only exists below 768px. */
 .tabs--desktop { flex: 1 1 auto; justify-content: space-evenly; min-width: 0; }
 .tab-btn {
@@ -935,7 +935,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .lightbox-figure img { max-height: 55vh; }
 }
 
-/* ------------------------------------- Donate / Seva / Contact form views */
+/* ---------------------------------------------- Seva / Contact form views */
 .view-sub {
   color: var(--muted);
   font-size: 0.9rem;
@@ -1541,7 +1541,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 }
 
 /* ---------------------------------------------------------- mobile drawer */
-/* Below 768px the six tabs collapse into a focus-trapped slide-down drawer;
+/* Below 768px the tabs collapse into a focus-trapped slide-down drawer;
    the header keeps one confident row: slot · lang · bell · menu (audit A1). */
 .menu-btn {
   display: none;
