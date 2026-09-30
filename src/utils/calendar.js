@@ -11,6 +11,15 @@ function parseISO(iso) {
   return new Date(y, m - 1, d);
 }
 
+/**
+ * "2026-10-27T00:00:00+00:00" → "2026-10-27".
+ *
+ * Everything here works on plain calendar dates, never timestamps: a program on
+ * 27 October must read as 27 October in Muscat even though the row is stored in
+ * UTC. Slicing the string avoids the timezone shifting the day by one.
+ */
+export const dateOnly = (value) => (value ? String(value).slice(0, 10) : "");
+
 function pad(n) {
   return String(n).padStart(2, "0");
 }

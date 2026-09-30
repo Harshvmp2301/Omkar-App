@@ -1893,6 +1893,35 @@ h1, .section-title, .pillar-title, .video-title, .blog-title, .fest-title, .cal-
   transition: border-color var(--t-fast) var(--ease);
 }
 .admin-input:focus { outline: none; border-color: var(--line-strong); }
+
+/* A native <select> keeps the operating system's own appearance on Windows,
+   which would drop two white boxes into the middle of the dark form. Resetting
+   it and drawing our own chevron keeps the dropdowns on theme. */
+select.admin-input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 34px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23C9972C' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5 6 6.5l5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  background-size: 11px;
+}
+select.admin-input::-ms-expand { display: none; }
+/* The open list is drawn by the OS, so give it theme-appropriate colours too. */
+.admin-input option { background: var(--panel-light); color: var(--ivory); }
+
+/* A small note under a field — quieter than a label, never a placeholder that
+   disappears the moment someone types. */
+.admin-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.73rem;
+  font-style: normal;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
 .admin-textarea { resize: vertical; line-height: 1.55; }
 .admin-file { padding: 8px; }
 .admin-check { display: inline-flex; align-items: center; gap: 8px; font-size: 0.82rem; margin: 4px 0 14px; cursor: pointer; }
