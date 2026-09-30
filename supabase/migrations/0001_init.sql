@@ -132,11 +132,14 @@ create table if not exists public.events (
   updated_at     timestamptz not null default now(),
   title_en       text not null,
   title_kn       text,
+  -- Guest names for the programme. The dashboard labels these fields "Guest";
+  -- nothing else writes here.
   description_en text,
   description_kn text,
-  -- Either an exact date/timestamp, or a label for a date still to be
-  -- announced ("TBA"). The website shows the label when starts_at is null.
+  -- The date, when it is known. Left null the website shows "Date TBA" by
+  -- itself, so there is no label for anyone to type or forget.
   starts_at      timestamptz,
+  -- Unused. Kept so an older row that set a label still loads.
   date_label_en  text,
   date_label_kn  text,
   location_en    text,

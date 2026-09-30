@@ -1,22 +1,28 @@
 import { useCallback, useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { AdminEmpty, AdminError, AdminLoading } from "../ui.jsx";
-import { formatWhen, toInput, toIso } from "../format.js";
+import { formatDate } from "../format.js";
+import { dateOnly } from "../../utils/calendar.js";
+import {
+  EVENT_TITLES,
+  TITLE_EN,
+  titleKnFor,
+  eventRowFromForm,
+} from "../../utils/events.js";
 
+/**
+ * Three programs, three choices. The form deliberately cannot type a title or
+ * a venue: a typo there is a typo on the public website. The only free text is
+ * the guest's name, and the only other decision is the date.
+ */
 const BLANK = {
   id: null,
   title_en: "",
   title_kn: "",
-  description_en: "",
-  description_kn: "",
   starts_at: "",
-  date_label_en: "",
-  date_label_kn: "",
-  location_en: "",
-  location_kn: "",
-  url: "",
+  guest_en: "",
+  guest_kn: "",
   published: true,
-  sort_order: 0,
 };
 
 export default function EventsAdmin({ getSupabase }) {
@@ -58,7 +64,15 @@ export default function EventsAdmin({ getSupabase }) {
     });
 
   function edit(row) {
-    setForm({ ...BLANK, ...row, starts_at: toInput(row.starts_at) });
+    setForm({
+      id: row.id,
+      title_en: row.title_en || "",
+      title_kn: row.title_kn || "",
+      starts_at: dateOnly(row.starts_at),
+      guest_en: row.description_en || "",
+      guest_kn: row.description_kn || "",
+      published: row.published !== false,
+    });
     setStatus("");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -67,38 +81,23 @@ export default function EventsAdmin({ getSupabase }) {
     e.preventDefault();
     setSaving(true);
     setStatus("");
-    const supabase = await getSupabase();
-    if (!supabase) return setSaving(false);
+    setError("");
 
-    if (!form.title_en.trim()) {
-      setError("An English title is required — it is what the site displays by default.");
+    if (!form.title_en) {
+      setError("Choose which program this is.");
       setSaving(false);
       return;
     }
 
-    // A date, or a label for one not yet announced ("TBA"). The website shows
-    // the label whenever starts_at is empty, which is how e2/e3 are handled.
-    const payload = {
-      title_en: form.title_en.trim(),
-      title_kn: form.title_kn.trim() || null,
-      description_en: form.description_en.trim() || null,
-      description_kn: form.description_kn.trim() || null,
-      starts_at: toIso(form.starts_at),
-      date_label_en: form.date_label_en.trim() || null,
-      date_label_kn: form.date_label_kn.trim() || null,
-      location_en: form.location_en.trim() || null,
-      location_kn: form.location_kn.trim() || null,
-      url: form.url.trim() || null,
-      published: Boolean(form.published),
-      sort_order: Number(form.sort_order) || 0,
-    };
+    const supabase = await getSupabase();
+    if (!supabase) return setSaving(false);
 
+    const payload = eventRowFromForm(form);
     const { error: err } = form.id
       ? await supabase.from("events").update(payload).eq("id", form.id)
       : await supabase.from("events").insert(payload);
 
     setSaving(false);
-    setError("");
     if (err) {
       setError(err.message);
       return;
@@ -116,6 +115,9 @@ export default function EventsAdmin({ getSupabase }) {
     reload();
   }
 
+  const alreadyListed = (title) =>
+    Boolean(rows && rows.some((r) => r.title_en === title && r.id !== form.id));
+
   return (
     <>
       <form className="admin-card admin-form" onSubmit={save}>
@@ -125,103 +127,77 @@ export default function EventsAdmin({ getSupabase }) {
 
         <div className="admin-grid-2">
           <label className="admin-field">
-            <span>Title — English *</span>
-            <input
+            <span>Program — English *</span>
+            <select
               className="admin-input"
               value={form.title_en}
-              onChange={(e) => setForm({ ...form, title_en: e.target.value })}
-              placeholder="Omkar Jnanamrutha 2026"
-            />
+              onChange={(e) =>
+                // The Kannada name belongs to the English one, so it follows.
+                // It stays a dropdown, so it can still be changed on its own.
+                setForm({
+                  ...form,
+                  title_en: e.target.value,
+                  title_kn: titleKnFor(e.target.value),
+                })
+              }
+            >
+              <option value="">Choose a program…</option>
+              {TITLE_EN.map((title) => (
+                <option key={title} value={title}>
+                  {title}
+                  {alreadyListed(title) ? " — already on the list" : ""}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="admin-field">
-            <span>Title — Kannada</span>
-            <input
+            <span>Program — Kannada</span>
+            <select
               className="admin-input"
               value={form.title_kn}
               onChange={(e) => setForm({ ...form, title_kn: e.target.value })}
-              placeholder="ಓಂಕಾರ ಜ್ಞಾನಾಮೃತ ೨೦೨೬"
-            />
+            >
+              <option value="">Choose a program…</option>
+              {EVENT_TITLES.map((t) => (
+                <option key={t.kn} value={t.kn}>
+                  {t.kn}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
 
-        <div className="admin-grid-2">
-          <label className="admin-field">
-            <span>Date &amp; time</span>
-            <input
-              className="admin-input"
-              type="datetime-local"
-              value={form.starts_at}
-              onChange={(e) => setForm({ ...form, starts_at: e.target.value })}
-            />
-          </label>
-          <label className="admin-field">
-            <span>…or a label, if the date isn't fixed</span>
-            <input
-              className="admin-input"
-              value={form.date_label_en}
-              onChange={(e) => setForm({ ...form, date_label_en: e.target.value })}
-              placeholder="Date to be announced"
-            />
-          </label>
-        </div>
+        <label className="admin-field">
+          <span>Date</span>
+          <input
+            className="admin-input"
+            type="date"
+            value={form.starts_at}
+            onChange={(e) => setForm({ ...form, starts_at: e.target.value })}
+          />
+          <em className="admin-hint">
+            Not decided yet? Leave this empty — the website shows “Date TBA” by
+            itself. The venue is always Sri Krishna Temple, Darsait.
+          </em>
+        </label>
 
         <div className="admin-grid-2">
           <label className="admin-field">
-            <span>Description — English</span>
-            <textarea
-              className="admin-input admin-textarea"
-              rows={3}
-              value={form.description_en}
-              onChange={(e) => setForm({ ...form, description_en: e.target.value })}
-            />
-          </label>
-          <label className="admin-field">
-            <span>Description — Kannada</span>
-            <textarea
-              className="admin-input admin-textarea"
-              rows={3}
-              value={form.description_kn}
-              onChange={(e) => setForm({ ...form, description_kn: e.target.value })}
-            />
-          </label>
-        </div>
-
-        <div className="admin-grid-2">
-          <label className="admin-field">
-            <span>Location — English</span>
+            <span>Guest names — English</span>
             <input
               className="admin-input"
-              value={form.location_en}
-              onChange={(e) => setForm({ ...form, location_en: e.target.value })}
+              value={form.guest_en}
+              onChange={(e) => setForm({ ...form, guest_en: e.target.value })}
+              placeholder="Smt. Amrutha Naidu"
             />
           </label>
           <label className="admin-field">
-            <span>Location — Kannada</span>
+            <span>Guest names — Kannada</span>
             <input
               className="admin-input"
-              value={form.location_kn}
-              onChange={(e) => setForm({ ...form, location_kn: e.target.value })}
-            />
-          </label>
-        </div>
-
-        <div className="admin-grid-2">
-          <label className="admin-field">
-            <span>Link (optional)</span>
-            <input
-              className="admin-input"
-              value={form.url}
-              onChange={(e) => setForm({ ...form, url: e.target.value })}
-              placeholder="https://omkarsamithi.blogspot.com/…"
-            />
-          </label>
-          <label className="admin-field">
-            <span>Order on the page (lower shows first)</span>
-            <input
-              className="admin-input"
-              type="number"
-              value={form.sort_order}
-              onChange={(e) => setForm({ ...form, sort_order: e.target.value })}
+              value={form.guest_kn}
+              onChange={(e) => setForm({ ...form, guest_kn: e.target.value })}
+              placeholder="ಶ್ರೀಮತಿ ಅಮೃತಾ ನಾಯ್ಡು"
             />
           </label>
         </div>
@@ -269,9 +245,9 @@ export default function EventsAdmin({ getSupabase }) {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Title</th>
-                <th>When</th>
-                <th>Location</th>
+                <th>Program</th>
+                <th>Date</th>
+                <th>Guest</th>
                 <th>On site</th>
                 <th />
               </tr>
@@ -281,12 +257,14 @@ export default function EventsAdmin({ getSupabase }) {
                 <tr key={r.id}>
                   <td className="admin-strong">
                     {r.title_en}
-                    {r.title_kn ? <span className="admin-muted"> · {r.title_kn}</span> : null}
+                    {r.title_kn ? (
+                      <span className="admin-muted"> · {r.title_kn}</span>
+                    ) : null}
                   </td>
                   <td className="admin-nowrap">
-                    {r.starts_at ? formatWhen(r.starts_at) : r.date_label_en || "TBA"}
+                    {r.starts_at ? formatDate(r.starts_at) : "Date TBA"}
                   </td>
-                  <td>{r.location_en || "—"}</td>
+                  <td>{r.description_en || "—"}</td>
                   <td>{r.published ? "Yes" : "Hidden"}</td>
                   <td className="admin-row-actions">
                     <button className="admin-btn admin-btn--quiet" onClick={() => edit(r)}>
