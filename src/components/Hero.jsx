@@ -1,5 +1,5 @@
 import Diya from "./Diya.jsx";
-import { litDiyas, anyDiyaLit } from "../utils/diya.js";
+import { litDiyas } from "../utils/diya.js";
 
 export default function Hero({ t, events, onGoToEvents }) {
   // Each lamp lights a month before its own program and then STAYS lit — the
@@ -20,10 +20,8 @@ export default function Hero({ t, events, onGoToEvents }) {
             <Diya key={e.id} lit={lit[i]} onClick={onGoToEvents} label={e.title} />
           ))}
         </div>
-        {/* The line promises that a lit lamp marks the soonest program. With
-            every lamp dark — early in the year, or between programs — it would
-            be describing something that is not on screen, so it waits. */}
-        {anyDiyaLit(lamps) && <p className="diya-hint">{t.diyaHint}</p>}
+        {/* No caption under the lamps, on purpose: the row lighting up through
+            the year is something to notice, not something to be told. */}
       </div>
     </section>
   );

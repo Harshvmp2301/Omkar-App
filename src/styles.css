@@ -282,12 +282,6 @@ button, a { -webkit-tap-highlight-color: transparent; }
 }
 /* Thin gold rule between the tagline and the diyas */
 .diya-row { display: flex; justify-content: center; gap: 16px; margin-top: 22px; }
-.diya-hint {
-  color: var(--muted);
-  font-size: 0.72rem;
-  letter-spacing: 0.05em;
-  margin-top: 10px;
-}
 
 /* --------------------------------------------------------------- section */
 .section {
