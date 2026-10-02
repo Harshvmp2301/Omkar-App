@@ -148,9 +148,11 @@ Two things worth understanding:
   the dashboard exists.
 - **The admin dashboard UI itself.** This migration and the data layer in
   `src/utils/supabase.js` are the foundation; the dashboard screens come next.
-- **Event and photo seeding.** The site keeps using the curated content in
-  `src/data/content.js` until rows exist here, and falls back to it whenever
-  the database is unreachable — the same contract the video and blog feeds use.
+- **Seeding events and photos.** Both are live: the site reads `events` and
+  `photos` and lays them over the curated content in `src/data/content.js`,
+  and falls back to that content whenever the database is unreachable — the
+  same contract the video and blog feeds use. Events are merged programme by
+  programme; photos are added in front of the bundled ones.
 
 ---
 

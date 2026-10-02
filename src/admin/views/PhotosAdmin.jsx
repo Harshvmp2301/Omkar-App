@@ -120,6 +120,28 @@ export default function PhotosAdmin({ getSupabase }) {
     }
   }
 
+  /**
+   * Captions, edited per photo.
+   *
+   * The upload form takes one caption for the whole batch, which is fine for a
+   * single evening's photographs and useless for importing a whole year — so
+   * every card can be corrected on its own, afterwards.
+   */
+  async function saveCaptions(row, next) {
+    const supabase = await getSupabase();
+    const { error: err } = await supabase
+      .from("photos")
+      .update({ caption_en: next.caption_en, caption_kn: next.caption_kn })
+      .eq("id", row.id);
+    if (err) {
+      setError(err.message);
+      reload();
+      return false;
+    }
+    setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, ...next } : r)));
+    return true;
+  }
+
   async function remove(row) {
     if (!window.confirm("Delete this photo? It will disappear from the website.")) return;
     const supabase = await getSupabase();
@@ -145,9 +167,15 @@ export default function PhotosAdmin({ getSupabase }) {
       >
         <p className="admin-card-title">Add photos</p>
         <p className="admin-muted">
-          Choose one or many — all of them are uploaded with the captions below.
-          JPEG, PNG and WebP work best. Files are kept exactly as uploaded, so
-          export them at a sensible size first (around 1600px wide is plenty).
+          Choose one or many — all of them are uploaded with the captions
+          below, and you can correct each photo's caption afterwards in the
+          list. JPEG, PNG and WebP work best.
+        </p>
+        <p className="admin-muted">
+          Files are stored exactly as uploaded, and every visitor downloads
+          them as they are. A photo straight off a phone is often 4–5 MB; at
+          around 1600px wide it is a few hundred kB and looks the same on a
+          screen. Exporting the batch first is worth the few minutes.
         </p>
 
         <div className="admin-grid-2">
@@ -214,6 +242,7 @@ export default function PhotosAdmin({ getSupabase }) {
               row={r}
               urlFor={urlFor}
               onPublish={(v) => setPublished(r, v)}
+              onCaption={(next) => saveCaptions(r, next)}
               onDelete={() => remove(r)}
             />
           ))}
@@ -223,8 +252,21 @@ export default function PhotosAdmin({ getSupabase }) {
   );
 }
 
-function PhotoCard({ row, urlFor, onPublish, onDelete }) {
+function PhotoCard({ row, urlFor, onPublish, onCaption, onDelete }) {
   const [url, setUrl] = useState("");
+  const [captionEn, setCaptionEn] = useState(row.caption_en || "");
+  const [captionKn, setCaptionKn] = useState(row.caption_kn || "");
+  const [saveState, setSaveState] = useState("");
+
+  /** Save on leaving the field, and only when something actually changed. */
+  async function commit() {
+    const en = captionEn.trim();
+    const kn = captionKn.trim();
+    if (en === (row.caption_en || "") && kn === (row.caption_kn || "")) return;
+    setSaveState("Saving…");
+    const ok = await onCaption({ caption_en: en || null, caption_kn: kn || null });
+    setSaveState(ok ? "Saved" : "");
+  }
 
   useEffect(() => {
     let alive = true;
@@ -244,8 +286,36 @@ function PhotoCard({ row, urlFor, onPublish, onDelete }) {
         <div className="admin-photo-ph" aria-hidden="true" />
       )}
       <figcaption>
-        <p className="admin-photo-caption">{row.caption_en || row.caption_kn || "—"}</p>
-        <p className="admin-muted admin-photo-when">{formatWhen(row.created_at)}</p>
+        <label className="admin-photo-field">
+          <span>Caption — English</span>
+          <input
+            className="admin-input admin-input--tight"
+            value={captionEn}
+            onChange={(e) => setCaptionEn(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+            }}
+            placeholder="No caption"
+          />
+        </label>
+        <label className="admin-photo-field">
+          <span>Caption — Kannada</span>
+          <input
+            className="admin-input admin-input--tight"
+            value={captionKn}
+            onChange={(e) => setCaptionKn(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+            }}
+            placeholder="No caption"
+          />
+        </label>
+        <p className="admin-muted admin-photo-when">
+          {formatWhen(row.created_at)}
+          {saveState ? <span className="admin-photo-state"> · {saveState}</span> : null}
+        </p>
         <div className="admin-photo-actions">
           <label className="admin-check admin-check--tight">
             <input

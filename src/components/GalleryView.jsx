@@ -1,9 +1,33 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ChevronLeft, ChevronRight, X, ImageOff } from "lucide-react";
 import useFocusTrap from "../hooks/useFocusTrap.js";
+import { loadGalleryPhotos } from "../utils/gallery.js";
 
-export default function GalleryView({ t }) {
-  const items = t.galleryItems;
+export default function GalleryView({ t, lang }) {
+  // Photographs the Samithi uploads in the dashboard are added in front of the
+  // bundled ones — never instead of them. With nothing uploaded, or if the
+  // database is unreachable, this stays the bundled list, the same contract the
+  // video, blog and event feeds use. The result remembers WHICH language it was
+  // built for, so switching language re-derives rather than showing the wrong
+  // captions.
+  const [live, setLive] = useState({ lang: null, items: null });
+
+  useEffect(() => {
+    let alive = true;
+    loadGalleryPhotos(t.galleryItems, lang).then((photos) => {
+      if (alive) setLive({ lang, items: photos });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [lang, t]);
+
+  const items = live.lang === lang && live.items ? live.items : t.galleryItems;
+
+  // Every photo needs a name for screen readers and for the browser's own
+  // "image failed" text. A caption is the best one; where there is none, a
+  // plain label still beats an unlabelled button.
+  const labelFor = (item) => item.caption || t.photoLabel;
   const [openIndex, setOpenIndex] = useState(null);
   const [loaded, setLoaded] = useState({}); // src → decoded
   const [failed, setFailed] = useState({}); // src → permanently broken
@@ -48,7 +72,7 @@ export default function GalleryView({ t }) {
   const markFailed = (src) =>
     setFailed((m) => (m[src] ? m : { ...m, [src]: true }));
 
-  const open = items[openIndex];
+  const open = openIndex === null ? null : items[openIndex];
 
   return (
     <div className="section">
@@ -67,7 +91,7 @@ export default function GalleryView({ t }) {
               openerRef.current = e.currentTarget;
               setOpenIndex(i);
             }}
-            aria-label={item.caption}
+            aria-label={labelFor(item)}
           >
             {failed[item.src] ? (
               <span className="photo-failed">
@@ -77,7 +101,7 @@ export default function GalleryView({ t }) {
             ) : (
               <img
                 src={item.src}
-                alt={item.caption}
+                alt={labelFor(item)}
                 loading="lazy"
                 decoding="async"
                 className={!loaded[item.src] ? "ph" : ""}
@@ -85,7 +109,7 @@ export default function GalleryView({ t }) {
                 onError={() => markFailed(item.src)}
               />
             )}
-            <span className="gallery-caption">{item.caption}</span>
+            {item.caption ? <span className="gallery-caption">{item.caption}</span> : null}
           </button>
         ))}
       </div>
@@ -96,7 +120,7 @@ export default function GalleryView({ t }) {
           className="lightbox"
           role="dialog"
           aria-modal="true"
-          aria-label={open.caption}
+          aria-label={labelFor(open)}
           onClick={(e) => {
             if (e.target === e.currentTarget) close();
           }}
@@ -131,14 +155,14 @@ export default function GalleryView({ t }) {
             ) : (
               <img
                 src={open.src}
-                alt={open.caption}
+                alt={labelFor(open)}
                 decoding="async"
                 onLoad={() => markLoaded(open.src)}
                 onError={() => markFailed(open.src)}
               />
             )}
             <figcaption>
-              {open.caption}
+              {open.caption || labelFor(open)}
               <span className="lightbox-hint">{t.lightboxHint}</span>
             </figcaption>
           </figure>
