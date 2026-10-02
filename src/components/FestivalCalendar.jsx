@@ -14,7 +14,7 @@ const WEEKDAYS = Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 7 + i));
  * its date; clicking a chip downloads the .ics. Months without announcements
  * are simply empty — chips stay muted until a date is published.
  */
-export default function FestivalCalendar({ t, lang, flash }) {
+export default function FestivalCalendar({ t, lang, events, flash }) {
   const locale = lang === "kn" ? "kn-IN" : "en-GB";
 
   // ISO date -> [items] for festivals + dated programs.
@@ -28,11 +28,13 @@ export default function FestivalCalendar({ t, lang, flash }) {
     t.festivalList.forEach((f) =>
       put(f.date, { id: f.id, title: f.title, desc: f.snippet, kind: "festival" })
     );
-    t.eventsList
+    // The SAME list the programs above show — a date set in the dashboard has
+    // to appear in both, or the calendar quietly contradicts the list.
+    events
       .filter((e) => e.date)
       .forEach((e) => put(e.date, { id: e.id, title: e.title, desc: e.venue, kind: "event" }));
     return map;
-  }, [t]);
+  }, [t, events]);
 
   const [view, setView] = useState(() => {
     // Always open on the month containing TODAY so the highlight is visible.

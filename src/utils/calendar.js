@@ -24,10 +24,15 @@ function pad(n) {
   return String(n).padStart(2, "0");
 }
 
-/** Whole days from today until `iso` (negative = past, 0 = today). */
-export function daysUntil(iso) {
+/**
+ * Whole days from today until `iso` (negative = past, 0 = today).
+ *
+ * `now` is injectable so callers with a date-dependent rule — the diya lamps,
+ * the event countdowns — can be tested at a chosen moment instead of only
+ * today. Left out, it is simply now.
+ */
+export function daysUntil(iso, now = new Date()) {
   const target = parseISO(iso);
-  const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   return Math.round((target - today) / 86400000);
 }
