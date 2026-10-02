@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { downloadIcs, toKnDigits } from "../utils/calendar.js";
+import { festivalsForYear } from "../utils/festivals.js";
 
 const pad = (n) => String(n).padStart(2, "0");
 const isoOf = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
@@ -17,6 +18,20 @@ const WEEKDAYS = Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 7 + i));
 export default function FestivalCalendar({ t, lang, events, flash }) {
   const locale = lang === "kn" ? "kn-IN" : "en-GB";
 
+  const [view, setView] = useState(() => {
+    // Always open on the month containing TODAY so the highlight is visible.
+    const now = new Date();
+    return { y: now.getFullYear(), m: now.getMonth() };
+  });
+
+  // The festivals of the year on screen, dated from the sky over Muscat — see
+  // src/utils/festivals.js. Paging to another year brings that year's dates,
+  // so the calendar never goes stale and nobody maintains a list.
+  const festivals = useMemo(
+    () => festivalsForYear(t.festivalList, view.y),
+    [t, view.y]
+  );
+
   // ISO date -> [items] for festivals + dated programs.
   const itemsByDate = useMemo(() => {
     const map = {};
@@ -25,7 +40,7 @@ export default function FestivalCalendar({ t, lang, events, flash }) {
       if (!map[date]) map[date] = [];
       map[date].push(item);
     };
-    t.festivalList.forEach((f) =>
+    festivals.forEach((f) =>
       put(f.date, { id: f.id, title: f.title, desc: f.snippet, kind: "festival" })
     );
     // The SAME list the programs above show — a date set in the dashboard has
@@ -34,13 +49,7 @@ export default function FestivalCalendar({ t, lang, events, flash }) {
       .filter((e) => e.date)
       .forEach((e) => put(e.date, { id: e.id, title: e.title, desc: e.venue, kind: "event" }));
     return map;
-  }, [t, events]);
-
-  const [view, setView] = useState(() => {
-    // Always open on the month containing TODAY so the highlight is visible.
-    const now = new Date();
-    return { y: now.getFullYear(), m: now.getMonth() };
-  });
+  }, [festivals, events]);
 
   const step = (dir) => {
     setView((v) => {
