@@ -54,13 +54,13 @@ export const translations = {
     aboutTitle: "About the Samithi",
     aboutS1H: "About Omkar Samithi",
     aboutS1:
-      "The Oman Karnataka Aradhana Samithi, commonly known as Omkar Samithi, is a prominent spiritual and cultural organization based in Muscat, Oman. Operating entirely through the dedication of community volunteers, the Samithi serves as a vital home-away-from-home for the Karnataka diaspora and the broader Hindu community in the region. They are highly active in organizing grand cultural events and maintain a robust digital presence — most notably through their YouTube channel, which archives their programs for “divine educational and divine entertainment purposes.” The organization frequently hosts renowned scholars and artists from India for its flagship event series: Omkar Jnaanamrutha (spiritual discourses by figures like Dr. Gururaj Karajagi and Dr. Arati V.B.) and Omkar Naadamrutha (musical evenings featuring artists like Sri Rahul Vellal and Sri Raichuru Sheshagiridas). In recognition of outstanding contributions to art and spirituality, the Samithi also confers the prestigious “Omkara Shree” award.",
+      "The Oman Karnataka Aradhana Samithi, commonly known as Omkar Samithi, is a cultural organization based in Muscat, Oman. For many years, families of the Karnataka community and others have come together through the Samithi to celebrate festivals, offer prayers and keep our culture and heritage alive far from home. From discourses, devotional music programs, poojas and festival celebrations to organizing the various ceremonies held at the Sri Krishna Temple — every program is an expression of devotion, culture and friendship. The Samithi invites well-known scholars and artists from India: Omkar Jnanamrutha (discourses by scholars such as Shatavadhani Ganesh, B. M. Hegde, Gururaj Karajagi, Sulibele Chakravarthy and Aarthi V. B.) and Omkar Naadamrutha (musical programs by artists such as Vidyabhushana, Puttur Narasimha Nayak and Sriharsha). In recognition of exceptional contributions to art, culture and heritage, the Samithi also confers the prestigious “Omkara Shree” award. Ours is a community run by its volunteers and sustained by the support of its members. A warm welcome to everyone — come with your family, share your questions, and lend a hand in seva.",
     aboutS2H: "Bhakti & Devotion and Karnataka Heritage",
     aboutS2:
-      "At the core of the Samithi’s mission is the preservation of Bhakti (devotion) and the rich heritage of Karnataka. The organization hosts an extensive religious gathering, the grand Anjaneya Pooja dedicated to the deity Sri Anjaneya Swamy, guided by traditional Panchang dates. Their online blogs and channels actively share devotional literature, Kannada festival notes, and music, ensuring that the younger generation growing up in Oman remains deeply connected to their mother tongue and ancestral traditions. Through classical music (Carnatic vocal and instrumental), philosophical discourses, and traditional rituals, the Samithi keeps the spiritual essence of Karnataka thriving on foreign soil.",
+      "Regular poojas, discourses and devotional music programs dedicated to Sri Anjaneya Swami and the temple deity. In Oman, we work to preserve and nurture the culture, literature, art, music and festivals of our homeland. Keeping Karnataka’s culture and heritage alive, far from home, is our constant effort.",
     aboutS3H: "Community & Seva",
     aboutS3:
-      "Omkar Samithi operates fundamentally on the principles of Seva (selfless service) and community fellowship. Because it is a volunteer-run and member-supported organization, every event — from organizing massive temple gatherings at venues like the Sri Krishna Temple in Darsait to the loving preparation of prasada — is a collective effort. The Samithi not only provides a space for spiritual fulfillment but also acts as a powerful support network. By bringing families together to volunteer their time and resources, Omkar Samithi fosters lasting friendships and a profound sense of shared identity and mutual support within the expatriate community in Muscat.",
+      "Bringing families together through selfless service, mutual support and friendship. From organizing the ceremonies held at the Sri Krishna Temple to lovingly preparing prasada, the Samithi’s members and volunteers nurture the community with their time, effort and service.",
     supportTitle: "Support the Samithi",
     supportBody:
       "The Samithi runs entirely on the dedicated time and service of its members and volunteers. To offer your help at an upcoming program, write to us — every hand that helps lights a lamp.",
@@ -88,8 +88,8 @@ export const translations = {
       { id: "s2", title: "Flowers", sub: "Flower decorations" },
       { id: "s3", title: "Oil Lamps", sub: "Light the lamps" },
       { id: "s4", title: "Incense/Dhoop", sub: "Incense supplies" },
-      { id: "s5", title: "Temple Bells", sub: "Bell ringing ceremony" },
-      { id: "s6", title: "Temple Cleaning", sub: "Help with maintenance" },
+      { id: "s5", title: "Temple Bells", sub: "Help ring the bells" },
+      { id: "s6", title: "Temple Cleaning", sub: "Help keep the temple clean" },
     ],
     chooseSeva: "Please choose a Seva option first",
     sevaDetailsLabel: "Quantity / Details",
@@ -99,7 +99,7 @@ export const translations = {
     sevaProgramsLabel: "Our yearly programs",
     registerSeva: "Register Seva",
     sevaNote:
-      "🙏 Seva (service) is a beautiful way to contribute to our spiritual community. Every act of service is valued!",
+      "🙏 Seva (service) is a beautiful way to contribute to our community. Every act of service is valued!",
     contactSub: "Have a question or suggestion? We would love to hear from you.",
     subjectLabel: "Subject",
     subjectPh: "What is this about?",
@@ -154,7 +154,7 @@ export const translations = {
       {
         id: "b3",
         title: "Omkar Anjaneya Pooja 2023",
-        snippet: "Recap of the grand Sri Anjaneya Swamy pooja celebrated in Muscat.",
+        snippet: "Recap of the Sri Anjaneya Swamy pooja celebrated in Muscat.",
         url: "https://omkarsamithi.blogspot.com/2023/12/omkar-anjaneya-pooja-mahotsava-2023.html",
       },
     ],
@@ -208,9 +208,9 @@ export const translations = {
       { id: "fc9", title: "Buddha Purnima", snippet: "Birth anniversary of Gautama Buddha." },
       { id: "fc10", title: "Jyeshtha Purnima", snippet: "The full moon of Jyeshtha — Satyanarayan Puja day." },
       { id: "fc11", title: "Jagannath Rath Yatra", snippet: "The grand chariot festival of Puri." },
-      { id: "fc12", title: "Guru Purnima", snippet: "Honouring spiritual teachers and gurus." },
+      { id: "fc12", title: "Guru Purnima", snippet: "A day to honour and remember the gurus." },
       { id: "fc13", title: "Onam", snippet: "Kerala's harvest festival welcoming King Mahabali." },
-      { id: "fc14", title: "Raksha Bandhan", snippet: "The bond of brothers and sisters." },
+      { id: "fc14", title: "Raksha Bandhan", snippet: "A festival celebrating the bond of brothers and sisters." },
       { id: "fc15", title: "Sri Krishna Janmashtami", snippet: "Birth of Lord Krishna, celebrated at midnight." },
       { id: "fc16", title: "Ganesh Chaturthi", snippet: "The arrival of Lord Ganesha — ten days of worship." },
       { id: "fc17", title: "Anant Chaturdashi", snippet: "Grand Ganesha visarjan processions." },
