@@ -37,6 +37,47 @@ export function daysUntil(iso, now = new Date()) {
   return Math.round((target - today) / 86400000);
 }
 
+const ISO_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Is this a real calendar day? "2026-02-30" and "2027-02-29" are not. */
+function isRealDate(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const probe = new Date(y, m - 1, d);
+  return probe.getMonth() === m - 1 && probe.getDate() === d;
+}
+
+/**
+ * The same calendar day in another year: "2026-04-01" + 2027 → "2027-04-01".
+ * "" when there is no such day (29 February in a common year) or the value is
+ * not a date at all.
+ */
+export function occurrenceInYear(dateISO, year) {
+  const date = dateOnly(dateISO);
+  if (!ISO_RE.test(date)) return "";
+  const iso = `${year}-${date.slice(5)}`;
+  return isRealDate(iso) ? iso : "";
+}
+
+/**
+ * The occurrence of an annually repeating date that applies now.
+ *
+ * The Samithi's programs fall on the same day every year — Jnanamrutha on
+ * 1 April, Anjaneya Pooje on 18 December — so the year stored with a date is
+ * only where it was first set. A date dated this year or earlier resolves to
+ * this year's occurrence, which is what keeps the program list, the festival
+ * calendar and the lamps correct in January without anyone editing anything.
+ *
+ * A date the Samithi has already set for a future year is left alone: that is
+ * a program scheduled ahead, and the site counts down to that one.
+ */
+export function annualOccurrence(dateISO, now = new Date()) {
+  const date = dateOnly(dateISO);
+  if (!ISO_RE.test(date)) return "";
+  const year = Number(date.slice(0, 4));
+  if (year > now.getFullYear()) return date;
+  return occurrenceInYear(date, now.getFullYear()) || date;
+}
+
 /** { day, month abbreviation } for the little date tile on event rows. */
 export function dateParts(iso, lang) {
   const date = parseISO(iso);

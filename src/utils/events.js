@@ -10,7 +10,7 @@
  * src/data/content.js, so the dropdown and the built-in list cannot drift.
  */
 
-import { dateOnly } from "./calendar.js";
+import { annualOccurrence, dateOnly } from "./calendar.js";
 import { listPublishedEvents, supabaseEnabled } from "./supabase.js";
 
 export const EVENT_TITLES = [
@@ -110,8 +110,12 @@ export async function fetchEventRows() {
  * matters: if the Samithi sets a date for Naadamrutha, the other two
  * programmes must stay on the page exactly as they are. A row only ever
  * replaces the programme it names, and only the details it actually carries —
- * so filling in a date this month and the guest's name next month both work,
- * and nothing is lost in between.
+ * so the guest's name can be filled in this month and changed the next, and
+ * nothing is lost in between.
+ *
+ * The date is the one exception: a row with no date means the Samithi has not
+ * announced one, and the site says TBA. It does not fall back to the built-in
+ * date, which may be a date that has already passed.
  *
  * Rows whose title is not one of the three (a future year, a new programme)
  * are appended rather than dropped.
@@ -136,9 +140,10 @@ export function mergeEvents(curated = [], rows = [], lang = "en") {
       // Keep the curated id: the reminder bells are stored per id in
       // localStorage, so a new id would silently forget someone's reminder.
       id: entry.id,
-      date: live.date || entry.date,
-      day: live.date ? "—" : entry.day,
-      mon: live.date ? "" : entry.mon,
+      // The row decides the date — empty means TBA, not a fallback.
+      date: live.date,
+      day: "—",
+      mon: "",
       title: live.title || entry.title,
       guest: live.guest || entry.guest,
       venue: live.venue || entry.venue,
@@ -149,8 +154,24 @@ export function mergeEvents(curated = [], rows = [], lang = "en") {
   return merged;
 }
 
+/**
+ * Move every program's date onto its occurrence in the current year.
+ *
+ * The Samithi's programs repeat every year, so the year in a stored date is
+ * only a starting point: set 1 April once and the site shows 1 April next year
+ * too, without anyone opening the dashboard in January. The lamps follow the
+ * same dates through diya.js, so the list, the calendar and the lamps all move
+ * together. A date already set for a future year is left where it is.
+ */
+export function rollDates(events = [], now = new Date()) {
+  return events.map((event) => {
+    const date = annualOccurrence(event.date, now);
+    return date === event.date ? event : { ...event, date };
+  });
+}
+
 /** The list the public Events page shows. */
-export async function loadEvents(curated = [], lang = "en") {
+export async function loadEvents(curated = [], lang = "en", now = new Date()) {
   const rows = await fetchEventRows();
-  return mergeEvents(curated, rows, lang);
+  return rollDates(mergeEvents(curated, rows, lang), now);
 }

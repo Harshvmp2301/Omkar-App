@@ -2,9 +2,9 @@ import Diya from "./Diya.jsx";
 import { litDiyas, anyDiyaLit } from "../utils/diya.js";
 
 export default function Hero({ t, events, onGoToEvents }) {
-  // Each lamp lights a month before its own program and goes dark once the
-  // program is over, so the lamps come on one by one through the year. The
-  // lit one is always the soonest program — see src/utils/diya.js.
+  // Each lamp lights a month before its own program and then STAYS lit — the
+  // programs finish, the flames do not. So the row gets brighter through the
+  // year and goes dark again on 1 January. See src/utils/diya.js.
   const lamps = events.slice(0, 4);
   const lit = litDiyas(lamps);
   return (

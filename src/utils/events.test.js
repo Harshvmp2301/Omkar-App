@@ -8,6 +8,7 @@ import {
   eventRowFromForm,
   mapEventRow,
   mergeEvents,
+  rollDates,
   titleKnFor,
 } from "./events.js";
 
@@ -161,8 +162,15 @@ describe("mergeEvents — the dashboard laid over the curated list", () => {
     const merged = mergeEvents(curated, [row({ starts_at: "2026-11-15T00:00:00+00:00" })], "en");
     expect(merged).toHaveLength(3);
     expect(merged.find((e) => e.title === "Omkar Naadamrutha").date).toBe("2026-11-15");
-    expect(merged.find((e) => e.title === "Omkar Jnanamrutha").date).toBe("2026-10-27");
-    expect(merged.find((e) => e.title === "Sri Anjaneya Pooje").date).toBe("");
+    expect(merged.find((e) => e.title === "Omkar Jnanamrutha").date).toBe("2026-04-01");
+    expect(merged.find((e) => e.title === "Sri Anjaneya Pooje").date).toBe("2026-12-18");
+  });
+
+  it("shows TBA when the date has been cleared in the dashboard", () => {
+    // The row is the Samithi's word on the date: no date means it has not been
+    // announced, so the site must not resurrect the built-in one.
+    const merged = mergeEvents(curated, [row()], "en");
+    expect(merged.find((e) => e.title === "Omkar Naadamrutha").date).toBe("");
   });
 
   it("keeps the curated guest when the row does not name one", () => {
@@ -208,5 +216,36 @@ describe("mergeEvents — the dashboard laid over the curated list", () => {
     );
     expect(merged.find((e) => e.title === "Omkar Naadamrutha").date).toBe("");
     expect(blank[0].date).toBe("");
+  });
+});
+
+describe("rollDates — the programs repeat every year", () => {
+  const at = (iso) => new Date(`${iso}T12:00:00`);
+  const curated = translations.en.eventsList;
+
+  it("moves stored dates onto this year's occurrence", () => {
+    const rolled = rollDates(curated, at("2027-02-01"));
+    expect(rolled.map((e) => e.date)).toEqual(["2027-04-01", "2027-10-02", "2027-12-18"]);
+  });
+
+  it("leaves this year's dates exactly as they are", () => {
+    const rolled = rollDates(curated, at("2026-06-01"));
+    expect(rolled.map((e) => e.date)).toEqual(curated.map((e) => e.date));
+  });
+
+  it("keeps a program with no date empty — TBA stays TBA", () => {
+    const rolled = rollDates([{ id: "x", date: "" }], at("2027-02-01"));
+    expect(rolled[0].date).toBe("");
+  });
+
+  it("leaves a date the Samithi set for a future year alone", () => {
+    const rolled = rollDates([{ id: "x", date: "2028-04-01" }], at("2027-02-01"));
+    expect(rolled[0].date).toBe("2028-04-01");
+  });
+
+  it("rolls a dashboard date the same way the built-in list rolls", () => {
+    const rows = [{ id: "row-1", title_en: "Omkar Naadamrutha", starts_at: "2026-11-15T00:00:00+00:00" }];
+    const merged = rollDates(mergeEvents(curated, rows, "en"), at("2027-02-01"));
+    expect(merged.find((e) => e.title === "Omkar Naadamrutha").date).toBe("2027-11-15");
   });
 });

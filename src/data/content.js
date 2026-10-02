@@ -109,9 +109,9 @@ export const translations = {
     sendMessage: "Send Message",
     messageRequired: "Please write a message first",
     eventsList: [
-      { id: "e1", date: "2026-10-27", day: "27", mon: "OCT", title: "Omkar Jnanamrutha", guest: "Smt. Amrutha Naidu", venue: "Sri Krishna Temple, Darsait, Muscat" },
-      { id: "e2", date: "", day: "—", mon: "2026", title: "Omkar Naadamrutha", guest: "Guest TBA", venue: "Sri Krishna Temple, Darsait, Muscat" },
-      { id: "e3", date: "", day: "—", mon: "2026", title: "Sri Anjaneya Pooje", guest: null, venue: "Sri Krishna Temple, Darsait, Muscat" },
+      { id: "e1", date: "2026-04-01", day: "1", mon: "APR", title: "Omkar Jnanamrutha", guest: "Smt. Amrutha Naidu", venue: "Sri Krishna Temple, Darsait, Muscat" },
+      { id: "e2", date: "2026-10-02", day: "2", mon: "OCT", title: "Omkar Naadamrutha", guest: "Guest TBA", venue: "Sri Krishna Temple, Darsait, Muscat" },
+      { id: "e3", date: "2026-12-18", day: "18", mon: "DEC", title: "Sri Anjaneya Pooje", guest: null, venue: "Sri Krishna Temple, Darsait, Muscat" },
     ],
     videos: [
       {
@@ -333,9 +333,9 @@ export const translations = {
     sendMessage: "ಸಂದೇಶ ಕಳುಹಿಸಿ",
     messageRequired: "ದಯವಿಟ್ಟು ಮೊದಲು ಸಂದೇಶ ಬರೆಯಿರಿ",
     eventsList: [
-      { id: "e1", date: "2026-10-27", day: "೨೭", mon: "ಅಕ್ಟೋ", title: "ಓಂಕಾರ ಜ್ಞಾನಾಮೃತ", guest: "ಶ್ರೀಮತಿ ಅಮೃತಾ ನಾಯ್ಡು", venue: "ಶ್ರೀ ಕೃಷ್ಣ ದೇವಸ್ಥಾನ, ದಾರ್ಸೈತ್, ಮಸ್ಕತ್" },
-      { id: "e2", date: "", day: "—", mon: "೨೦೨೬", title: "ಓಂಕಾರ ನಾದಾಮೃತ", guest: "ಅತಿಥಿ ಪ್ರಕಟಣೆ ಬಾಕಿ", venue: "ಶ್ರೀ ಕೃಷ್ಣ ದೇವಸ್ಥಾನ, ದಾರ್ಸೈತ್, ಮಸ್ಕತ್" },
-      { id: "e3", date: "", day: "—", mon: "೨೦೨೬", title: "ಶ್ರೀ ಆಂಜನೇಯ ಪೂಜೆ", guest: null, venue: "ಶ್ರೀ ಕೃಷ್ಣ ದೇವಸ್ಥಾನ, ದಾರ್ಸೈತ್, ಮಸ್ಕತ್" },
+      { id: "e1", date: "2026-04-01", day: "೧", mon: "ಏಪ್ರಿ", title: "ಓಂಕಾರ ಜ್ಞಾನಾಮೃತ", guest: "ಶ್ರೀಮತಿ ಅಮೃತಾ ನಾಯ್ಡು", venue: "ಶ್ರೀ ಕೃಷ್ಣ ದೇವಸ್ಥಾನ, ದಾರ್ಸೈತ್, ಮಸ್ಕತ್" },
+      { id: "e2", date: "2026-10-02", day: "೨", mon: "ಅಕ್ಟೋ", title: "ಓಂಕಾರ ನಾದಾಮೃತ", guest: "ಅತಿಥಿ ಪ್ರಕಟಣೆ ಬಾಕಿ", venue: "ಶ್ರೀ ಕೃಷ್ಣ ದೇವಸ್ಥಾನ, ದಾರ್ಸೈತ್, ಮಸ್ಕತ್" },
+      { id: "e3", date: "2026-12-18", day: "೧೮", mon: "ಡಿಸೆಂ", title: "ಶ್ರೀ ಆಂಜನೇಯ ಪೂಜೆ", guest: null, venue: "ಶ್ರೀ ಕೃಷ್ಣ ದೇವಸ್ಥಾನ, ದಾರ್ಸೈತ್, ಮಸ್ಕತ್" },
     ],
     videos: [
       {

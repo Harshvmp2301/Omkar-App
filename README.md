@@ -5,7 +5,8 @@ Omkar Samithi is a bilingual (English/Kannada) community platform for the Oman K
 ## Features
 
 - ✨ **Scroll-driven logo animation (every tab)** — at `scrollY = 0` the single Omkar logo sits large and exactly centred over the full-screen hero while the title, tagline and diya row are anchored to the bottom of the screen (the original first-deployment composition); scrolling shrinks and glides the logo into its slot in the sticky navbar within the first 15% of the page's scroll, and scrolling back up glides it out again — on every tab. Clearance logic lifts the flight only when needed, so the logo never overlaps the hero copy or the content below it (one element, no duplicates)
-- 📅 **Upcoming programs** with live countdowns, per-event reminders and a permanent one-click **Add to Calendar** (.ics) button — dimmed until the date is announced
+- 📅 **Upcoming programs** with live countdowns, per-event reminders and a permanent one-click **Add to Calendar** (.ics) button — dimmed until the date is announced. The Samithi sets each program's date once in the dashboard; the site repeats it every year on its own, so nothing needs updating in January
+- 🪔 **Diya lamps that follow the year** — each lamp lights 30 days before its own program and, once lit, stays lit until New Year. The row fills up through the year (one lamp, then two, then all three) and goes dark again on 1 January — see `src/utils/diya.js`
 - 🗓️ **Festival calendar** — a dark-themed wall-calendar month grid (Google-Calendar-style) covering all of 2026, with every announced festival and program listed under its date and today highlighted in gold; click a chip to download the .ics
 - 🙏 **Seva** — volunteer opportunities (Food, Flowers, Oil Lamps, Incense, Temple Bells, Cleaning) with a registration form fixed to **Sri Anjaneya Pooja** (yearly program dates shown; no date picker)
 - ✉️ **About & Contact** — one merged tab (last in the nav): mission pillars, support call-out, message form and the contact emails. Contact details appear nowhere else
@@ -41,7 +42,7 @@ administrator can then, without touching any code:
 
 - **Seva signups** — every registration with contact details, filterable by status (new / contacted / confirmed / declined)
 - **Messages** — everything sent through the contact form, with unread counts, read/unread and replied markers
-- **Events** — pick one of the three programmes from a list (English and Kannada come as a pair), name the guests, and set the date. Leave the date empty and the site shows "Date TBA" by itself; the venue is always Sri Krishna Temple, Darsait
+- **Events** — pick one of the three programmes from a list (English and Kannada come as a pair), name the guests, and set the date. Leave the date empty and the site shows "Date TBA" by itself; the venue is always Sri Krishna Temple, Darsait. The date repeats every year — the site moves it onto the current year by itself, and a cleared date means TBA (never a stale date)
 - **Photos** — upload one or many images at once, then correct the caption on each one (English and Kannada), publish or hide, delete. Uploads appear in the public gallery in front of the photographs that ship with the app; nothing uploaded means nothing changes
 
 Access is by allow-list only: there is **no public sign-up**. An address must
@@ -209,3 +210,5 @@ vercel.json                 # Vercel build config (Vite → dist/)
 ## Content updates
 
 All text — including events, videos, blog posts, festival dates and gallery captions — is edited in **`src/data/content.js`** under the `en` and `kn` blocks. Event and festival dates use ISO format (`YYYY-MM-DD`) which powers countdowns and calendar downloads automatically.
+
+The three programs repeat every year, so only the day and month of a program date matter: the site moves a stored date onto its occurrence in the current year by itself (`annualOccurrence` in `src/utils/calendar.js`, applied by `rollDates` in `src/utils/events.js`), and the lamps, the program list and the calendar all follow the same value.

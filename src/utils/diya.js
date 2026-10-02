@@ -1,39 +1,41 @@
 /**
  * When a diya is lit.
  *
- * The rule, as the Samithi described it: every lamp is dark at the start of the
- * year, and each one lights a month before its own program — so the lamps come
- * on one by one through the year, in the order the programs fall. A lamp is
- * dark again once its program is over.
+ * The rule, as the Samithi described it: every lamp is dark on the first day of
+ * the year. Each one lights a month before its own program — and from then on
+ * it STAYS lit. A program that has finished does not put its lamp out, so the
+ * lamps pile up through the year: one is burning by the spring program, a
+ * month before the autumn program a second joins it, and a month before the
+ * December program all three are lit. They stay lit until New Year, when they
+ * all go dark and the year starts again.
  *
- * With programs months apart that means at most one lamp is lit at a time, and
- * the lit one is always the soonest program — which is exactly what the line
- * beneath them promises: "The next lit diya marks your soonest upcoming
- * program."
+ * A program repeats every year, so the lamp follows the month and day of the
+ * stored date, never its year: 1 April lights in April of whatever year it is
+ * now, and nobody has to touch the dashboard in January. A date the Samithi
+ * has already put in for a future year counts as that year's program — the
+ * lamp lights a month before the date as written.
  *
  * A program whose date has not been announced cannot light anything: there is
  * nothing to count down to yet.
  */
 
-import { daysUntil, dateOnly } from "./calendar.js";
+import { annualOccurrence, daysUntil } from "./calendar.js";
 
 /** How long before a program its lamp comes on. */
 export const DIYA_WINDOW_DAYS = 30;
 
 /**
- * Is the lamp for this date lit?
+ * Is the lamp for this program lit?
  *
- * `daysUntil` counts whole calendar days from today, so this is a plain date
- * comparison — no clock times, no timezone arithmetic. A program is lit from
- * the first moment of the day 30 days before it, through to the end of the day
- * it happens on.
+ * `daysUntil` counts whole calendar days, so this is a plain date comparison —
+ * no clock times, no timezone arithmetic. Negative days mean the program has
+ * already happened this year, which is still lit: the flame is not put out
+ * when the program ends.
  */
 export function diyaLit(dateISO, now = new Date()) {
-  const date = dateOnly(dateISO);
+  const date = annualOccurrence(dateISO, now);
   if (!date) return false;
-
-  const days = daysUntil(date, now);
-  return days >= 0 && days <= DIYA_WINDOW_DAYS;
+  return daysUntil(date, now) <= DIYA_WINDOW_DAYS;
 }
 
 /**
