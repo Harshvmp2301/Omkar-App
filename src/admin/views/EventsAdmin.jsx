@@ -177,7 +177,9 @@ export default function EventsAdmin({ getSupabase }) {
           />
           <em className="admin-hint">
             Not decided yet? Leave this empty — the website shows “Date TBA” by
-            itself. The venue is always Sri Krishna Temple, Darsait.
+            itself. The date is the day of the program, not the year: the
+            website repeats it every year on its own, so there is nothing to
+            update in January. The venue is always Sri Krishna Temple, Darsait.
           </em>
         </label>
 

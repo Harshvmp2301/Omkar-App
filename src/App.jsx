@@ -13,6 +13,7 @@ import { translations } from "./data/content.js";
 import useLocalStorage from "./hooks/useLocalStorage.js";
 import { initMagnetic } from "./utils/magnetic.js";
 import { tabFromHash } from "./utils/route.js";
+import { loadEvents } from "./utils/events.js";
 
 // The admin dashboard is code-split: it pulls in the Supabase SDK and a lot of
 // UI that no ordinary visitor needs. Loading it lazily keeps all of that out of
@@ -44,6 +45,30 @@ export default function OmkarSamithiApp() {
   const aspectRef = useRef(1); // logo aspect survives effect re-runs
 
   const t = translations[lang] || translations.en;
+
+  // The program list, loaded ONCE for the whole app.
+  //
+  // The lamps, the program list and the festival calendar must agree about
+  // dates: they used to read different sources — the curated list in two of
+  // them and the database in the third — so a date set in the dashboard
+  // appeared in the list but not in the calendar. One fetch, one answer.
+  //
+  // Whatever is stored is laid over the curated list; with nothing stored, or
+  // if the database is unreachable, this is the curated list untouched.
+  const [liveEvents, setLiveEvents] = useState({ lang: null, events: null });
+
+  useEffect(() => {
+    let alive = true;
+    loadEvents(t.eventsList, lang).then((events) => {
+      if (alive) setLiveEvents({ lang, events });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [lang, t]);
+
+  const events =
+    liveEvents.lang === lang && liveEvents.events ? liveEvents.events : t.eventsList;
 
   // --- hash routing (deep-linkable: #/hub, #/events, #/gallery, #/about) -----
   useEffect(() => {
@@ -364,7 +389,7 @@ export default function OmkarSamithiApp() {
         className="app-logo"
       />
 
-      <Hero t={t} events={t.eventsList} onGoToEvents={() => setTab("events")} />
+      <Hero t={t} events={events} onGoToEvents={() => setTab("events")} />
 
       <main
           key={tab}
@@ -378,13 +403,14 @@ export default function OmkarSamithiApp() {
         {tab === "events" && (
           <EventsView
             t={t}
+            events={events}
             lang={lang}
             notify={notify}
             onToggleNotify={toggleNotify}
             flash={flash}
           />
         )}
-        {tab === "gallery" && <GalleryView t={t} />}
+        {tab === "gallery" && <GalleryView t={t} lang={lang} />}
         {tab === "about" && (
           <>
             <AboutView t={t} />

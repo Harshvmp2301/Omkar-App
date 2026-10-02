@@ -1,29 +1,15 @@
-import { useEffect, useState } from "react";
 import { User, MapPin, Bell, BellRing, CalendarPlus } from "lucide-react";
 import { dateParts, countdownLabel, formatFullDate, downloadIcs } from "../utils/calendar.js";
-import { loadEvents } from "../utils/events.js";
 import FestivalCalendar from "./FestivalCalendar.jsx";
 
-export default function EventsView({ t, lang, notify, onToggleNotify, flash }) {
-  // Whatever the Samithi maintains in the dashboard is laid over the curated
-  // list — programme by programme, so setting one date never removes the other
-  // two. With nothing stored, or if the database is unreachable, this is the
-  // curated list untouched, the same contract the video and blog feeds use.
-  // The result remembers WHICH language it was built for, so switching
-  // language re-derives rather than showing the wrong one.
-  const [live, setLive] = useState({ lang: null, events: null });
-
-  useEffect(() => {
-    let alive = true;
-    loadEvents(t.eventsList, lang).then((events) => {
-      if (alive) setLive({ lang, events });
-    });
-    return () => {
-      alive = false;
-    };
-  }, [lang, t]);
-
-  const events = live.lang === lang && live.events ? live.events : t.eventsList;
+/**
+ * The program list and the festival calendar below it.
+ *
+ * `events` arrives already merged from App: the Samithi's stored dates laid
+ * over the curated list. This view deliberately does not fetch them itself —
+ * doing so is what let the calendar show a date the list had already replaced.
+ */
+export default function EventsView({ t, lang, events, notify, onToggleNotify, flash }) {
 
   const handleIcs = (e) => {
     const ok = downloadIcs({
@@ -109,7 +95,7 @@ export default function EventsView({ t, lang, notify, onToggleNotify, flash }) {
         <h2 className="section-title display">{t.festivalCalendar}</h2>
         <span className="note">{t.festivalNote}</span>
       </div>
-      <FestivalCalendar t={t} lang={lang} flash={flash} />
+      <FestivalCalendar t={t} lang={lang} events={events} flash={flash} />
     </div>
   );
 }

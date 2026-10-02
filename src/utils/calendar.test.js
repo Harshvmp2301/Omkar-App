@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   toKnDigits,
   daysUntil,
+  occurrenceInYear,
+  annualOccurrence,
   dateParts,
   countdownLabel,
   formatFullDate,
@@ -32,6 +34,50 @@ describe("daysUntil", () => {
     expect(daysUntil(isoOf(today))).toBe(0);
     expect(daysUntil(isoOf(tomorrow))).toBe(1);
     expect(daysUntil(isoOf(yesterday))).toBe(-1);
+  });
+});
+
+describe("occurrenceInYear — the same day in another year", () => {
+  it("moves a date to the same day", () => {
+    expect(occurrenceInYear("2026-04-01", 2027)).toBe("2027-04-01");
+    expect(occurrenceInYear("2026-12-18", 2030)).toBe("2030-12-18");
+  });
+
+  it("returns nothing for a day that year does not have", () => {
+    expect(occurrenceInYear("2024-02-29", 2025)).toBe("");
+    expect(occurrenceInYear("2024-02-29", 2028)).toBe("2028-02-29");
+  });
+
+  it("returns nothing for a value that is not a date", () => {
+    expect(occurrenceInYear("", 2027)).toBe("");
+    expect(occurrenceInYear(null, 2027)).toBe("");
+    expect(occurrenceInYear("April 1", 2027)).toBe("");
+  });
+});
+
+describe("annualOccurrence — which year a repeating date means now", () => {
+  const at = (iso) => new Date(`${iso}T12:00:00`);
+
+  it("uses this year's occurrence once the stored year has passed", () => {
+    expect(annualOccurrence("2026-04-01", at("2026-07-01"))).toBe("2026-04-01");
+    expect(annualOccurrence("2026-04-01", at("2027-01-05"))).toBe("2027-04-01");
+  });
+
+  it("leaves a date already set for a future year alone", () => {
+    expect(annualOccurrence("2027-04-01", at("2026-07-01"))).toBe("2027-04-01");
+  });
+
+  it("keeps a timestamp's calendar day, with no timezone drift", () => {
+    expect(annualOccurrence("2026-10-02T00:00:00+00:00", at("2027-01-05"))).toBe("2027-10-02");
+  });
+
+  it("is empty when there is no usable date", () => {
+    expect(annualOccurrence("", at("2026-07-01"))).toBe("");
+    expect(annualOccurrence(null, at("2026-07-01"))).toBe("");
+  });
+
+  it("falls back to the stored day when this year has no 29 February", () => {
+    expect(annualOccurrence("2024-02-29", at("2025-06-01"))).toBe("2024-02-29");
   });
 });
 
