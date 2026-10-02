@@ -384,7 +384,7 @@ export default function OmkarSamithiApp() {
             flash={flash}
           />
         )}
-        {tab === "gallery" && <GalleryView t={t} />}
+        {tab === "gallery" && <GalleryView t={t} lang={lang} />}
         {tab === "about" && (
           <>
             <AboutView t={t} />

@@ -1949,5 +1949,15 @@ select.admin-input::-ms-expand { display: none; }
 .admin-photo-ph { height: 150px; background: var(--panel-light); }
 .admin-photo figcaption { padding: 10px 12px; display: grid; gap: 6px; }
 .admin-photo-caption { margin: 0; font-size: 0.8rem; font-weight: 600; }
+/* Per-photo captions: the card is small, so these fields are compact and the
+   label sits above the input rather than beside it. */
+.admin-photo-field > span {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.admin-input--tight { padding: 6px 9px; font-size: 0.76rem; }
+.admin-photo-state { font-style: italic; }
 .admin-photo-when { margin: 0; font-size: 0.7rem; }
 .admin-photo-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }

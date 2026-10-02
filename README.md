@@ -42,7 +42,7 @@ administrator can then, without touching any code:
 - **Seva signups** — every registration with contact details, filterable by status (new / contacted / confirmed / declined)
 - **Messages** — everything sent through the contact form, with unread counts, read/unread and replied markers
 - **Events** — pick one of the three programmes from a list (English and Kannada come as a pair), name the guests, and set the date. Leave the date empty and the site shows "Date TBA" by itself; the venue is always Sri Krishna Temple, Darsait
-- **Photos** — upload one or many images, add bilingual captions, publish or hide, delete
+- **Photos** — upload one or many images at once, then correct the caption on each one (English and Kannada), publish or hide, delete. Uploads appear in the public gallery in front of the photographs that ship with the app; nothing uploaded means nothing changes
 
 Access is by allow-list only: there is **no public sign-up**. An address must
 be in the `admins` table before it can open the dashboard (see

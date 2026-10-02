@@ -77,6 +77,7 @@ export const translations = {
     footerLocation: "Muscat, Oman",
     backToTop: "Back to top",
     photoFailed: "Photo unavailable",
+    photoLabel: "Photo",
     emailOpensNote:
       "Your details go to the Samithi team and are kept private. No payment is taken on this site.",
     formSent: "Thank you! Your details were sent — we'll be in touch soon.",
@@ -268,6 +269,7 @@ export const translations = {
     footerLocation: "ಮಸ್ಕತ್, ಓಮನ್",
     backToTop: "ಮೇಲ್ಭಾಗಕ್ಕೆ",
     photoFailed: "ಫೋಟೋ ಲಭ್ಯವಿಲ್ಲ",
+    photoLabel: "ಫೋಟೋ",
     emailOpensNote:
       "ನಿಮ್ಮ ಮಾಹಿತಿ ಸಮಿತಿಯ ತಂಡಕ್ಕೆ ತಲುಪುತ್ತದೆ ಮತ್ತು ಗೌಪ್ಯವಾಗಿ ಇಡಲಾಗುತ್ತದೆ. ಈ ಸೈಟ್‌ನಲ್ಲಿ ಯಾವುದೇ ಪಾವತಿ ಸ್ವೀಕರಿಸುವುದಿಲ್ಲ.",
     formSent: "ಧನ್ಯವಾದಗಳು! ನಿಮ್ಮ ಮಾಹಿತಿ ಕಳುಹಿಸಲಾಗಿದೆ — ನಾವು ಶೀಘ್ರದಲ್ಲಿ ಸಂಪರ್ಕಿಸುತ್ತೇವೆ.",
