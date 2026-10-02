@@ -22,7 +22,7 @@ export const EVENT_TITLES = [
 /** Every program is held at the temple, so nobody types it. */
 export const DEFAULT_VENUE = {
   en: "Sri Krishna Temple, Darsait, Muscat",
-  kn: "ಶ್ರೀ ಕೃಷ್ಣ ದೇವಸ್ಥಾನ, ದಾರ್ಸೈತ್, ಮಸ್ಕತ್",
+  kn: "ಶ್ರೀ ಕೃಷ್ಣ ದೇವಸ್ಥಾನ, ದಾರ್ಸೈಟ್, ಮಸ್ಕತ್",
 };
 
 export const TITLE_EN = EVENT_TITLES.map((t) => t.en);
