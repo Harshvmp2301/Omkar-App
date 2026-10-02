@@ -249,3 +249,45 @@ describe("rollDates — the programs repeat every year", () => {
     expect(merged.find((e) => e.title === "Omkar Naadamrutha").date).toBe("2027-11-15");
   });
 });
+
+describe("the old Darsait spelling that is still stored in the database", () => {
+  const typo = "ದಾರ್ಸೈತ್";
+  const row = {
+    id: "row-1",
+    title_en: "Sri Anjaneya Pooje",
+    title_kn: "ಶ್ರೀ ಆಂಜನೇಯ ಪೂಜೆ",
+    starts_at: "2026-12-18T00:00:00+00:00",
+    // Exactly what the dashboard wrote into this column before the spelling
+    // was settled — a published row still holding it must not show it.
+    location_kn: "ಶ್ರೀ ಕೃಷ್ಣ ದೇವಸ್ಥಾನ, ದಾರ್ಸೈತ್, ಮಸ್ಕತ್",
+  };
+
+  it("corrects a venue saved before the spelling was settled", () => {
+    expect(mapEventRow(row, "kn").venue).toBe(DEFAULT_VENUE.kn);
+  });
+
+  it("corrects it through the merge, so the public card is clean", () => {
+    const merged = mergeEvents(translations.kn.eventsList, [row], "kn");
+    const anjaneya = merged.find((e) => e.title === "ಶ್ರೀ ಆಂಜನೇಯ ಪೂಜೆ");
+    expect(anjaneya.venue).toBe(DEFAULT_VENUE.kn);
+    expect(merged.every((e) => !e.venue.includes(typo))).toBe(true);
+  });
+
+  it("writes only the correct spelling back, even if it was typed wrong", () => {
+    const saved = eventRowFromForm({
+      title_en: "Omkar Naadamrutha",
+      guest_kn: "ದಾರ್ಸೈತ್ ಬಳಿಯ ಭಕ್ತರು",
+    });
+    expect(saved.location_kn).toBe(DEFAULT_VENUE.kn);
+    expect(saved.description_kn).toBe("ದಾರ್ಸೈಟ್ ಬಳಿಯ ಭಕ್ತರು");
+  });
+
+  it("leaves text that has nothing to correct alone, and a missing column too", () => {
+    expect(mapEventRow({ ...row, location_kn: null, description_kn: null }, "kn").venue).toBe(
+      DEFAULT_VENUE.kn
+    );
+    expect(mapEventRow({ ...row, title_kn: "ಓಂಕಾರ ನಾದಾಮೃತ" }, "kn").title).toBe(
+      "ಓಂಕಾರ ನಾದಾಮೃತ"
+    );
+  });
+});

@@ -25,6 +25,28 @@ export const DEFAULT_VENUE = {
   kn: "ಶ್ರೀ ಕೃಷ್ಣ ದೇವಸ್ಥಾನ, ದಾರ್ಸೈಟ್, ಮಸ್ಕತ್",
 };
 
+/** Darsait, in the one Kannada spelling the site uses. */
+export const DARSAIT_KN = "ದಾರ್ಸೈಟ್";
+const DARSAIT_TYPO = "ದಾರ್ಸೈತ್";
+
+/**
+ * Fix the town's name in Kannada text that came from the database.
+ *
+ * The dashboard used to write Darsait with the wrong letter, and that text is
+ * still stored in the `location_kn` column of every row saved back then. A
+ * row's venue wins over the built-in one, so without this the old spelling
+ * walks back onto the Events page no matter what the rest of the site says.
+ * Correcting it as the row is read means nobody has to edit rows by hand — and
+ * doing it on the way in means fresh rows are clean too.
+ *
+ * Anything that is not a string (a missing column, for instance) is passed
+ * through untouched.
+ */
+export function correctDarsait(text) {
+  if (typeof text !== "string") return text;
+  return text.split(DARSAIT_TYPO).join(DARSAIT_KN);
+}
+
 export const TITLE_EN = EVENT_TITLES.map((t) => t.en);
 
 /** The Kannada name that belongs to an English title ("" when unknown). */
@@ -50,11 +72,11 @@ export function mapEventRow(row = {}, lang = "en") {
     // Used only when there is no date yet; the row shows "TBA" beside it.
     day: "—",
     mon: "",
-    title: (kn ? row.title_kn : row.title_en) || row.title_en || "",
+    title: correctDarsait((kn ? row.title_kn : row.title_en) || row.title_en || ""),
     // Guest names are stored in the description columns — the dashboard labels
     // the field "Guest" and nothing else writes there.
-    guest: (kn ? row.description_kn : row.description_en) || row.description_en || null,
-    venue: (kn ? row.location_kn : row.location_en) || DEFAULT_VENUE[kn ? "kn" : "en"],
+    guest: correctDarsait((kn ? row.description_kn : row.description_en) || row.description_en || null),
+    venue: correctDarsait((kn ? row.location_kn : row.location_en) || DEFAULT_VENUE[kn ? "kn" : "en"]),
   };
 }
 
@@ -71,8 +93,9 @@ export function mapEventRow(row = {}, lang = "en") {
  */
 export function eventRowFromForm(form = {}) {
   const titleEn = String(form.title_en || "").trim();
-  const titleKn = String(form.title_kn || "").trim() || titleKnFor(titleEn) || null;
-  const guest = (value) => String(value || "").trim() || null;
+  const titleKn =
+    correctDarsait(String(form.title_kn || "").trim()) || titleKnFor(titleEn) || null;
+  const guest = (value) => correctDarsait(String(value || "").trim()) || null;
 
   return {
     title_en: titleEn,
