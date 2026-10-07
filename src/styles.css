@@ -16,13 +16,15 @@
   --gold-deep: #8A6416;
   --muted: #B7A28A;
   --ivory: #F3E9D6;
-  --line: rgba(201, 151, 44, 0.13);
-  --line-strong: rgba(201, 151, 44, 0.3);
+  /* Gold is the accent, not the ground: hairlines stay faint until something
+     is actually selected, and elevation comes from shadow rather than glow. */
+  --line: rgba(201, 151, 44, 0.095);
+  --line-strong: rgba(201, 151, 44, 0.22);
 
   /* elevation */
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 18px rgba(0, 0, 0, 0.25);
-  --shadow-2: 0 8px 22px rgba(0, 0, 0, 0.4), 0 24px 60px rgba(0, 0, 0, 0.35);
-  --glow-gold: 0 10px 34px rgba(201, 151, 44, 0.09);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 16px rgba(0, 0, 0, 0.2);
+  --shadow-2: 0 6px 16px rgba(0, 0, 0, 0.32), 0 18px 44px rgba(0, 0, 0, 0.28);
+  --glow-gold: 0 8px 24px rgba(201, 151, 44, 0.06);
 
   /* shape */
   --r-sm: 6px;
@@ -124,7 +126,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 }
 .diya-flicker { animation: flicker 1.8s ease-in-out infinite; transform-origin: center bottom; }
 .diya-btn { background: none; border: none; padding: 0; cursor: pointer; transition: transform 0.15s; }
-.diya-btn:hover { transform: scale(1.12); }
+.diya-btn:hover { transform: translateY(-2px); }
 
 /* ---------------------------------------------------------------- header */
 .header {
@@ -151,13 +153,23 @@ button, a { -webkit-tap-highlight-color: transparent; }
   left: 50%;
   top: 50%;
   z-index: 1200;
-  height: clamp(140px, 30vh, 220px);
+  /* The design size, full stop: the mark does not shrink to make room for the
+     copy — the copy is laid out below the mark instead (.hero::after). The
+     effect mirrors this exact expression, and a test asserts the two match. */
+  height: clamp(88px, 30vh, 220px);
   width: auto;
+  /* The rest position is this anchor and nothing else: the flight is applied as
+     an offset on top of it, so at the top of the page the mark is centred by
+     the stylesheet even if no script has run. */
   transform: translate(-50%, -50%);
   pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
-  will-change: transform, height;
+  /* transform + opacity only: both are compositable, so the mark keeps one
+     layer and the flight never triggers layout or a repaint. The old
+     `will-change: transform, height` promised a size animation the compositor
+     can never perform — every frame re-rasterised the image on the CPU. */
+  will-change: transform;
 }
 
 /* Reserves the logo's final navbar position so the flight has a target. */
@@ -229,7 +241,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   background: linear-gradient(180deg, var(--gold-bright), var(--gold));
   color: var(--on-gold);
   border-color: rgba(var(--on-gold-rgb), 0.14);
-  box-shadow: 0 3px 12px rgba(var(--gold-rgb), 0.16);
+  box-shadow: 0 2px 8px rgba(var(--gold-rgb), 0.1);
 }
 
 .header-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
@@ -238,8 +250,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
 /* Full-screen first view (first-deployment composition): the hero copy is
    anchored to the BOTTOM of the screen while the big fixed logo sits
    exactly at the viewport centre at scrollY=0, over the empty upper stage —
-   so it never covers real content. Clearance logic keeps the logo off the
-   copy at every scroll position; it docks into the navbar as you scroll. */
+   so it never covers real content. The `.hero::after` spacer below reserves
+   the mark's space in the layout, so the copy cannot reach it; the mark docks
+   into the navbar as you scroll. */
 .hero {
   text-align: center;
   min-height: calc(100dvh - var(--header-h, 80px));
@@ -251,6 +264,27 @@ button, a { -webkit-tap-highlight-color: transparent; }
   position: relative;
   isolation: isolate;
 }
+/* The mark's clearance, reserved in the LAYOUT.
+   The mark is fixed at the viewport centre and never gives way: it keeps the
+   full clamp() size and the stylesheet's centre line. So the copy must clear it
+   instead. This spacer is the hero's first flex item: it takes all the slack
+   (which keeps the copy bottom-anchored, as before) but can never shrink below
+   the line where the mark ends — the viewport centre, half the mark, and the
+   rest gap:
+
+     copy top >= 50vh + clamp(...)/2 + REST_GAP
+
+   On a window too short for both, the hero grows a few pixels and the page
+   scrolls; it never shrinks the mark and never lifts it off centre. */
+.hero::after {
+  content: "";
+  order: -1; /* first in the column, above the copy */
+  flex: 1 1 auto; /* absorbs the slack on a tall screen */
+  width: 100%;
+  /* 50vh, not 50dvh: the percentage in the mark's own `top: 50%` resolves
+     against the same viewport box, so the two can never disagree. */
+  min-height: calc(50vh - var(--header-h, 80px) + clamp(88px, 30vh, 220px) / 2 + 28px);
+}
 /* Ambient gold halo + vignette behind the centred logo (decorative only) */
 .hero::before {
   content: '';
@@ -259,20 +293,18 @@ button, a { -webkit-tap-highlight-color: transparent; }
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(46% 38% at 50% 44%, rgba(var(--gold-rgb), 0.16), transparent 70%),
-    radial-gradient(80% 60% at 50% 100%, rgba(var(--panel-light-rgb), 0.55), transparent 72%);
+    radial-gradient(42% 34% at 50% 42%, rgba(var(--gold-rgb), 0.07), transparent 72%),
+    radial-gradient(80% 60% at 50% 100%, rgba(var(--panel-light-rgb), 0.4), transparent 74%);
 }
 .hero-content { display: flex; flex-direction: column; align-items: center; position: relative; }
 .hero h1 {
   font-size: var(--text-hero);
   line-height: 1.15;
   letter-spacing: 0.03em;
-  margin: 10px 0 4px;
-  background: linear-gradient(180deg, var(--hero-grad-from) 20%, var(--hero-grad-to) 85%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: var(--hero-grad-to); /* fallback when background-clip:text is unsupported */
+  margin: 8px 0 3px;
+  /* One colour, set solid: the organisation's name reads as a nameplate, not
+     as a logo treatment. The gold stays on the wordmark and the lamps. */
+  color: var(--ivory);
 }
 .hero p {
   color: var(--muted);
@@ -281,7 +313,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   margin: 0;
 }
 /* Thin gold rule between the tagline and the diyas */
-.diya-row { display: flex; justify-content: center; gap: 16px; margin-top: 22px; }
+.diya-row { display: flex; justify-content: center; gap: 14px; margin-top: 16px; }
 
 /* --------------------------------------------------------------- section */
 .section {
@@ -648,9 +680,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
   display: block;
 }
 .gallery-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-1);
-  border-color: var(--gold);
+  border-color: var(--line-strong);
 }
 .gallery-card img {
   display: block;
@@ -782,7 +814,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .support-card {
   margin-top: 44px;
   background: linear-gradient(135deg, var(--panel-light), var(--panel));
-  border: 1px solid rgba(var(--gold-rgb), 0.4);
+  border: 1px solid rgba(var(--gold-rgb), 0.26);
   border-radius: 8px;
   padding: 24px;
   text-align: center;
@@ -914,7 +946,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .video-grid { grid-template-columns: 1fr; }
   .contact-grid { grid-template-columns: 1fr; }
   .social-icons { flex-direction: column; align-items: center; }
-  .app-logo { height: clamp(120px, 26vh, 200px); }
+  .app-logo { height: clamp(88px, 30vh, 220px); } /* matches the JS sizing, so there is no jump at first paint */
   .event-row { flex-direction: column; align-items: flex-start; }
   .event-actions { margin-left: 0; width: 100%; justify-content: flex-end; }
   .cal-cell { min-height: 48px; padding: 3px 2px 4px; gap: 2px; }
@@ -1140,12 +1172,12 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .blog-card:hover,
 .fest-card:hover,
 .contact-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-2);
   border-color: var(--line-strong);
 }
 .event-row:hover {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
   border-color: var(--line-strong);
   box-shadow: var(--shadow-2);
 }
@@ -1166,7 +1198,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   background-size: 200% 100%;
   animation: shimmer 1.4s linear infinite;
 }
-.gallery-card:hover img { transform: scale(1.05); }
+.gallery-card:hover img { transform: scale(1.03); }
 .photo-failed {
   aspect-ratio: 3 / 2;
   display: flex;
@@ -1202,37 +1234,24 @@ button, a { -webkit-tap-highlight-color: transparent; }
   border-radius: var(--r-pill);
   padding: 10px 20px;
   letter-spacing: 0.02em;
-  box-shadow: var(--glow-gold), var(--shadow-2);
+  box-shadow: var(--shadow-2);
   animation: toastIn 0.32s var(--ease) both;
 }
 
-/* ---- primary button: gradient + shine sweep (restored per user) ---- */
+/* ---- primary button: one surface, one honest hover ---- */
 .btn-primary {
   position: relative;
-  overflow: hidden;
   background: linear-gradient(180deg, var(--gold-bright), var(--gold));
-  box-shadow: 0 6px 20px rgba(var(--gold-rgb), 0.16);
+  box-shadow: 0 4px 14px rgba(var(--gold-rgb), 0.1);
   transition: background var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease),
     transform var(--t-fast) var(--ease);
 }
-.btn-primary::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.45), transparent);
-  transform: translateX(-160%) skewX(-20deg);
-  transition: transform 0.55s var(--ease);
-  pointer-events: none;
-}
 .btn-primary:hover {
   background: linear-gradient(180deg, var(--gold-hot), var(--gold-bright));
-  box-shadow: 0 10px 30px rgba(var(--gold-rgb), 0.2);
+  box-shadow: 0 7px 20px rgba(var(--gold-rgb), 0.13);
+  transform: translateY(-1px);
 }
-.btn-primary:hover::after { transform: translateX(520%) skewX(-20deg); }
-.btn-primary:active { transform: scale(0.985); }
+.btn-primary:active { transform: translateY(0); }
 
 /* ---- form fields: focus glow + honest invalid state ---- */
 .field input:focus,
@@ -1251,7 +1270,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .support-cta {
   border-radius: var(--r-pill);
   background: linear-gradient(180deg, var(--gold-bright), var(--gold));
-  box-shadow: 0 6px 18px rgba(var(--gold-rgb), 0.16);
+  box-shadow: 0 4px 14px rgba(var(--gold-rgb), 0.1);
   padding: 10px 22px;
   transition: background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease),
     box-shadow var(--t-fast) var(--ease);
@@ -1259,7 +1278,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .support-cta:hover {
   background: linear-gradient(180deg, var(--gold-hot), var(--gold-bright));
   transform: translateY(-2px);
-  box-shadow: 0 10px 26px rgba(var(--gold-rgb), 0.2);
+  box-shadow: 0 7px 20px rgba(var(--gold-rgb), 0.13);
 }
 
 /* ---- festival calendar: cell affordances + today ring ---- */
@@ -1268,8 +1287,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .cal-cell.today { box-shadow: inset 0 0 0 1px rgba(var(--gold-rgb), 0.45); }
 .cal-num { transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease); }
 .cal-cell:hover .cal-num {
-  transform: translateY(-3px) scale(1.1);
-  box-shadow: 0 4px 10px rgba(var(--gold-rgb), 0.45);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(var(--gold-rgb), 0.26);
 }
 .cal-chip {
   transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease),
@@ -1282,12 +1301,12 @@ button, a { -webkit-tap-highlight-color: transparent; }
   border-radius: var(--r-pill);
   transition: transform var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
 }
-.bell-btn:hover { transform: scale(1.14); background: rgba(var(--gold-rgb), 0.12); }
+.bell-btn:hover { transform: scale(1.06); background: rgba(var(--gold-rgb), 0.1); }
 .ics-btn { border-radius: var(--r-pill); }
 .ics-btn:hover { transform: translateY(-1px); }
 
 /* ---- lit diya: warm glow ---- */
-.diya-flicker { filter: drop-shadow(0 0 5px rgba(var(--gold-bright-rgb), 0.55)); }
+.diya-flicker { filter: drop-shadow(0 0 4px rgba(var(--gold-bright-rgb), 0.32)); }
 .diya-btn { transition: transform var(--t-fast) var(--ease); border-radius: var(--r-sm); }
 
 /* ---- footer: gilded rule, identity line, back-to-top ---- */
@@ -1349,17 +1368,32 @@ button, a { -webkit-tap-highlight-color: transparent; }
   border-color: var(--gold);
   color: var(--on-gold);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(var(--gold-rgb), 0.12);
+  box-shadow: 0 4px 12px rgba(var(--gold-rgb), 0.08);
 }
 
 /* ---- hero cue polish: tagline rule ---- */
 .hero-content::after {
   content: '';
   display: block;
-  width: min(220px, 40vw);
+  width: min(160px, 34vw);
   height: 1px;
-  margin: 14px auto 0;
-  background: linear-gradient(90deg, transparent, rgba(var(--gold-rgb), 0.55), transparent);
+  margin: 12px auto 0;
+  background: linear-gradient(90deg, transparent, rgba(var(--gold-rgb), 0.28), transparent);
+}
+
+/* The hero copy sits a little lower on short or narrow screens, and its own
+   gaps tighten by a few pixels each: every one of those pixels is room for the
+   mark above it. The height threshold covers the common laptop windows (900px
+   and 864px tall as well as 768px), because that is where the mark and the copy
+   most need the space between them. */
+@media (max-height: 940px), (max-width: 700px) {
+  .hero { padding-bottom: clamp(12px, 2.5vh, 32px); }
+  .hero .hero-eyebrow { margin-bottom: 5px; }
+  .hero h1 { margin: 6px 0 2px; }
+  .hero .hero-line { margin-top: 6px; }
+  .hero-ctas { margin-top: 12px; }
+  .diya-row { margin-top: 10px; }
+  .hero-content::after { margin-top: 8px; }
 }
 
 /* ---- responsive tap targets & rhythm ---- */
@@ -1430,12 +1464,12 @@ button, a { -webkit-tap-highlight-color: transparent; }
   --gold-bright-rgb: 220, 184, 73;
   --gold-deep: #A8842A;
   --gold-hot: #E9CB6B;
-  --line: rgba(212, 175, 55, 0.4);
-  --line-strong: rgba(212, 175, 55, 0.7);
+  --line: rgba(212, 175, 55, 0.28);
+  --line-strong: rgba(212, 175, 55, 0.5);
   --grid-line: #F0E6D2;
-  --shadow-1: 0 1px 2px rgba(64, 42, 12, 0.08), 0 6px 18px rgba(64, 42, 12, 0.08);
-  --shadow-2: 0 8px 22px rgba(64, 42, 12, 0.1), 0 24px 60px rgba(64, 42, 12, 0.12);
-  --glow-gold: 0 10px 34px rgba(212, 175, 55, 0.18);
+  --shadow-1: 0 1px 2px rgba(64, 42, 12, 0.06), 0 6px 16px rgba(64, 42, 12, 0.06);
+  --shadow-2: 0 6px 16px rgba(64, 42, 12, 0.08), 0 18px 44px rgba(64, 42, 12, 0.1);
+  --glow-gold: 0 8px 24px rgba(212, 175, 55, 0.12);
   --display-grad-from: #E8CB6B;
   --display-grad-to: #BFA035;
   --hero-grad-from: #F0DC96;
@@ -1451,7 +1485,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .video-card, .blog-card, .fest-card, .event-row, .gallery-card,
 .contact-card, .seva-card, .form-card, .support-card, .ics-btn, .social-link {
   transition:
-    transform var(--t-hover) var(--spring-soft),
+    transform var(--t-hover) var(--ease),
     box-shadow var(--t-hover) var(--ease),
     background var(--t-fast) var(--ease),
     color var(--t-fast) var(--ease),
@@ -1460,7 +1494,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 /* Cards that never lifted before now join the system */
 .seva-card:hover, .form-card:hover, .support-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-2);
   border-color: var(--line-strong);
 }
@@ -1491,32 +1525,22 @@ button, a { -webkit-tap-highlight-color: transparent; }
 [tabindex="-1"]:focus { outline: none; box-shadow: none; }
 
 /* ================================================================
-   Round 10 — premium layer: scroll-progress hairline + magnetic CTAs
+   Round 10 — premium layer: the scroll-progress hairline
+   (the magnetic CTAs that lived here were removed in the redesign)
    ================================================================ */
 
-/* 2px gold hairline across the sticky header — raw page progress,
-   set as --scroll-p from App's existing rAF scroll loop */
+/* Hairline across the sticky header — raw page progress, set as --scroll-p
+   from App's existing rAF scroll loop */
 .scroll-progress {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--gold-deep), var(--gold-bright), var(--gold-bright));
+  height: 1px;
+  background: linear-gradient(90deg, var(--gold-deep), var(--gold), var(--gold));
   transform: scaleX(var(--scroll-p, 0));
   transform-origin: left center;
   pointer-events: none;
-}
-
-/* Magnetic surfaces: spring-integrated inline transform (JS), so their CSS
-   transitions must not also interpolate transform (that would smear the spring) */
-.magnetic {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  will-change: transform;
-  transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease),
-    box-shadow var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
 }
 
 /* --------------------------------------------------------------- responsive */
@@ -1955,3 +1979,436 @@ select.admin-input::-ms-expand { display: none; }
 .admin-photo-state { font-style: italic; }
 .admin-photo-when { margin: 0; font-size: 0.7rem; }
 .admin-photo-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+/* ================================================================
+   Institutional layer — hierarchy over ornament.
+
+   The page now has levels. Level 1 is who the Samithi is and what is
+   happening next. Level 2 is what it does and the community around it.
+   Level 3 is seva and the About page. Level 4 is the archive — the
+   recordings, the writing and the calendar. Gold marks level 1 and the
+   things a visitor can act on; everything else is ground, type, rule
+   and space. See the tokens at the top for the reduced accent values.
+   ================================================================ */
+
+/* ---- section furniture -------------------------------------------------- */
+/* The rule under a heading marks a section. It does not glow. */
+.section-head::after {
+  background: linear-gradient(
+    90deg,
+    rgba(var(--gold-rgb), 0.5) 0%,
+    rgba(var(--gold-rgb), 0.14) 55%,
+    transparent 100%
+  );
+  box-shadow: none;
+}
+/* Section titles are gold, set solid — a gradient reads as decoration. */
+.section-title {
+  color: var(--gold-bright);
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+/* A heading is a heading everywhere: the same rule sits under it on the About
+   page as on the homepage. --plain only changes the alignment. */
+.section-head--plain { justify-content: flex-start; }
+.section-lede {
+  max-width: 62ch;
+  margin: -8px 0 22px;
+  color: var(--muted);
+  font-size: 0.94rem;
+  line-height: 1.65;
+}
+
+/* ---- hero: the org, the sentence, two ways in --------------------------- */
+.hero .hero-eyebrow {
+  margin: 0 0 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.hero .hero-line {
+  /* Wider than a body measure on purpose: this is ONE lead sentence, and on a
+     wide screen it has to read as one line. The hero's whole vertical budget is
+     the mark plus this stack, and a second line costs the composition 26px for
+     nothing. It wraps normally on a narrow screen, where it must. */
+  max-width: min(920px, 94vw);
+  margin: 8px auto 0;
+  line-height: 1.65;
+}
+.hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+/* Buttons that sit in a row rather than filling a form */
+.btn-inline { display: inline-flex; width: auto; align-items: center; justify-content: center; gap: 6px; }
+.btn-quiet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 11px 20px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ivory);
+  font-family: var(--font-body);
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+.btn-quiet:hover {
+  border-color: var(--gold);
+  color: var(--gold-bright);
+  background: rgba(var(--gold-rgb), 0.06);
+  transform: translateY(-1px);
+}
+.btn-quiet.dimmed { opacity: 0.55; }
+.hero-ctas .btn-primary { min-height: 44px; padding: 11px 22px; border-radius: var(--r-pill); font-size: 0.86rem; }
+
+/* ---- the next program is the star --------------------------------------- */
+.next-program {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 20px 56px;
+}
+.feature-card {
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--r-lg);
+  padding: clamp(22px, 4vw, 34px);
+  box-shadow: var(--shadow-1);
+}
+.feature-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.feature-kicker {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.feature-title {
+  font-size: clamp(1.5rem, 1.15rem + 1.7vw, 2.05rem);
+  line-height: 1.2;
+  letter-spacing: 0.015em;
+  margin: 0 0 8px;
+  color: var(--ivory);
+}
+.feature-guest {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+.feature-facts {
+  display: grid;
+  gap: 16px;
+  margin: 20px 0 24px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+.feature-fact { margin: 0; }
+.feature-fact dt {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 7px;
+}
+.feature-fact dd {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ivory);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+.feature-date-text { font-weight: 600; }
+.feature-venue { display: inline-flex; align-items: flex-start; gap: 6px; }
+.feature-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* ---- and the ones after it, listed quietly ------------------------------ */
+.also-coming { margin-top: 22px; }
+.also-heading {
+  font-size: 0.74rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.also-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.also-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 13px 2px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ivory);
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  text-align: left;
+  cursor: pointer;
+  transition: color var(--t-fast) var(--ease), padding-left var(--t-fast) var(--ease);
+}
+.also-row:hover { color: var(--gold-bright); padding-left: 6px; }
+.also-row:hover .also-arrow { transform: translateX(3px); }
+.also-date { display: flex; flex-direction: column; align-items: center; min-width: 40px; }
+.also-date b { font-size: 0.98rem; color: var(--gold-bright); }
+.also-date span {
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.also-title { font-weight: 600; }
+.also-meta { color: var(--muted); font-size: 0.78rem; }
+.also-arrow { color: var(--muted); transition: transform var(--t-fast) var(--ease); }
+
+/* The program a group appears in — proper nouns from the About copy */
+.voices-program {
+  margin: -4px 0 10px;
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
+  color: var(--gold);
+}
+
+/* ---- what we do: three lines, three rules ------------------------------- */
+.pillar-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.pillar { padding-top: 16px; border-top: 1px solid var(--line-strong); }
+.pillar-mark { color: var(--gold); }
+.pillar-heading {
+  margin: 10px 0 6px;
+  font-size: 1.02rem;
+  color: var(--ivory);
+  letter-spacing: 0.02em;
+}
+.pillar-line { margin: 0; color: var(--muted); font-size: 0.88rem; line-height: 1.65; }
+
+/* ---- gallery: a composition, not a grid of equals ----------------------- */
+/* Two section wrappers that only carry spacing — kept as named hooks so the
+   grid and the invite card can be restyled without touching markup. */
+.gallery-strip,
+.seva-invite { padding-bottom: 46px; }
+
+.link-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 2px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--gold-bright);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  transition: color var(--t-fast) var(--ease), gap var(--t-fast) var(--ease);
+}
+.link-cta:hover { color: var(--gold-hot); gap: 10px; }
+.strip-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+.strip-support { display: grid; gap: 12px; }
+.strip-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+.strip-tile {
+  position: relative;
+  display: block;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--panel);
+  cursor: pointer;
+  transition: border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+.strip-tile:hover { border-color: var(--line-strong); transform: translateY(-2px); }
+.strip-tile img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.strip-lead img { aspect-ratio: 16 / 10; }
+.strip-small img { aspect-ratio: 16 / 10; }
+.strip-support .strip-small img { aspect-ratio: 16 / 9; }
+.strip-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 22px 12px 10px;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  text-align: left;
+  color: #F3E9D6;
+  background: linear-gradient(180deg, transparent, rgba(10, 4, 7, 0.85));
+}
+
+/* ---- seva: one card, one sentence, one way through ---------------------- */
+.invite-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 22px 24px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+.invite-mark { color: var(--gold); flex: none; }
+.invite-text { flex: 1 1 260px; min-width: 0; }
+.invite-title { margin: 0 0 4px; font-size: 1.05rem; color: var(--ivory); }
+.invite-line { margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+.invite-next { margin: 8px 0 0; color: var(--muted); font-size: 0.78rem; letter-spacing: 0.02em; }
+.invite-next b { color: var(--ivory); font-weight: 600; }
+.seva-what { max-width: 62ch; margin: 6px 0 22px; color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+
+/* ---- distinguished voices ----------------------------------------------- */
+/* The names are the Samithi's cultural credentials and they read as a set, so
+   the box is centred — labels, programs and the pills alike. */
+.voices-groups {
+  display: grid;
+  gap: 26px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  text-align: center;
+}
+.voices-label {
+  margin: 0 0 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.voices-names {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.voices-name {
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--panel);
+  color: var(--ivory);
+  font-size: 0.9rem;
+  letter-spacing: 0.015em;
+}
+.voices-note { max-width: 62ch; margin: 24px 0 0; color: var(--muted); font-size: 0.86rem; line-height: 1.65; }
+
+/* ---- the About headings lose their gold rules, keep the gold ------------ */
+.about-block h3::before { background: rgba(var(--gold-rgb), 0.45); width: 18px; }
+
+/* ---- the archive is level 4: usefulness, not presence ------------------- */
+.section--archive .section-title { font-size: clamp(1.02rem, 0.95rem + 0.45vw, 1.28rem); }
+.section--archive .note { border-color: var(--line); }
+
+/* ---- footer: identity, then two columns of links ------------------------ */
+.footer { padding: 44px 20px 28px; text-align: left; }
+.footer::before { width: min(880px, 92%); background: linear-gradient(90deg, transparent, var(--line-strong), transparent); }
+.footer-inner {
+  max-width: 880px;
+  margin: 0 auto;
+  display: grid;
+  gap: 28px;
+  grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(0, 1fr));
+}
+.footer-brand { min-width: 0; }
+.footer-name { margin: 0 0 6px; font-size: 1.1rem; letter-spacing: 0.08em; color: var(--gold-bright); }
+.footer-org { margin: 0; color: var(--muted); font-size: 0.82rem; line-height: 1.6; }
+.footer-pranaams {
+  margin: 12px 0 0;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.footer-col { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.footer-col-title {
+  margin: 0 0 8px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 0.84rem;
+  text-align: left;
+  text-decoration: none;
+  transition: color var(--t-fast) var(--ease);
+}
+.footer-link:hover { color: var(--gold-bright); }
+.footer-base {
+  max-width: 880px;
+  margin: 26px auto 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.footer-copy { color: var(--muted); font-size: 0.72rem; letter-spacing: 0.04em; }
+.footer .to-top { margin-top: 0; }
+
+/* ---- small screens: the same hierarchy, stacked -------------------------- */
+@media (max-width: 700px) {
+  .next-program { padding: 0 16px 46px; }
+  .feature-actions .btn-primary,
+  .feature-actions .btn-quiet { width: 100%; }
+  .hero-ctas { width: 100%; }
+  .hero-ctas .btn-primary,
+  .hero-ctas .btn-quiet { flex: 1 1 45%; }
+  .section-lede,
+  .seva-what,
+  .voices-note { max-width: none; }
+  .also-row { grid-template-columns: auto 1fr auto; gap: 10px; }
+  .also-meta { display: none; }
+  .strip-grid { grid-template-columns: 1fr; }
+  .strip-support { grid-template-columns: 1fr 1fr; }
+  .strip-row { grid-template-columns: repeat(2, 1fr); }
+  .invite-card { padding: 20px; }
+  .invite-card .link-cta { min-height: 44px; }
+  .footer { padding: 34px 16px 24px; }
+  .footer-inner { grid-template-columns: 1fr; gap: 22px; }
+  .footer-link { min-height: 44px; }
+}

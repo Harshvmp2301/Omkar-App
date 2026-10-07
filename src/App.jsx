@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, lazy, Suspense } from "react";
-import { Facebook, Youtube, ExternalLink, MapPin } from "lucide-react";
+import { Facebook, Youtube, ExternalLink, MapPin, Mail } from "lucide-react";
 import Header from "./components/Header.jsx";
 import Hero from "./components/Hero.jsx";
 import ContentHub from "./components/ContentHub.jsx";
@@ -11,9 +11,10 @@ import ContactView from "./components/ContactView.jsx";
 import Contact from "./components/Contact.jsx";
 import { translations } from "./data/content.js";
 import useLocalStorage from "./hooks/useLocalStorage.js";
-import { initMagnetic } from "./utils/magnetic.js";
 import { tabFromHash } from "./utils/route.js";
 import { loadEvents } from "./utils/events.js";
+import { directionsUrl } from "./utils/venue.js";
+import { NAV_H, liftAtRest, logoLayout, logoOffset } from "./utils/logo.js";
 
 // The admin dashboard is code-split: it pulls in the Supabase SDK and a lot of
 // UI that no ordinary visitor needs. Loading it lazily keeps all of that out of
@@ -145,23 +146,6 @@ export default function OmkarSamithiApp() {
     }
   }, []);
 
-  // --- magnetic CTAs (round-10 wow): spring-physics hover pull --------------
-  // Views remount per tab, so magnetic surfaces are (re)bound after each
-  // switch. Fine pointers only; reduced-motion users get plain buttons.
-  useEffect(() => {
-    const fine =
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(pointer: fine)").matches;
-    const reduced =
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!fine || reduced) return undefined;
-    const cleanups = Array.from(document.querySelectorAll(".magnetic")).map((el) =>
-      initMagnetic(el)
-    );
-    return () => cleanups.forEach((fn) => fn());
-  }, [tab, lang]);
-
   // --- single-logo scroll transition (every tab) ---------------------------
   // The ONE logo (rendered once at page level) starts centred in the viewport
   // at scrollY=0 and flies into its slot in the sticky navbar over the first
@@ -173,94 +157,219 @@ export default function OmkarSamithiApp() {
     const slot = slotRef.current;
     if (!logo || !slot) return undefined;
 
-    const NAV_H = 45;
     let raf = 0;
-    if (!aspectRef.current && logo.naturalWidth && logo.naturalHeight) {
-      aspectRef.current = logo.naturalWidth / logo.naturalHeight;
+    let measureTimer = 0;
+    let measureDeadline = 0;
+    let lastScrollAt = 0;
+    let lastTransform = "";
+    let lastScrollP = -1;
+
+    // Everything that depends on the WINDOW and not on the scroll is read once,
+    // here, and reused. Reading layout on every scroll frame is what made this
+    // animation stutter on phones: position:fixed geometry plus a forced
+    // synchronous layout per frame, while the previous frame's style writes
+    // were still unflushed.
+    const geom = {
+      aspect: aspectRef.current || 1, // width / height, measured from the file
+      size: 0, // the logo's size at rest, from logoLayout
+      baseW: 0, // the box it is rasterised in, fixed for the whole flight
+      baseH: 0,
+      startY: 0,
+      targetX: 0,
+      targetY: 0,
+      headerH: 0,
+      copyTopDoc: Infinity, // hero copy top in DOCUMENT space — scroll-proof
+      vw: 0,
+      ready: false, // no transform is written until measure() has run once
+    };
+    if (!geom.aspect && logo.naturalWidth && logo.naturalHeight) {
+      geom.aspect = logo.naturalWidth / logo.naturalHeight;
     }
-    let aspect = aspectRef.current || 1; // width / height, measured once
 
     // Cached once per mount — the hero never unmounts, so the per-frame
-    // querySelector is unnecessary (audit item 5).
+    // querySelector is unnecessary.
     const heroContent = document.querySelector(".hero-content");
 
+    // ── measure: the only place that reads layout (so it must not run per frame)
+    const measure = () => {
+      const doc = document.documentElement;
+      if (logo.naturalWidth && logo.naturalHeight) {
+        geom.aspect = logo.naturalWidth / logo.naturalHeight;
+        aspectRef.current = geom.aspect;
+      }
+      const rect = slot.getBoundingClientRect();
+      geom.targetX = rect.left + rect.width / 2;
+      geom.targetY = rect.top + rect.height / 2;
+      geom.headerH = headerRef.current ? headerRef.current.offsetHeight : 0;
+      // clientWidth/clientHeight are the LAYOUT viewport — the same box the
+      // CSS `left: 50%` resolves against. window.innerWidth/innerHeight
+      // include the scrollbars, which is what used to put the mark a
+      // scrollbar's width to the right of everything else on the page.
+      geom.vw = doc.clientWidth;
+      slot.style.width = `${Math.round(NAV_H * geom.aspect)}px`; // the docked size
+
+      const copyTopDoc = heroContent
+        ? heroContent.getBoundingClientRect().top + window.scrollY
+        : Infinity;
+
+      // The logo's rest size and centre. See src/utils/logo.js: this mirrors
+      // `.app-logo`'s clamp exactly, and the hero reserves the clearance for it
+      // in the layout (.hero::after) — so the mark is never shrunk or nudged to
+      // make room for the copy.
+      const { startY, size } = logoLayout({ viewportH: doc.clientHeight });
+      geom.startY = startY;
+      geom.size = size;
+      geom.copyTopDoc = copyTopDoc;
+      // The box the image is rasterised in: its SIZE AT REST. The flight then
+      // only scales that box down, so the mark is drawn once and never
+      // re-sampled while it moves.
+      geom.baseH = size;
+      geom.baseW = size * geom.aspect;
+      // NOTE: left/top are deliberately NOT written. The stylesheet anchors the
+      // mark at left/top 50% with translate(-50%, -50%), so its rest position is
+      // a CSS guarantee; the flight is added as an offset on top of that.
+      logo.style.height = `${geom.baseH}px`;
+      logo.style.width = `${geom.baseW}px`;
+      geom.ready = true;
+      lastTransform = "";
+      update();
+    };
+
+    // ── update: per frame, and it touches no layout at all
     const update = () => {
       raf = 0;
-      const doc = document.documentElement;
-      const maxScroll = Math.max(0, doc.scrollHeight - window.innerHeight);
-      // Round-10 scroll progress: full-range progress feeds the header
-      // hairline (--scroll-p) while `p` below stays the 15% logo-flight ramp.
-      doc.style.setProperty(
-        "--scroll-p",
-        String(maxScroll > 0 ? Math.min(1, window.scrollY / maxScroll) : 0)
-      );
-      let p = maxScroll > 0 ? window.scrollY / (maxScroll * 0.15) : 0;
-      p = Math.min(1, Math.max(0, p));
-      p = p * p * (3 - 2 * p); // smoothstep for a natural glide
+      // Until the logo has been measured, the CSS fallback (fixed, centred)
+      // stands — an unmeasured transform would park the mark in the corner.
+      if (!geom.ready) return;
+      const scrollY = window.scrollY;
+      const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
 
-      const bigH = Math.max(140, Math.min(window.innerHeight * 0.3, 220));
-
-      const rect = slot.getBoundingClientRect();
-      const targetX = rect.left + rect.width / 2;
-      const targetY = rect.top + rect.height / 2;
-      const headerH = headerRef.current ? headerRef.current.offsetHeight : 0;
-
-      // First-deployment composition: the big logo starts exactly at the
-      // viewport centre while the hero copy is anchored BELOW it. If any
-      // visible copy would otherwise slide into the logo's path, lift the
-      // progress analytically (continuous + fully reversible) so the logo
-      // simply reaches its navbar slot a little sooner — it never covers
-      // text or the content underneath it.
-      const startY = window.innerHeight / 2;
-      let pEff = p;
-      if (heroContent) {
-        const hc = heroContent.getBoundingClientRect();
-        const visibleTop = Math.max(hc.top, headerH);
-        const A = startY + bigH / 2; // logo bottom at p = 0
-        const B =
-          targetY - startY + (NAV_H - bigH) / 2; // change of bottom per unit p (< 0)
-        if (B < 0) {
-          const need = (visibleTop - 8 - A) / B; // p at which the bottom clears
-          if (Number.isFinite(need)) pEff = Math.min(1, Math.max(pEff, need));
+      // The header hairline is a custom property written to the HEADER, not to
+      // :root. A custom property on the root invalidates style for the whole
+      // document on every scroll frame; scoped to the header it is one tiny
+      // subtree. Written only when the value actually changed.
+      const scrollP = maxScroll > 0 ? Math.min(1, scrollY / maxScroll) : 0;
+      const roundedP = Math.round(scrollP * 1000);
+      if (roundedP !== lastScrollP) {
+        lastScrollP = roundedP;
+        if (headerRef.current) {
+          headerRef.current.style.setProperty("--scroll-p", String(roundedP / 1000));
         }
       }
 
-      const h = bigH + (NAV_H - bigH) * pEff;
-      const w = h * aspect;
-      const cx = window.innerWidth / 2 + (targetX - window.innerWidth / 2) * pEff;
-      const cy = startY + (targetY - startY) * pEff;
+      // Flight ramp: the first 15% of the page's scrollable range.
+      let p = maxScroll > 0 ? scrollY / (maxScroll * 0.15) : 0;
+      p = Math.min(1, Math.max(0, p));
+      p = p * p * (3 - 2 * p); // smoothstep for a natural glide
 
-      logo.style.left = "0";
-      logo.style.top = "0";
-      logo.style.height = `${h}px`;
-      logo.style.width = `${w}px`;
-      logo.style.transform = `translate3d(${cx - w / 2}px, ${cy - h / 2}px, 0)`;
-    };
-
-    const measure = () => {
-      if (logo.naturalWidth && logo.naturalHeight) {
-        aspect = logo.naturalWidth / logo.naturalHeight;
-        aspectRef.current = aspect;
+      // Copy that has scrolled up into the logo's path lifts the progress, so
+      // the mark reaches the navbar before the two can touch. Derived from the
+      // measured document position minus the scroll — no layout read, and no
+      // reaction to the address bar changing the viewport height mid-scroll.
+      //
+      // The lift is faded in over the first 40px of scrolling, so at rest it is
+      // exactly zero and the logo sits on the CSS centre line. It is a
+      // scroll-induced correction only; if the geometry ever went stale, it can
+      // no longer leave the mark parked off-centre at the top of the page.
+      let pEff = p;
+      if (Number.isFinite(geom.copyTopDoc) && scrollY > 0) {
+        const lift = liftAtRest({
+          copyTopVisible: geom.copyTopDoc - scrollY,
+          headerH: geom.headerH,
+          startY: geom.startY,
+          size: geom.size,
+          targetY: geom.targetY,
+        });
+        const fade = Math.min(1, scrollY / 40);
+        const lifted = lift * fade;
+        if (lifted > pEff) pEff = lifted;
       }
-      slot.style.width = `${Math.round(NAV_H * aspect)}px`;
-      update();
+
+      // One compositor-only write. The element's width and height never change
+      // after measure, so this is a transform and never a layout. The
+      // `translate(-50%, -50%)` half is the stylesheet's anchor — it is what
+      // puts the mark's centre on the viewport centre when dx/dy are zero.
+      const t = logoOffset({
+        startY: geom.startY,
+        size: geom.size,
+        centerX: geom.vw / 2,
+        targetX: geom.targetX,
+        targetY: geom.targetY,
+        progress: pEff,
+        aspect: geom.aspect,
+      });
+      const transform = `translate(-50%, -50%) translate3d(${t.dx.toFixed(2)}px, ${t.dy.toFixed(2)}px, 0) scale(${t.scale.toFixed(4)})`;
+      if (transform !== lastTransform) {
+        lastTransform = transform;
+        logo.style.transform = transform;
+      }
     };
 
     const schedule = () => {
       if (!raf) raf = requestAnimationFrame(update);
     };
-    resyncLogo.current = schedule;
+
+    // Re-measuring is deferred until the page is still. On phones the address
+    // bar collapsing fires `resize` DURING a scroll, and the viewport height
+    // changes with it — re-measuring there re-sizes the mark and moves its
+    // target mid-flight. Devices differ in whether and when that happens,
+    // which is exactly why this looked like "only some phones". A short hard
+    // cap guarantees the measure still runs on a long momentum scroll.
+    const measureSoon = () => {
+      if (measureTimer) return;
+      if (!measureDeadline) measureDeadline = performance.now() + 1200;
+      measureTimer = window.setTimeout(() => {
+        measureTimer = 0;
+        const settled = performance.now() - lastScrollAt >= 200;
+        if (!settled && performance.now() < measureDeadline) {
+          measureSoon();
+          return;
+        }
+        measureDeadline = 0;
+        measure();
+      }, 120);
+    };
+
+    const onScroll = () => {
+      lastScrollAt = performance.now();
+      schedule();
+    };
+
+    // Tab and language changes re-run this measure: the hero copy's own height
+    // can change with the text, and the geometry follows it.
+    resyncLogo.current = measure;
 
     if (logo.complete) measure();
     else logo.addEventListener("load", measure);
+
+    // The hero copy's box is what sets the logo's size and clearance, and it
+    // changes behind our back: the webfonts swap in (different metrics), the
+    // headline rewraps, a language change alters every line. Measuring once and
+    // trusting it is what left the mark parked off-centre — so watch the two
+    // elements whose size decides the geometry and re-measure when either
+    // changes. ResizeObserver fires on those changes, not on every frame.
+    let ro = null;
+    if (typeof ResizeObserver === "function") {
+      ro = new ResizeObserver(() => measureSoon());
+      if (heroContent) ro.observe(heroContent);
+      if (headerRef.current) ro.observe(headerRef.current);
+    }
+    // Belt and braces for the font swap: `fonts.ready` can resolve before the
+    // layout has taken the new metrics, so measure on the next frames rather
+    // than synchronously on the promise.
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(measureSoon).catch(() => {});
+    }
     update();
 
-    window.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", measureSoon);
     return () => {
       if (raf) cancelAnimationFrame(raf);
-      window.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", schedule);
+      if (measureTimer) clearTimeout(measureTimer);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", measureSoon);
+      if (ro) ro.disconnect();
       logo.removeEventListener("load", measure);
       resyncLogo.current = null;
     };
@@ -389,7 +498,12 @@ export default function OmkarSamithiApp() {
         className="app-logo"
       />
 
-      <Hero t={t} events={events} onGoToEvents={() => setTab("events")} />
+      <Hero
+        t={t}
+        events={events}
+        onGoToEvents={() => setTab("events")}
+        onGoToAbout={() => setTab("about")}
+      />
 
       <main
           key={tab}
@@ -399,7 +513,15 @@ export default function OmkarSamithiApp() {
           className="view"
           aria-label={TAB_LABELS[tab]}
         >
-        {tab === "hub" && <ContentHub t={t} lang={lang} />}
+        {tab === "hub" && (
+          <ContentHub
+            t={t}
+            lang={lang}
+            events={events}
+            flash={flash}
+            onTab={setTab}
+          />
+        )}
         {tab === "events" && (
           <EventsView
             t={t}
@@ -422,52 +544,89 @@ export default function OmkarSamithiApp() {
       </main>
 
       <footer className="footer">
-        <p className="footer-pranaams">{t.pranaams}</p>
-        <div className="footer-meta">
-          <MapPin size={12} aria-hidden="true" /> {t.footerLocation} · © {t.appName}
+        <div className="footer-inner">
+          <div className="footer-brand">
+            <p className="footer-name display">{t.appName}</p>
+            <p className="footer-org">{t.footerOrgLine}</p>
+            <p className="footer-pranaams">{t.pranaams}</p>
+          </div>
+
+          <nav className="footer-col" aria-label={t.footerExplore}>
+            <h2 className="footer-col-title">{t.footerExplore}</h2>
+            <button type="button" className="footer-link" onClick={() => setTab("events")}>
+              {t.events}
+            </button>
+            <button type="button" className="footer-link" onClick={() => setTab("gallery")}>
+              {t.galleryTab}
+            </button>
+            <button type="button" className="footer-link" onClick={() => setTab("seva")}>
+              {t.sevaTab}
+            </button>
+            <button type="button" className="footer-link" onClick={() => setTab("about")}>
+              {t.aboutTab}
+            </button>
+          </nav>
+
+          <nav className="footer-col" aria-label={t.footerConnect}>
+            <h2 className="footer-col-title">{t.footerConnect}</h2>
+            <a className="footer-link" href={`mailto:${t.contactEmail}`}>
+              <Mail size={13} aria-hidden="true" /> {t.footerEmail}
+            </a>
+            <a
+              className="footer-link"
+              href="https://www.youtube.com/@OmkarSamithi"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Youtube size={13} aria-hidden="true" /> YouTube
+            </a>
+            <a
+              className="footer-link"
+              href="https://www.facebook.com/groups/omkarsamithi/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Facebook size={13} aria-hidden="true" /> Facebook
+            </a>
+            <a
+              className="footer-link"
+              href="https://omkarfeedback.blogspot.com/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <ExternalLink size={13} aria-hidden="true" /> {t.footerFeedback}
+            </a>
+            <a
+              className="footer-link"
+              href={directionsUrl(t.eventsList[0]?.venue || t.footerLocation)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <MapPin size={13} aria-hidden="true" /> {t.getDirections}
+            </a>
+          </nav>
         </div>
-        {/* Social & feedback links live with the Pranaams box on every page */}
-        <div className="social-icons footer-links">
-          <a
-            href="https://www.facebook.com/groups/omkarsamithi/"
-            target="_blank"
-            rel="noreferrer"
-            className="social-link"
+
+        <div className="footer-base">
+          <span className="footer-copy">
+            © {t.appName} · {t.footerLocation}
+          </span>
+          <button
+            type="button"
+            className="to-top"
+            onClick={() =>
+              window.scrollTo({
+                top: 0,
+                behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)")
+                  .matches
+                  ? "auto"
+                  : "smooth",
+              })
+            }
           >
-            <Facebook size={16} aria-hidden="true" /> Facebook Group
-          </a>
-          <a
-            href="https://www.youtube.com/@OmkarSamithi"
-            target="_blank"
-            rel="noreferrer"
-            className="social-link"
-          >
-            <Youtube size={16} aria-hidden="true" /> YouTube Channel
-          </a>
-          <a
-            href="https://omkarfeedback.blogspot.com/"
-            target="_blank"
-            rel="noreferrer"
-            className="social-link"
-          >
-            <ExternalLink size={16} aria-hidden="true" /> Feedback Form
-          </a>
+            ↑ {t.backToTop}
+          </button>
         </div>
-        <button
-          type="button"
-          className="to-top magnetic"
-          onClick={() =>
-            window.scrollTo({
-              top: 0,
-              behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)")
-                .matches
-                ? "auto"
-                : "smooth",
-            })
-          }
-        >
-          ↑ {t.backToTop}
-        </button>
       </footer>
 
       {toast && (
