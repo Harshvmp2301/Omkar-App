@@ -342,7 +342,7 @@ export default function OmkarSamithiApp() {
   const toggleLanguage = useCallback(() => {
     const nextLang = lang === "en" ? "kn" : "en";
     setLang(nextLang);
-    flash(nextLang === "kn" ? "ಭಾಷೆ ಬದಲಾಯಿಸಲಾಗಿದೆ" : "Language changed");
+    flash(nextLang === "kn" ? "ಭಾಷೆ ಬದಲಾಗಿದೆ" : "Language changed");
   }, [lang, setLang, flash]);
 
   if (tab === "admin") {
