@@ -23,12 +23,12 @@ export default function AboutView({ t }) {
     <>
       <div className="section section--narrow">
         <div className="section-head reveal">
-          <h2 className="section-title display">{t.aboutTitle}</h2>
+          <h1 className="section-title display">{t.aboutTitle}</h1>
         </div>
 
         <div className="about-prose reveal">
           <section className="about-block">
-            <h3 className="display">{blocks[0].heading}</h3>
+            <h2 className="display">{blocks[0].heading}</h2>
             <p>{blocks[0].body}</p>
           </section>
         </div>
@@ -42,7 +42,7 @@ export default function AboutView({ t }) {
         <div className="about-prose reveal">
           {blocks.slice(1).map(({ heading, body }) => (
             <section className="about-block" key={heading}>
-              <h3 className="display">{heading}</h3>
+              <h2 className="display">{heading}</h2>
               <p>{body}</p>
             </section>
           ))}

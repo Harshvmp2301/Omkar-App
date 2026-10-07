@@ -77,7 +77,7 @@ export default function GalleryView({ t, lang }) {
   return (
     <div className="section">
       <div className="section-head reveal">
-        <h2 className="section-title display">{t.galleryTitle}</h2>
+        <h1 className="section-title display">{t.galleryTitle}</h1>
         <span className="note">{t.sampleGallery}</span>
       </div>
 

@@ -12,6 +12,7 @@ const Header = forwardRef(function Header(
     notificationsEnabled,
     onRequestNotify,
     slotRef,
+    progressRef,
   },
   ref
 ) {
@@ -107,7 +108,9 @@ const Header = forwardRef(function Header(
             The ONE logo element (rendered at page level, fixed-positioned) flies
             into it — see App.jsx. */}
         <span className="logo-slot" ref={slotRef} aria-hidden="true" />
-        <div className="wordmark display">{t.appName}</div>
+        <div className="wordmark display" aria-hidden="true">
+          {t.appName}
+        </div>
       </div>
       <nav className="tabs tabs--desktop" aria-label="Primary">
         {tabButtons()}
@@ -169,9 +172,10 @@ const Header = forwardRef(function Header(
         </nav>
       )}
 
-      {/* Round-10 scroll progress: 2px gold hairline driven by --scroll-p
-          (set inside App's existing rAF scroll loop — no extra listener). */}
-      <span className="scroll-progress" aria-hidden="true" />
+      {/* Scroll progress: a 1px gold hairline whose transform is written
+          directly by App's existing rAF scroll loop. No custom property, no
+          extra listener — one composited write on one leaf element. */}
+      <span className="scroll-progress" ref={progressRef} aria-hidden="true" />
     </header>
   );
 });

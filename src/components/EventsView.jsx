@@ -24,7 +24,7 @@ export default function EventsView({ t, lang, events, notify, onToggleNotify, fl
   return (
     <div className="section section--narrow">
       <div className="section-head reveal">
-        <h2 className="section-title display">{t.upcomingPrograms}</h2>
+        <h1 className="section-title display">{t.upcomingPrograms}</h1>
         <span className="note">{t.sampleDates}</span>
       </div>
 

@@ -43,7 +43,11 @@ export default function OmkarSamithiApp() {
   const logoRef = useRef(null);
   const slotRef = useRef(null);
   const headerRef = useRef(null);
+  const progressRef = useRef(null); // the 1px scroll-progress bar in the header
   const aspectRef = useRef(1); // logo aspect survives effect re-runs
+  // Is the HOME hero (and its big mark) on screen? Seeded from the first tab so
+  // a deep link never paints a centred mark on a view that has no hero.
+  const heroModeRef = useRef(tab === "hub");
 
   const t = translations[lang] || translations.en;
 
@@ -92,21 +96,36 @@ export default function OmkarSamithiApp() {
     seva: t.sevaTab,
     about: t.aboutTab,
   };
-  // View change → move focus into the new view so screen readers announce
-  // it; preventScroll keeps the current scroll position (no hero jump).
+  // View change → move focus into the new view so screen readers announce it,
+  // and START THE NEW VIEW AT ITS TOP. Tabs are separate pages: keeping the old
+  // scroll offset dropped you into the middle of the next one (and, on Home,
+  // mid-flight of the logo). focus() runs first with preventScroll so the jump
+  // is never announced as a scroll.
   useEffect(() => {
     if (firstViewFocus.current) {
       firstViewFocus.current = false;
       return undefined;
     }
     mainRef.current?.focus({ preventScroll: true });
+    window.scrollTo(0, 0);
     return undefined;
+  }, [tab]);
+
+  // The mark is docked in the navbar on every view that has no hero — the mark
+  // only takes the centre stage where it belongs (Home). Published through a
+  // ref so the scroll effect reads it per frame without re-subscribing.
+  useEffect(() => {
+    heroModeRef.current = tab === "hub";
+    resyncLogo.current?.();
   }, [tab]);
 
   useEffect(() => {
     document.documentElement.lang = lang;
     const page = TAB_LABELS[tab];
-    document.title = page ? `${page} · ${t.appName} · Muscat` : `${t.appName} · Muscat`;
+    // appNamePlain, not appName: the wordmark token is upper-case for display,
+    // and a tab title should not shout.
+    const brand = t.appNamePlain || t.appName;
+    document.title = page ? `${page} · ${brand} · Muscat` : `${brand} · Muscat`;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, tab, t]);
 
@@ -164,6 +183,22 @@ export default function OmkarSamithiApp() {
     let lastTransform = "";
     let lastScrollP = -1;
 
+
+    // Reduced motion: no scroll-linked movement at all. The mark is centred at
+    // rest and switches to its navbar slot on the first nudge of scrolling —
+    // a state change, not a glide. (The CSS block already kills transitions;
+    // the flight is JavaScript, so it needs its own switch.)
+    const motionQuery =
+      typeof window.matchMedia === "function"
+        ? window.matchMedia("(prefers-reduced-motion: reduce)")
+        : null;
+    let reduced = Boolean(motionQuery && motionQuery.matches);
+    const onMotionChange = () => {
+      reduced = Boolean(motionQuery && motionQuery.matches);
+      lastTransform = "";
+      schedule();
+    };
+
     // Everything that depends on the WINDOW and not on the scroll is read once,
     // here, and reused. Reading layout on every scroll frame is what made this
     // animation stutter on phones: position:fixed geometry plus a forced
@@ -180,19 +215,33 @@ export default function OmkarSamithiApp() {
       headerH: 0,
       copyTopDoc: Infinity, // hero copy top in DOCUMENT space — scroll-proof
       vw: 0,
+      maxScroll: 0, // measured, so the frame loop never reads layout
       ready: false, // no transform is written until measure() has run once
     };
     if (!geom.aspect && logo.naturalWidth && logo.naturalHeight) {
       geom.aspect = logo.naturalWidth / logo.naturalHeight;
     }
 
-    // Cached once per mount — the hero never unmounts, so the per-frame
-    // querySelector is unnecessary.
-    const heroContent = document.querySelector(".hero-content");
+    // The hero is only rendered on Home, so it is (re)found inside measure()
+    // — which runs a handful of times per scene, never per frame. Both the
+    // observed node and the observer itself are declared HERE: measure() can be
+    // called before the observer is created.
+    let heroContent = null;
+    let previousHero = null;
+    let ro = null;
 
     // ── measure: the only place that reads layout (so it must not run per frame)
     const measure = () => {
       const doc = document.documentElement;
+      const hero = document.querySelector(".hero-content");
+      if (hero !== heroContent) {
+        heroContent = hero;
+        if (ro) {
+          if (previousHero) ro.unobserve(previousHero);
+          previousHero = hero;
+          if (hero) ro.observe(hero);
+        }
+      }
       if (logo.naturalWidth && logo.naturalHeight) {
         geom.aspect = logo.naturalWidth / logo.naturalHeight;
         aspectRef.current = geom.aspect;
@@ -206,6 +255,9 @@ export default function OmkarSamithiApp() {
       // include the scrollbars, which is what used to put the mark a
       // scrollbar's width to the right of everything else on the page.
       geom.vw = doc.clientWidth;
+      // How far the page can scroll. Cheap here (measure() runs a handful of
+      // times per scene), never in the frame loop.
+      geom.maxScroll = Math.max(0, doc.scrollHeight - doc.clientHeight);
       slot.style.width = `${Math.round(NAV_H * geom.aspect)}px`; // the docked size
 
       const copyTopDoc = heroContent
@@ -242,19 +294,55 @@ export default function OmkarSamithiApp() {
       // stands — an unmeasured transform would park the mark in the corner.
       if (!geom.ready) return;
       const scrollY = window.scrollY;
-      const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      // maxScroll is MEASURED, never read here. `documentElement.scrollHeight`
+      // is a layout read: with the previous frame's style writes still
+      // unflushed it forces a synchronous style+layout flush on every scroll
+      // frame — the single most expensive thing this loop used to do, and a
+      // classic source of stutter on a mid-range phone. It is recomputed in
+      // measure() (load, resize, tab change, and any change in the page's own
+      // height, via the ResizeObserver on <body>).
+      const maxScroll = geom.maxScroll;
 
       // The header hairline is a custom property written to the HEADER, not to
       // :root. A custom property on the root invalidates style for the whole
       // document on every scroll frame; scoped to the header it is one tiny
       // subtree. Written only when the value actually changed.
       const scrollP = maxScroll > 0 ? Math.min(1, scrollY / maxScroll) : 0;
-      const roundedP = Math.round(scrollP * 1000);
+      // Written STRAIGHT onto the 1px bar, not as a custom property on the
+      // header. A custom property is inherited, so setting one on the header
+      // restyled its whole subtree (tabs, buttons, wordmark) on every frame —
+      // and the next frame's layout read then flushed it synchronously. One
+      // style write on one leaf element costs a fraction of that.
+      const roundedP = Math.round(scrollP * 500);
       if (roundedP !== lastScrollP) {
         lastScrollP = roundedP;
-        if (headerRef.current) {
-          headerRef.current.style.setProperty("--scroll-p", String(roundedP / 1000));
+        if (progressRef.current) {
+          progressRef.current.style.transform = `scaleX(${(roundedP / 500).toFixed(4)})`;
         }
+      }
+
+      // Which progress the mark is drawn at:
+      //   · no hero on this view  → already docked; nothing to animate
+      //   · reduced motion        → snap between the two states, never glide
+      //   · otherwise             → the scroll-linked flight, below
+      const home = heroModeRef.current;
+      if (!home || reduced) {
+        const pSnap = !home ? 1 : scrollY > 24 ? 1 : 0;
+        const snapped = logoOffset({
+          startY: geom.startY,
+          size: geom.size,
+          centerX: geom.vw / 2,
+          targetX: geom.targetX,
+          targetY: geom.targetY,
+          progress: pSnap,
+          aspect: geom.aspect,
+        });
+        const snapTransform = `translate(-50%, -50%) translate3d(${snapped.dx.toFixed(2)}px, ${snapped.dy.toFixed(2)}px, 0) scale(${snapped.scale.toFixed(4)})`;
+        if (snapTransform !== lastTransform) {
+          lastTransform = snapTransform;
+          logo.style.transform = snapTransform;
+        }
+        return;
       }
 
       // Flight ramp: the first 15% of the page's scrollable range.
@@ -348,11 +436,15 @@ export default function OmkarSamithiApp() {
     // trusting it is what left the mark parked off-centre — so watch the two
     // elements whose size decides the geometry and re-measure when either
     // changes. ResizeObserver fires on those changes, not on every frame.
-    let ro = null;
     if (typeof ResizeObserver === "function") {
       ro = new ResizeObserver(() => measureSoon());
+      heroContent = document.querySelector(".hero-content");
+      previousHero = heroContent;
       if (heroContent) ro.observe(heroContent);
       if (headerRef.current) ro.observe(headerRef.current);
+      // Body height changes as content arrives (feeds, images, a tab switch):
+      // that moves the end of the page, so maxScroll must follow it.
+      ro.observe(document.body);
     }
     // Belt and braces for the font swap: `fonts.ready` can resolve before the
     // layout has taken the new metrics, so measure on the next frames rather
@@ -364,11 +456,14 @@ export default function OmkarSamithiApp() {
 
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", measureSoon);
+    // The OS "reduce motion" setting can be changed while the app is open.
+    if (motionQuery) motionQuery.addEventListener("change", onMotionChange);
     return () => {
       if (raf) cancelAnimationFrame(raf);
       if (measureTimer) clearTimeout(measureTimer);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", measureSoon);
+      if (motionQuery) motionQuery.removeEventListener("change", onMotionChange);
       if (ro) ro.disconnect();
       logo.removeEventListener("load", measure);
       resyncLogo.current = null;
@@ -478,6 +573,7 @@ export default function OmkarSamithiApp() {
       <Header
         ref={headerRef}
         slotRef={slotRef}
+        progressRef={progressRef}
         t={t}
         lang={lang}
         tab={tab}
@@ -491,19 +587,48 @@ export default function OmkarSamithiApp() {
           ancestor such as the blurred header would trap a fixed child),
           centred at scrollY=0 and flown into the navbar slot by the scroll
           effect below. Never duplicated. */}
-      <img
-        ref={logoRef}
-        src="/omkar-logo.png"
-        alt="Omkar Samithi"
-        className="app-logo"
-      />
+      {/* The mark is drawn at 220 CSS px, so a 220px file is upscaled on every
+          retina screen — 2.3x soft at the most prominent element on the page.
+          srcset lets those screens take the 512px candidate while 1x screens
+          keep the small file, and both are the same artwork in the same frame
+          (verified pixel-wise), so the mark's size and aspect are identical
+          whichever the browser picks.
 
-      <Hero
-        t={t}
-        events={events}
-        onGoToEvents={() => setTab("events")}
-        onGoToAbout={() => setTab("about")}
-      />
+          Retina screens are the phones, so the file a phone actually downloads
+          is the WebP pair: 50 kB at 512px instead of 334 kB, for the same
+          pixels. The PNG pair stays behind it as the fallback, with the same
+          widths and the same sizes, so the browser selects the same candidate
+          in whichever format it supports and the chosen width never changes.
+          index.html preloads the same list — the two must stay identical. */}
+      <picture>
+        <source
+          type="image/webp"
+          srcSet="/omkar-logo-220.webp 220w, /omkar-logo-512.webp 512w"
+          sizes="220px"
+        />
+        <img
+          ref={logoRef}
+          src="/omkar-logo.png"
+          srcSet="/omkar-logo.png 220w, /icon-512.png 512w"
+          sizes="220px"
+          alt="Omkar Samithi"
+          decoding="async"
+          className="app-logo"
+        />
+      </picture>
+
+      {/* The hero belongs to the HOME tab. On the other tabs it stood between
+          the visitor and the page they asked for — opening "Events" showed the
+          homepage's hero and its CTAs — so those views now begin with their own
+          heading, and the mark is already docked in the navbar. */}
+      {tab === "hub" && (
+        <Hero
+          t={t}
+          events={events}
+          onGoToEvents={() => setTab("events")}
+          onGoToAbout={() => setTab("about")}
+        />
+      )}
 
       <main
           key={tab}

@@ -172,9 +172,12 @@ describe("the logo measures the layout viewport, not the window", () => {
     expect(code).not.toMatch(/window\.innerWidth/);
   });
 
-  it("still lets the scroll maths use the window height", () => {
-    // scrolling is about how far the page can move, which is a window measure
-    expect(code).toMatch(/scrollHeight - window\.innerHeight/);
+  it("takes the scrollable distance from the layout viewport too", () => {
+    // The distance the page can move is scrollHeight - clientHeight, measured
+    // against the LAYOUT viewport — the same box the mark is centred in, so the
+    // two cannot disagree about where the bottom of the page is.
+    expect(code).toMatch(/doc\.scrollHeight - doc\.clientHeight/);
+    expect(code).not.toMatch(/window\.innerHeight/);
   });
 });
 
@@ -298,9 +301,38 @@ describe("the flight stays compositor-only", () => {
     expect((code.match(/\.offsetHeight/g) || []).length).toBe(2); // header + the --header-h effect
   });
 
-  it("does not write a custom property on the document root per frame", () => {
-    expect(code).not.toMatch(/documentElement\.style\.setProperty\(\s*"\s*--scroll-p/);
-    expect(code).toMatch(/headerRef\.current\.style\.setProperty\("--scroll-p"/);
+  it("writes the progress bar directly, with no inherited custom property", () => {
+    // A custom property set on the header is INHERITED: it restyled the whole
+    // header subtree every frame, and the next frame's layout read flushed it.
+    expect(code).not.toMatch(/style\.setProperty\(\s*"\s*--scroll-p/);
+    expect(code).toMatch(/progressRef\.current\.style\.transform/);
+  });
+
+  it("performs no layout read in the frame loop", () => {
+    // The frame body must touch nothing that can force a style/layout flush:
+    // no scrollHeight, no innerHeight, no getBoundingClientRect, no offset*.
+    // window.scrollY is a scroll offset, not a layout read.
+    const body = code.slice(code.indexOf("const update = () => {"), code.indexOf("const schedule = () => {"));
+    expect(body.length).toBeGreaterThan(400);
+    for (const read of [
+      "scrollHeight",
+      "window.innerHeight",
+      "getBoundingClientRect",
+      "offsetHeight",
+      "offsetWidth",
+      "clientHeight",
+      "clientWidth",
+      "getComputedStyle",
+    ]) {
+      expect(body, `frame loop reads ${read}`).not.toContain(read);
+    }
+    expect(body).toContain("window.scrollY");
+    expect(body).toContain("geom.maxScroll");
+  });
+
+  it("measures maxScroll once per scene, and follows the page height", () => {
+    expect(code).toMatch(/geom\.maxScroll = Math\.max\(0, doc\.scrollHeight - doc\.clientHeight\)/);
+    expect(code).toMatch(/ro\.observe\(document\.body\)/);
   });
 
   it("skips style writes when nothing changed", () => {

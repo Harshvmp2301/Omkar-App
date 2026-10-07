@@ -119,32 +119,41 @@ export default function ContentHub({ t, lang, events = [], onTab, flash }) {
           ))}
         </div>
 
+        {/* Blog + festival notes share ONE heading and sit side by side from
+            900px up. Three equal section heads in a row read as a CMS listing
+            its content types; recordings lead as the featured resource and
+            these two read as the secondary material they are. */}
         <div className="section-head section-head--gap reveal">
-          <h2 className="section-title display">{t.fromBlog}</h2>
+          <h2 className="section-title display">{t.archiveReading}</h2>
         </div>
-        <div className="blog-list reveal">
-          {blogPosts.map((p) => (
-            <a key={p.id} href={p.url} target="_blank" rel="noreferrer" className="blog-card">
-              <BookOpen size={16} className="blog-icon" aria-hidden="true" />
-              <div className="blog-text">
-                <p className="blog-title">{p.title}</p>
-                <p className="blog-snippet">{p.snippet}</p>
-              </div>
-              <ExternalLink size={12} className="blog-arrow" aria-hidden="true" />
-            </a>
-          ))}
-        </div>
+        <div className="archive-columns">
+          <div className="archive-col reveal">
+            <h3 className="archive-label">{t.fromBlog}</h3>
+            <div className="blog-list">
+              {blogPosts.map((p) => (
+                <a key={p.id} href={p.url} target="_blank" rel="noreferrer" className="blog-card">
+                  <BookOpen size={16} className="blog-icon" aria-hidden="true" />
+                  <div className="blog-text">
+                    <p className="blog-title">{p.title}</p>
+                    <p className="blog-snippet">{p.snippet}</p>
+                  </div>
+                  <ExternalLink size={12} className="blog-arrow" aria-hidden="true" />
+                </a>
+              ))}
+            </div>
+          </div>
 
-        <div className="section-head section-head--gap reveal">
-          <h2 className="section-title display">{t.festivalNotes}</h2>
-        </div>
-        <div className="fest-grid reveal">
-          {festivalPosts.map((f) => (
-            <a key={f.id} href={f.url} target="_blank" rel="noreferrer" className="fest-card">
-              <p className="fest-title">{f.title}</p>
-              <p className="fest-snippet">{f.snippet}</p>
-            </a>
-          ))}
+          <div className="archive-col reveal">
+            <h3 className="archive-label">{t.festivalNotes}</h3>
+            <div className="fest-grid">
+              {festivalPosts.map((f) => (
+                <a key={f.id} href={f.url} target="_blank" rel="noreferrer" className="fest-card">
+                  <p className="fest-title">{f.title}</p>
+                  <p className="fest-snippet">{f.snippet}</p>
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </>

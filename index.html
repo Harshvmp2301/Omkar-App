@@ -44,6 +44,10 @@
     <meta property="og:image" content="https://omkar-app.vercel.app/og-banner.jpg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Omkar Samithi emblem beside gold lettering — Omkar Samithi, Oman Karnataka Aradhana Samithi, Muscat, Oman — above a row of lit oil lamps."
+    />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Omkar Samithi · Muscat" />
     <meta
@@ -51,6 +55,10 @@
       content="Programs, events, festival calendar and recordings — bilingual English & Kannada."
     />
     <meta name="twitter:image" content="https://omkar-app.vercel.app/og-banner.jpg" />
+    <meta
+      name="twitter:image:alt"
+      content="Omkar Samithi emblem beside gold lettering — Omkar Samithi, Oman Karnataka Aradhana Samithi, Muscat, Oman — above a row of lit oil lamps."
+    />
 
     <link rel="icon" type="image/png" href="/omkar-logo.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
@@ -67,7 +75,48 @@
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Karla:wght@400;500;700&family=Noto+Sans+Kannada:wght@400;600&display=swap"
     />
 
-    <title>Omkar Samithi · Muscat</title>
+    <!-- The mark is the largest element on the first screen and it is rendered
+         by the bundle, so without this hint the browser cannot start fetching
+         it until React has run. The candidate list mirrors the <picture> in
+         src/App.jsx exactly (a guard test keeps the two in step); browsers that
+         do not understand imagesrcset simply do not preload, and nothing is
+         ever fetched twice. -->
+    <link
+      rel="preload"
+      as="image"
+      type="image/webp"
+      imagesrcset="/omkar-logo-220.webp 220w, /omkar-logo-512.webp 512w"
+      imagesizes="220px"
+    />
+
+    <!-- Structured data: what a search engine needs to present the Samithi as
+         an organisation rather than a page. Every value here is already stated
+         on the site — no invented address, no invented profiles. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Omkar Samithi",
+        "alternateName": ["Oman Karnataka Aradhana Samithi", "ಓಂಕಾರ ಸಮಿತಿ"],
+        "url": "https://omkar-app.vercel.app/",
+        "logo": "https://omkar-app.vercel.app/icon-512.png",
+        "description": "Karnataka cultural and devotional organisation in Muscat, Oman — programs, poojas, music and community.",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Muscat",
+          "addressCountry": "OM"
+        },
+        "areaServed": "Muscat, Oman",
+        "knowsLanguage": ["en", "kn"],
+        "sameAs": [
+          "https://www.youtube.com/@OmkarSamithi",
+          "https://omkarsamithi.blogspot.com/",
+          "https://omkarfeedback.blogspot.com/"
+        ]
+      }
+    </script>
+
+    <title>Omkar Samithi · Oman Karnataka Aradhana Samithi, Muscat</title>
   </head>
   <body>
     <div id="root"></div>

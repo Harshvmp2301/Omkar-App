@@ -4,6 +4,7 @@
 export const translations = {
   en: {
     appName: "OMKAR SAMITHI",
+    appNamePlain: "Omkar Samithi",
     tagline: "Muscat, Oman · Programs & Community",
     heroLine:
       "Preserving Karnataka’s culture, traditions and community in Muscat — through devotion, music and the arts.",
@@ -16,6 +17,7 @@ export const translations = {
     programsRecordings: "Programs & Recordings",
     fromBlog: "From the Blog",
     festivalNotes: "Festival Notes",
+    archiveReading: "Writing & Festival Notes",
     upcomingPrograms: "Upcoming Programs",
     nextProgram: "Next Program",
     whenLabel: "Date",
@@ -32,8 +34,8 @@ export const translations = {
     pillarCultureBody: "Music, literature, discourse and Karnataka’s traditions.",
     pillarCommunity: "Community",
     pillarCommunityBody: "Bringing families together and supporting one another.",
-    remindersOn: "Browser alert on",
-    remindersOff: "Browser alert off",
+    remindersOn: "Browser reminder on",
+    remindersOff: "Browser reminder off",
     pranaams: "Pranaams · Omkar Samithi",
     sampleLayout: "Latest recordings from our YouTube channel",
     sampleDates: "Confirmed dates · TBA = to be announced",
@@ -281,6 +283,7 @@ export const translations = {
   },
   kn: {
     appName: "ಓಂಕಾರ ಸಮಿತಿ",
+    appNamePlain: "ಓಂಕಾರ ಸಮಿತಿ",
     tagline: "ಮಸ್ಕತ್, ಓಮನ್ · ಕಾರ್ಯಕ್ರಮಗಳು ಮತ್ತು ಸಮುದಾಯ",
     heroLine:
       "ಮಸ್ಕತ್‌ನಲ್ಲಿ ಕರ್ನಾಟಕದ ಸಂಸ್ಕೃತಿ, ಪರಂಪರೆ ಮತ್ತು ಸಮುದಾಯವನ್ನು ಭಕ್ತಿ, ಸಂಗೀತ ಮತ್ತು ಕಲೆಯ ಮೂಲಕ ಜೀವಂತವಾಗಿರಿಸುತ್ತೇವೆ.",
@@ -293,6 +296,7 @@ export const translations = {
     programsRecordings: "ಕಾರ್ಯಕ್ರಮಗಳು ಮತ್ತು ದಾಖಲೆಗಳು",
     fromBlog: "ಬ್ಲಾಗ್‌ನಿಂದ",
     festivalNotes: "ಹಬ್ಬದ ಟಿಪ್ಪಣಿಗಳು",
+    archiveReading: "ಬರಹಗಳು ಮತ್ತು ಹಬ್ಬದ ಟಿಪ್ಪಣಿಗಳು",
     upcomingPrograms: "ಮುಂಬರುವ ಕಾರ್ಯಕ್ರಮಗಳು",
     nextProgram: "ಮುಂದಿನ ಕಾರ್ಯಕ್ರಮ",
     whenLabel: "ದಿನಾಂಕ",
@@ -304,13 +308,13 @@ export const translations = {
     whatWeDoIntro:
       "ಭಕ್ತಿ, ಸಂಸ್ಕೃತಿ ಮತ್ತು ಸಮುದಾಯ — ಮಸ್ಕತ್‌ನಲ್ಲಿ ಕರ್ನಾಟಕದ ಬದುಕನ್ನು ಓಂಕಾರ ಸಮಿತಿ ಜೊತೆಗೂಡಿಸುತ್ತದೆ.",
     pillarBhakti: "ಭಕ್ತಿ",
-    pillarBhaktiBody: "ದೇವಸ್ಥಾನದಲ್ಲಿ ನಡೆಯುವ ಪೂಜೆಗಳು, ಪ್ರವಚನಗಳು ಮತ್ತು ಪ್ರಾರ್ಥನೆಗಳು.",
+    pillarBhaktiBody: "ದೇವಸ್ಥಾನದಲ್ಲಿ ನಡೆಯುವ ಭಕ್ತಿ ಕಾರ್ಯಕ್ರಮಗಳು, ಪೂಜೆಗಳು ಮತ್ತು ಪ್ರಾರ್ಥನೆಗಳು.",
     pillarCulture: "ಸಂಸ್ಕೃತಿ",
     pillarCultureBody: "ಸಂಗೀತ, ಸಾಹಿತ್ಯ, ಪ್ರವಚನ ಮತ್ತು ಕರ್ನಾಟಕದ ಪರಂಪರೆ.",
     pillarCommunity: "ಸಮುದಾಯ",
     pillarCommunityBody: "ಕುಟುಂಬಗಳನ್ನು ಒಗ್ಗೂಡಿಸಿ ಪರಸ್ಪರ ಬೆಂಬಲ ನೀಡುವುದು.",
-    remindersOn: "ಬ್ರೌಸರ್ ಅಲರ್ಟ್ ಆನ್",
-    remindersOff: "ಬ್ರೌಸರ್ ಅಲರ್ಟ್ ಆಫ್",
+    remindersOn: "ಬ್ರೌಸರ್ ಜ್ಞಾಪನೆ ಆನ್",
+    remindersOff: "ಬ್ರೌಸರ್ ಜ್ಞಾಪನೆ ಆಫ್",
     pranaams: "ಪ್ರಣಾಮಗಳು · ಓಂಕಾರ ಸಮಿತಿ",
     sampleLayout: "ನಮ್ಮ YouTube ಚಾನೆಲ್‌ನ ಇತ್ತೀಚಿನ ವೀಡಿಯೊಗಳು",
     sampleDates: "ಖಚಿತವಾದ ದಿನಾಂಕಗಳು · TBA = ಶೀಘ್ರದಲ್ಲಿ ಘೋಷಣೆ",

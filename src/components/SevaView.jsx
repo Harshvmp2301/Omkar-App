@@ -59,7 +59,7 @@ export default function SevaView({ t, lang, flash }) {
   return (
     <div className="section section--narrow">
       <div className="section-head reveal">
-        <h2 className="section-title display">{t.sevaTitle}</h2>
+        <h1 className="section-title display">{t.sevaTitle}</h1>
       </div>
       <p className="view-sub">{t.sevaSub}</p>
       {/* What "offering a seva" actually means, before the options are shown */}

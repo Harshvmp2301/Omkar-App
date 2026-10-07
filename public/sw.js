@@ -5,7 +5,17 @@ const CACHE = "omkar-cache-v1";
 
 // Pre-cache the app shell so the FIRST offline visit works (audit E17),
 // not only after a second visit.
-const PRECACHE = ["/", "/index.html", "/omkar-logo.png", "/icon-192.png", "/icon-512.png"];
+// The WebP twins are what a retina screen actually paints (see src/App.jsx),
+// so the first offline visit needs them too, not only the PNG fallbacks.
+const PRECACHE = [
+  "/",
+  "/index.html",
+  "/omkar-logo.png",
+  "/omkar-logo-220.webp",
+  "/omkar-logo-512.webp",
+  "/icon-192.png",
+  "/icon-512.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
