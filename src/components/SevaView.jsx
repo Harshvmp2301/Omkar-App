@@ -62,6 +62,8 @@ export default function SevaView({ t, lang, flash }) {
         <h2 className="section-title display">{t.sevaTitle}</h2>
       </div>
       <p className="view-sub">{t.sevaSub}</p>
+      {/* What "offering a seva" actually means, before the options are shown */}
+      <p className="seva-what">{t.sevaWhat}</p>
 
       {/* The three yearly programs and their announced dates (read-only) */}
       <div className="seva-programs">

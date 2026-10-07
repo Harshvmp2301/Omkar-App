@@ -10,7 +10,7 @@
  * src/data/content.js, so the dropdown and the built-in list cannot drift.
  */
 
-import { annualOccurrence, dateOnly } from "./calendar.js";
+import { annualOccurrence, dateOnly, occurrenceInYear } from "./calendar.js";
 import { listPublishedEvents, supabaseEnabled } from "./supabase.js";
 
 export const EVENT_TITLES = [
@@ -191,6 +191,38 @@ export function rollDates(events = [], now = new Date()) {
     const date = annualOccurrence(event.date, now);
     return date === event.date ? event : { ...event, date };
   });
+}
+
+/**
+ * The one program to put in front of a visitor: the next dated one.
+ *
+ * The homepage leads with a single featured program, and "next" has to mean
+ * next — a program that finished yesterday must not be the headline. Dates
+ * repeat annually, so a program whose day has already passed this year is
+ * counted into next year rather than dropped: after Anjaneya Pooje in
+ * December, the featured program becomes April's Jnanamrutha.
+ *
+ * A program with no date is never featured (there is no date to act on), and
+ * when nothing has a date at all the first program is returned so the caller
+ * still has something to show — it renders as TBA, exactly like the list.
+ */
+export function nextEvent(events = [], now = new Date()) {
+  const list = Array.isArray(events) ? events : [];
+  const dated = list.filter((e) => e && e.date);
+  if (!dated.length) return list[0] || null;
+
+  const today = dateOnly(now.toISOString());
+  const year = now.getFullYear();
+
+  let best = null;
+  for (const event of dated) {
+    const thisYear = occurrenceInYear(event.date, year);
+    const date =
+      thisYear && thisYear >= today ? thisYear : occurrenceInYear(event.date, year + 1);
+    if (!date) continue;
+    if (!best || date < best.date) best = { ...event, date };
+  }
+  return best || list[0];
 }
 
 /** The list the public Events page shows. */

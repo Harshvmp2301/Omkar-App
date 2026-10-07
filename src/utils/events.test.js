@@ -8,6 +8,7 @@ import {
   eventRowFromForm,
   mapEventRow,
   mergeEvents,
+  nextEvent,
   rollDates,
   titleKnFor,
 } from "./events.js";
@@ -289,5 +290,49 @@ describe("the old Darsait spelling that is still stored in the database", () => 
     expect(mapEventRow({ ...row, title_kn: "ಓಂಕಾರ ನಾದಾಮೃತ" }, "kn").title).toBe(
       "ಓಂಕಾರ ನಾದಾಮೃತ"
     );
+  });
+});
+
+describe("nextEvent — the program the homepage leads with", () => {
+  const curated = translations.en.eventsList;
+  const at = (iso) => new Date(`${iso}T12:00:00`);
+
+  it("picks the next program that has not happened yet", () => {
+    // 7 October 2026: Jnanamrutha (April) and Naadamrutha (October 2) are
+    // behind us, so the Anjaneya Pooje in December is the next one.
+    expect(nextEvent(curated, at("2026-10-07")).title).toBe("Sri Anjaneya Pooje");
+  });
+
+  it("moves to the next program as the year turns", () => {
+    const rolled = rollDates(curated, at("2027-02-01"));
+    expect(nextEvent(rolled, at("2027-02-01")).date).toBe("2027-04-01");
+  });
+
+  it("counts a finished program into next year rather than dropping it", () => {
+    // 20 December 2026: everything in the list has happened, so the featured
+    // card looks ahead to the April program instead of showing a stale date.
+    const next = nextEvent(curated, at("2026-12-20"));
+    expect(next.title).toBe("Omkar Jnanamrutha");
+    expect(next.date).toBe("2027-04-01");
+  });
+
+  it("never features an undated program while a dated one is ahead", () => {
+    const mixed = [
+      { id: "x", title: "No date yet", date: "" },
+      { id: "e3", title: "Sri Anjaneya Pooje", date: "2026-12-18" },
+    ];
+    expect(nextEvent(mixed, at("2026-10-07")).title).toBe("Sri Anjaneya Pooje");
+  });
+
+  it("still returns something when nothing has a date — it renders as TBA", () => {
+    const undated = [{ id: "x", title: "No date yet", date: "" }];
+    expect(nextEvent(undated, at("2026-10-07")).title).toBe("No date yet");
+    expect(nextEvent([], at("2026-10-07"))).toBeNull();
+  });
+
+  it("does not mutate the list it was given", () => {
+    const before = JSON.stringify(curated);
+    nextEvent(curated, at("2026-12-20"));
+    expect(JSON.stringify(curated)).toBe(before);
   });
 });
