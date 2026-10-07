@@ -27,7 +27,8 @@ export default class ErrorBoundary extends Component {
             <h2 className="section-title display">ಓಂಕಾರ ಸಮಿತಿ · Omkar Samithi</h2>
             <p className="view-sub" style={{ marginTop: 12 }}>
               Something went wrong rendering this page. Your saved data is untouched —
-              please reload to continue. / ಈ ಪುಟವನ್ನು ತೋರಿಸುವಲ್ಲಿ ದೋಷವಾಗಿದೆ. ಮರುಹೊಂದಿಸಿ.
+              please reload to continue. / ಈ ಪುಟವನ್ನು ತೋರಿಸುವಾಗ ಏನೋ ತೊಂದರೆಯಾಗಿದೆ. ನಿಮ್ಮ ಉಳಿಸಿದ
+              ಮಾಹಿತಿ ಸುರಕ್ಷಿತವಾಗಿದೆ — ಮುಂದುವರಿಯಲು ಪುಟವನ್ನು ಮತ್ತೆ ತೆರೆಯಿರಿ.
             </p>
             <button
               type="button"
@@ -35,7 +36,7 @@ export default class ErrorBoundary extends Component {
               style={{ maxWidth: 240, margin: "0 auto" }}
               onClick={() => window.location.reload()}
             >
-              Reload · ಮರುಹೊಂದಿಸಿ
+              Reload · ಮತ್ತೆ ತೆರೆಯಿರಿ
             </button>
           </div>
         </div>

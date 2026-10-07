@@ -64,7 +64,7 @@ export default function ContactView({ t, lang, flash }) {
           </div>
 
           <div className="field">
-            <label htmlFor="ct-email">Email</label>
+            <label htmlFor="ct-email">{t.emailLabel}</label>
             <input
               id="ct-email"
               type="email"
