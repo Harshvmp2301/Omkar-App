@@ -16,12 +16,6 @@ const Header = forwardRef(function Header(
   },
   ref
 ) {
-  // The wordmark steps down by what fits beside the four controls (see
-  // .wordmark-tail in styles.css): the whole name, its first word, or nothing.
-  // Splitting the translated string here keeps both languages on one rule and
-  // invents no text — "OMKAR SAMITHI" and "ಓಂಕಾರ ಸಮಿತಿ" both read lead + tail.
-  const [nameLead, ...nameRest] = t.appName.split(" ");
-
   const tabs = [
     { id: "hub", label: t.contentHub },
     { id: "events", label: t.events },
@@ -115,8 +109,7 @@ const Header = forwardRef(function Header(
             into it — see App.jsx. */}
         <span className="logo-slot" ref={slotRef} aria-hidden="true" />
         <div className="wordmark display" aria-hidden="true">
-          {nameLead}
-          {nameRest.length > 0 && <span className="wordmark-tail"> {nameRest.join(" ")}</span>}
+          {t.appName}
         </div>
       </div>
       <nav className="tabs tabs--desktop" aria-label="Primary">

@@ -1261,22 +1261,33 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
   letter-spacing: 0.08em;
 }
 
-/* The wordmark steps down by what actually fits, never truncating mid-word.
-   Beside the four controls a phone leaves it W - 305px (English) or W - 320px
-   (Kannada, whose language button reads "English"). Measured with the real
-   typefaces: the whole name needs 129px in English and 86px in Kannada; its first
-   word needs 58px and 44px. So:
-     from 440px   the whole name            (it used to read "OMKAR S…" up to there)
-     375 - 439px  its first word            ("OMKAR" / "ಓಂಕಾರ", 11px or more to spare)
-     below 375px  the logo and the controls only
-   Written in em so the steps move with the visitor's text-size setting; the
-   ellipsis on .wordmark stays as the last line of defence. The wordmark is
-   aria-hidden — the logo's alt text and the menu's label carry the name. */
-@media (max-width: 27.4375em) {
-  .wordmark-tail { display: none; }
+/* On phones the wordmark keeps the WHOLE name by wrapping to two lines.
+   Beside the four controls it gets W - 305px (English) or W - 320px (Kannada):
+   85px at 390px wide, while "OMKAR SAMITHI" needs ~129px on one line. An earlier
+   round stepped the name down to its first word there — which read as the owner's
+   name losing half of itself. Two lines cost nothing: the header row is 44px tall
+   for the buttons, and two 0.8rem lines are ~30px, so the header keeps one row and
+   its height. Below 360px even two lines cannot fit ("SAMITHI" alone needs ~55px
+   and only ~15px remain), so there the wordmark yields — the logo's alt text and
+   the menu's label still carry the name. The ellipsis on the base rule stays as
+   the last line of defence for widths where one line is expected to fit. */
+/* Selectors match .header-left .wordmark on purpose: the <=600px rule uses that
+   pair and forces nowrap, and a plainer selector would lose to it. */
+@media (max-width: 27.4375em) { /* 439px */
+  .header-left .wordmark {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    font-size: 0.8rem;
+    line-height: 1.15;
+    letter-spacing: 0.04em;
+  }
 }
-@media (max-width: 23.375em) {
-  .wordmark { display: none; }
+@media (max-width: 23.375em) { /* 374px */
+  .header-left .wordmark { font-size: 0.72rem; }
+}
+@media (max-width: 22.4375em) { /* 359px */
+  .header-left .wordmark { display: none; }
 }
 
 /* Sub section headings inside Content Hub */

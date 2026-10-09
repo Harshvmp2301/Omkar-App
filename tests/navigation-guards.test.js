@@ -297,74 +297,56 @@ describe("short phones get the CTA row onto the first screen", () => {
   });
 });
 
-describe("the header wordmark steps down by what fits, and is never cut mid-word", () => {
-  // The owner's phones read "OMKAR S…": beside four controls a 390px screen
-  // leaves the wordmark 85px and the whole name needs 129px. Rather than truncate,
-  // it steps down — the whole name, its first word, nothing — at widths measured
-  // in a real browser with the real typefaces.
+describe("the header wordmark keeps the whole name on phones", () => {
+  // Round 23 stepped the name down to its first word beside the four controls
+  // ("OMKAR" instead of "OMKAR SAMITHI") because one line needs ~129px and a 390px
+  // phone offers ~85px. The owner read that as the name losing half of itself —
+  // rightly. Two lines cost nothing: the header row is 44px tall for the buttons
+  // and two 0.8rem lines are ~30px, so the header keeps ONE row and its height
+  // (measured 65px at every width, both languages). Below 360px even two lines
+  // cannot fit, so there the wordmark yields to the logo and the menu label.
   const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8")
     .replace(/\/\*[\s\S]*?\*\//g, "");
   const header = readFileSync(new URL("../src/components/Header.jsx", import.meta.url), "utf8");
+  const band = (px) => {
+    const em = String(parseFloat((px / 16).toFixed(4)));
+    const at = css.indexOf(`@media (max-width: ${em}em)`);
+    if (at === -1) return "";
+    return css.slice(at, css.indexOf("}", css.indexOf("}", at) + 1) + 1);
+  };
+  const wrapBand = band(439);
+  const smallBand = band(374);
+  const hideBand = band(359);
 
-  // MEASURED (Chromium, Cinzel / Noto Sans Kannada, 0.85rem, 0.05em tracking).
-  // Re-measure these if the header's controls or the wordmark's type change.
-  const NEED = { en: { full: 129.2, lead: 58.2 }, kn: { full: 85.8, lead: 44 } };
-  const ROOM = (width, lang) => width - (lang === "en" ? 305 : 320); // what the four controls leave
-
-  const queries = [...css.matchAll(/@media \(max-width: ([\d.]+)em\) \{\s*([^{}]+)\{([^{}]*)\}\s*\}/g)].map((m) => ({
-    px: Number(m[1]) * 16,
-    selector: m[2].trim(),
-    body: m[3],
-  }));
-  const tailQuery = queries.find((q) => q.selector === ".wordmark-tail");
-  const noneQuery = queries.find((q) => q.selector === ".wordmark");
-
-  it("splits the translated name into a lead word and a tail, inventing no text", () => {
-    expect(header).toMatch(/const \[nameLead, \.\.\.nameRest\] = t\.appName\.split\(" "\);/);
-    expect(header).toMatch(/<span className="wordmark-tail"> \{nameRest\.join\(" "\)\}<\/span>/);
-    // still decorative: the logo's alt text and the menu's label carry the name
-    expect(header).toMatch(/<div className="wordmark display" aria-hidden="true">/);
+  it("renders the translated name whole — no lead/tail split left behind", () => {
+    expect(header).not.toMatch(/wordmark-tail/);
+    expect(header).not.toMatch(/nameLead/);
+    expect(header).toMatch(/<div className="wordmark display" aria-hidden="true">\s*\{t\.appName\}\s*<\/div>/);
   });
 
-  it("hides the tail from 439px down and the whole wordmark from 374px down", () => {
-    expect(tailQuery, "a max-width query must hide .wordmark-tail").toBeTruthy();
-    expect(noneQuery, "a max-width query must hide .wordmark").toBeTruthy();
-    expect(tailQuery.body).toMatch(/display: none/);
-    expect(noneQuery.body).toMatch(/display: none/);
-    expect(tailQuery.px).toBe(439);
-    expect(noneQuery.px).toBe(374);
-    expect(noneQuery.px).toBeLessThan(tailQuery.px);
+  it("wraps to two lines on phones instead of truncating or dropping a word", () => {
+    expect(wrapBand, "the 439px band must exist").toContain(".header-left .wordmark");
+    expect(wrapBand).toMatch(/white-space: normal/);
+    expect(wrapBand).toMatch(/overflow: visible/);
+    expect(wrapBand).toMatch(/text-overflow: clip/);
+    expect(wrapBand).not.toMatch(/nowrap/);
+    expect(wrapBand).not.toMatch(/ellipsis/);
+    expect(wrapBand).not.toMatch(/display: none/);
   });
 
-  it("writes the steps in em, so they move with the visitor's text size", () => {
-    expect(css).toMatch(/@media \(max-width: 27\.4375em\)/);
-    expect(css).toMatch(/@media \(max-width: 23\.375em\)/);
+  it("uses the higher-specificity selector, or the 600px nowrap rule would win", () => {
+    // the <=600px rule sets .header-left .wordmark { white-space: nowrap }; a
+    // plainer .wordmark here loses that tie on every phone and silently reverts
+    // to one truncated line (this exact regression was caught in the browser).
+    expect(wrapBand).toMatch(/\.header-left \.wordmark \{/);
   });
 
-  it("never shows a step that does not fit — in either language, at every phone width", () => {
-    expect(tailQuery && noneQuery).toBeTruthy();
-    for (let width = 320; width <= 767; width += 1) {
-      const state = width <= noneQuery.px ? "none" : width <= tailQuery.px ? "lead" : "full";
-      if (state === "none") continue;
-      for (const lang of ["en", "kn"]) {
-        // 640px and up the header has more room and a bigger wordmark: out of scope
-        // of this model, which covers the phone header (<= 600px).
-        if (width > 600) continue;
-        const spare = ROOM(width, lang) - NEED[lang][state];
-        expect(spare, `${lang} ${state} at ${width}px`).toBeGreaterThanOrEqual(5);
-      }
-    }
+  it("steps the type down once more before it gives up entirely", () => {
+    expect(smallBand).toMatch(/\.header-left \.wordmark \{ font-size: 0\.72rem; \}/);
+    expect(hideBand).toMatch(/\.header-left \.wordmark \{ display: none; \}/);
   });
 
-  it("would NOT fit without the steps — that is the defect this replaces", () => {
-    // The whole English name on a 390px screen: 85px of room for 129px of text.
-    expect(ROOM(390, "en")).toBeLessThan(NEED.en.full);
-    expect(ROOM(412, "en")).toBeLessThan(NEED.en.full);
-    // ...and the first word alone fits where the whole name does not.
-    expect(ROOM(390, "en")).toBeGreaterThan(NEED.en.lead);
-  });
-
-  it("keeps the ellipsis as the last line of defence", () => {
+  it("keeps the ellipsis only as the desktop last line of defence", () => {
     const rules = [...css.matchAll(/\.wordmark \{[^}]*\}/g)].map((m) => m[0]);
     expect(rules.some((r) => /text-overflow: ellipsis/.test(r) && /overflow: hidden/.test(r))).toBe(true);
   });
