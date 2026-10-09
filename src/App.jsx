@@ -9,6 +9,7 @@ import AboutView from "./components/AboutView.jsx";
 import SevaView from "./components/SevaView.jsx";
 import ContactView from "./components/ContactView.jsx";
 import Contact from "./components/Contact.jsx";
+import ReminderStrip from "./components/ReminderStrip.jsx";
 import { translations } from "./data/content.js";
 import useLocalStorage from "./hooks/useLocalStorage.js";
 import { tabFromHash } from "./utils/route.js";
@@ -655,6 +656,8 @@ export default function OmkarSamithiApp() {
           onGoToAbout={() => setTab("about")}
         />
       )}
+
+      <ReminderStrip t={t} lang={lang} programs={programs} />
 
       <main
           key={tab}

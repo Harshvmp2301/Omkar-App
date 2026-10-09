@@ -2218,6 +2218,63 @@ select.admin-input::-ms-expand { display: none; }
   .hero-ctas { margin-top: 8px; }
 }
 
+/* The reminder line (round 28): one quiet notice under the header, never
+   more than one at a time. It sits in the flow between the sticky header and
+   the view, so nothing jumps when it appears or is dismissed mid-read. The
+   gold dot is the only decoration — the line itself is body-muted text on the
+   panel ground, in both themes, and it animates nothing. */
+.remind-strip {
+  /* Out of flow on purpose: the hero's vertical budget is exactly
+     100svh - header, so a strip in the flow would push the CTA row below the
+     fold by its own height — on the very phones round 27 just rescued. Parked
+     absolutely under the sticky header it overlays the hero's empty sky,
+     costs nothing, and scrolls away like any other line. */
+  position: absolute;
+  top: var(--header-h, 80px);
+  left: 0;
+  right: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+.remind-dot {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold-text-bright);
+}
+.remind-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.remind-x {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.remind-x:hover { color: var(--gold-text-bright); }
+.remind-x:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
 /* Buttons that sit in a row rather than filling a form */
 .btn-inline { display: inline-flex; width: auto; align-items: center; justify-content: center; gap: 6px; }
 .btn-quiet {
