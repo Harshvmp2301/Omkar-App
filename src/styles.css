@@ -55,7 +55,11 @@
   --t-med: 0.32s;
 
   /* type scale (fluid) */
-  --font-display: 'Cinzel', serif;
+  /* Kannada set in the display face used to fall through to whatever serif the
+     device happens to have — a different face from the body, and empty boxes on a
+     phone with no Kannada system font. Cinzel has no Kannada, so Kannada glyphs
+     take the loaded webfont; Latin still takes Cinzel. */
+  --font-display: 'Cinzel', 'Noto Sans Kannada', serif;
   --font-body: 'Karla', 'Noto Sans Kannada', sans-serif;
   --text-hero: clamp(1.45rem, 1rem + 1.8vw, 2.25rem);
   --text-h2: clamp(1.2rem, 1rem + 0.9vw, 1.55rem);
@@ -574,7 +578,7 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
   font-weight: 700;
   color: var(--gold-text-bright);
   margin: 0 0 8px 0;
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-display);
 }
 .fest-snippet {
   font-size: 0.8rem;
@@ -700,8 +704,18 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
   padding: 6px 0;
   border-bottom: 1px solid var(--line);
 }
-.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+.cal-grid {
+  /* minmax(0, 1fr), never plain 1fr: a 1fr track's minimum is its content, so ONE
+     long chip ("Omkar Naadamrutha", a festival name) widened its own column and
+     starved the others — measured on a 390px phone: 72/23/110/23/65/23/88px inside
+     a 348px wrapper, with the Saturday column sliced off by the calendar's
+     overflow: hidden (the "Mahalaya" chip cut mid-word). With a zero minimum the
+     seven tracks are equal and the chips' own ellipsis does the truncating. */
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
 .cal-cell {
+  min-width: 0; /* belt and braces for the track minimum, above */
   min-height: 64px;
   padding: 4px 4px 6px;
   border-right: 1px solid var(--grid-line);
@@ -742,7 +756,7 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: 'Karla', sans-serif;
+  font-family: var(--font-body);
 }
 .cal-chip.festival { background: var(--gold); color: var(--on-gold); }
 .cal-chip.festival:hover { background: var(--gold-bright); }
@@ -783,7 +797,7 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
   padding: 10px 12px;
   font-size: 0.75rem;
   color: var(--muted);
-  font-family: 'Karla', sans-serif;
+  font-family: var(--font-body);
   line-height: 1.5;
 }
 
@@ -1070,7 +1084,7 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
 .field label {
   display: block;
   color: var(--gold-text-bright);
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-display);
   font-size: 0.76rem;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -1086,7 +1100,7 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
   color: var(--ivory);
   padding: 12px 14px;
   font-size: 0.9rem;
-  font-family: 'Karla', sans-serif;
+  font-family: var(--font-body);
   transition: border-color 0.15s;
 }
 .field input::placeholder,
@@ -1110,7 +1124,7 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
   width: 100%;
   background: var(--gold);
   color: var(--on-gold);
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-display);
   font-weight: 700;
   font-size: 0.92rem;
   letter-spacing: 0.06em;
@@ -1144,7 +1158,7 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
   padding: 16px 40px 16px 18px;
   cursor: pointer;
   color: inherit;
-  font-family: 'Karla', sans-serif;
+  font-family: var(--font-body);
   transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
 }
 .seva-card:hover { transform: translateY(-2px); border-color: var(--gold); }
@@ -2163,6 +2177,18 @@ select.admin-input::-ms-expand { display: none; }
   justify-content: center;
   gap: 10px;
   margin-top: 18px;
+}
+
+/* Short phones (around 745px and below): the CTA row — already one row from
+   700px down — sat 15-40px below the first screen, because the mark's reserved
+   clearance plus the copy is taller than the viewport. The mark's size and
+   centre are untouchable, so the recoverable height is spacing: this tightens
+   only margins and padding, on phones, on short viewports. Nothing changes on
+   a tall phone, a tablet or a desktop. */
+@media (max-width: 700px) and (max-height: 790px) {
+  .hero { padding-bottom: 14px; } /* was clamp(24px, 7vh, 90px): ~38px at 745px tall */
+  .hero h1 { margin: 5px 0 2px; }
+  .hero-ctas { margin-top: 10px; gap: 8px; }
 }
 
 /* Buttons that sit in a row rather than filling a form */

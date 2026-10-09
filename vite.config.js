@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -46,16 +47,57 @@ export default defineConfig(({ mode }) => {
     envDir: 'config',
     plugins: [
       {
-        name: "force-download-for-transfer",
+        // DEV ONLY: serves the delivery patch (and the notes) straight from the
+        // repository root at /transfer/<name>, as a forced download, so the
+        // preview itself carries a working download link. configureServer never
+        // runs in a production build, and the whitelist below is the whole
+        // surface — nothing else in the repo is reachable through it.
+        name: "patch-download",
         configureServer(server) {
+          const ALLOW = ["omkar-ux-redesign.patch", "TRANSFER-NOTES.md"];
           server.middlewares.use((req, res, next) => {
-            const u = req.url || "";
-            if (u.startsWith("/transfer/") && (u.includes(".bundle") || u.includes(".patch"))) {
-              const file = u.split("?")[0].split("/").pop();
-              res.setHeader("Content-Disposition", 'attachment; filename="' + file + '"');
+            const u = (req.url || "").split("?")[0];
+            if (!u.startsWith("/transfer/")) return next();
+            const name = u.slice("/transfer/".length);
+            if (!ALLOW.includes(name)) {
+              res.statusCode = 404;
+              res.end("not here");
+              return;
             }
-            next();
+            readFile(join(root, name))
+              .then((buf) => {
+                res.setHeader("Content-Type", "application/octet-stream");
+                res.setHeader("Content-Disposition", `attachment; filename="${name}"`);
+                res.setHeader("Cache-Control", "no-store");
+                res.end(buf);
+              })
+              .catch(() => {
+                res.statusCode = 404;
+                res.end("missing");
+              });
           });
+        },
+        // DEV ONLY (apply: "serve"): a visible download chip in the corner of
+        // the preview, pointing at the endpoint above. The shipped index.html
+        // is never touched — a production build has neither the chip nor the
+        // endpoint, so nothing about the deployed site changes.
+        apply: "serve",
+        async transformIndexHtml(html) {
+          try {
+            const buf = await readFile(join(root, "omkar-ux-redesign.patch"));
+            const sha = createHash("sha256").update(buf).digest("hex").slice(0, 8);
+            const kb = (buf.length / 1024).toFixed(1);
+            const chip =
+              `<a id="omkar-patch-chip" href="/transfer/omkar-ux-redesign.patch" ` +
+              `title="sha256 ${sha}…" ` +
+              `style="position:fixed;right:14px;bottom:14px;z-index:5000;background:#C9972C;` +
+              `color:#170B10;font:700 12px/1.2 system-ui,sans-serif;padding:10px 14px;` +
+              `border-radius:999px;text-decoration:none;box-shadow:0 6px 18px rgba(0,0,0,.35)">` +
+              `&#11015; omkar-ux-redesign.patch &middot; ${kb} kB</a>`;
+            return html.replace("</body>", chip + "</body>");
+          } catch {
+            return html; // no patch at the root: no chip, preview still works
+          }
         },
       },
       {

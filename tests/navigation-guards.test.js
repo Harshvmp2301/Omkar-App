@@ -198,6 +198,105 @@ describe("the header can never be overprinted by the wordmark", () => {
   });
 });
 
+describe("the festival calendar fits a phone", () => {
+  // The owner's screenshot: "Omkar Naadamruth" cut mid-word. Measured in a real
+  // browser it was worse — a plain `1fr` track takes its minimum from its CONTENT,
+  // so one long chip widened its own column and starved the rest (72/23/110/23/
+  // 65/23/88px inside a 348px wrapper on a 390px phone), and the calendar's
+  // overflow: hidden sliced the Saturday column clean off. With a zero track
+  // minimum the seven columns are equal and the chips' own ellipsis truncates.
+  const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "");
+  const grid = css.slice(css.indexOf(".cal-grid {"), css.indexOf("}", css.indexOf(".cal-grid {")));
+  const cell = css.slice(css.indexOf(".cal-cell {"), css.indexOf("}", css.indexOf(".cal-cell {")));
+  const chipRules = [...css.matchAll(/\.cal-chip \{[^}]*\}/g)].map((m) => m[0]).join("\n");
+
+  it("gives the seven tracks a zero minimum, so no chip can widen its column", () => {
+    expect(grid).toMatch(/grid-template-columns: repeat\(7, minmax\(0, 1fr\)\)/);
+    expect(grid).not.toMatch(/repeat\(7, 1fr\)/);
+  });
+
+  it("lets the cells shrink with their track", () => {
+    expect(cell).toMatch(/min-width: 0/);
+  });
+
+  it("truncates a long name with an ellipsis, never a hard slice", () => {
+    expect(chipRules).toMatch(/overflow: hidden/);
+    expect(chipRules).toMatch(/text-overflow: ellipsis/);
+    expect(chipRules).toMatch(/white-space: nowrap/);
+  });
+
+  it("keeps the full name in the DOM and in a tooltip", () => {
+    const cal = readFileSync(new URL("../src/components/FestivalCalendar.jsx", import.meta.url), "utf8");
+    expect(cal).toMatch(/title=\{`\$\{it\.title\}/);
+    expect(cal).toMatch(/>\s*\{it\.title\}\s*</);
+  });
+});
+
+describe("Kannada display type uses the loaded Kannada webfont", () => {
+  // The wordmark, eyebrows, buttons and headings set in --font-display used to
+  // fall through to whatever serif the DEVICE has — a different face from the
+  // body, and empty boxes on a phone with no Kannada system font. Cinzel has no
+  // Kannada glyphs, so Kannada now takes Noto Sans Kannada; Latin keeps Cinzel.
+  const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  it("lists the webfont between Cinzel and the generic serif", () => {
+    expect(css).toMatch(/--font-display: 'Cinzel', 'Noto Sans Kannada', serif;/);
+  });
+
+  it("routes every element through the two tokens — no hardcoded family", () => {
+    // Seven rules hardcoded 'Cinzel', serif or 'Karla', sans-serif (the primary
+    // button, festival titles, calendar chips, captions, form fields, seva
+    // cards). A hardcoded stack skips the token, so its Kannada fell through to
+    // the device — tofu on a phone with no Kannada system font. The tokens are
+    // the single place the faces are named.
+    expect(css).not.toMatch(/font-family: '(Cinzel|Karla)'/);
+  });
+});
+
+describe("the viewer hint speaks touch as well as keys", () => {
+  // It read "Use ← → keys or click to browse · Esc to close" on phones, which
+  // have neither keys nor a mouse. Both languages now lead with the gesture a
+  // phone has, and keep the keyboard path for desktops.
+  const content = readFileSync(new URL("../src/data/content.js", import.meta.url), "utf8");
+  const en = content.match(/lightboxHint: "([^"]*)",/g).join("\n");
+  it("leads with swipe and arrows in English, and drops the keys-only wording", () => {
+    expect(en).toMatch(/Swipe or use the arrows to browse/);
+    expect(en).not.toMatch(/keys or click/);
+  });
+  it("mirrors it in Kannada", () => {
+    expect(en).toMatch(/ಸ್ವೈಪ್ ಅಥವಾ ಬಾಣಗಳಿಂದ ಬ್ರೌಸ್ ಮಾಡಿ/);
+    expect(en).not.toMatch(/ಕೀಗಳನ್ನು/);
+  });
+});
+
+describe("short phones get the CTA row onto the first screen", () => {
+  // On a phone around 745px tall the (already single) row of hero buttons sat
+  // 15-40px below the fold: the mark's reserved clearance plus the copy is
+  // taller than the viewport. The mark's size and centre are untouchable, so
+  // the recoverable height is spacing — margins and padding only, phones only,
+  // short viewports only.
+  const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "");
+  const at = css.indexOf("@media (max-width: 700px) and (max-height: 790px)");
+  const rule = at === -1 ? "" : css.slice(at, css.indexOf("}", css.indexOf(".hero-ctas", at)) + 1);
+
+  it("exists, and tightens only spacing", () => {
+    expect(at, "the short-phone media query must exist").toBeGreaterThan(-1);
+    expect(rule).toMatch(/\.hero \{ padding-bottom: 14px; \}/);
+    expect(rule).toMatch(/\.hero-ctas \{ margin-top: 10px; gap: 8px; \}/);
+  });
+
+  it("never touches the mark", () => {
+    expect(rule).not.toMatch(/app-logo|clamp\(88px/);
+  });
+
+  it("leaves tall phones, tablets and desktops alone", () => {
+    expect(rule).not.toMatch(/min-width/);
+    // the base rule (the one carrying the flex row) keeps its full spacing
+    expect(css).toMatch(/\.hero-ctas \{[^}]*margin-top: 18px/);
+  });
+});
+
 describe("the header wordmark steps down by what fits, and is never cut mid-word", () => {
   // The owner's phones read "OMKAR S…": beside four controls a 390px screen
   // leaves the wordmark 85px and the whole name needs 129px. Rather than truncate,
