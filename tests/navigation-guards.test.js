@@ -558,3 +558,45 @@ describe("reduced motion switches the flight off entirely", () => {
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)/);
   });
 });
+
+describe("very short phones trade the duplicated eyebrow for the fold", () => {
+  const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  const hero = readFileSync(new URL("../src/components/Hero.jsx", import.meta.url), "utf8");
+  const bandStart = css.indexOf("@media (max-width: 700px) and (max-height: 46.5em)");
+  const band = bandStart === -1 ? "" : css.slice(bandStart, css.indexOf("\n}", bandStart));
+
+  it("has a band for phones up to 744px tall, the measured hole", () => {
+    expect(bandStart).toBeGreaterThan(-1);
+    expect(band).toContain("max-height: 46.5em");
+  });
+
+  it("steps the eyebrow aside there, because the header already says the name", () => {
+    expect(band).toContain(".hero .hero-eyebrow { display: none; }");
+  });
+
+  it("tightens only spacing inside the band", () => {
+    expect(band).toContain(".hero { padding-bottom: 10px; }");
+    expect(band).toContain(".hero h1 { margin: 4px 0 2px; }");
+    expect(band).toContain(".hero .hero-line { margin-top: 4px; line-height: 1.5; }");
+    expect(band).toContain(".hero-ctas { margin-top: 8px; }");
+  });
+
+  it("never touches the mark, its centre or the type scale inside the band", () => {
+    expect(band).not.toContain(".app-logo");
+    expect(band).not.toContain("clamp(");
+    expect(band).not.toContain("font-size");
+    expect(band).not.toContain("transform");
+  });
+
+  it("keeps the eyebrow everywhere the band does not match", () => {
+    // the base rule still paints it on tall phones, tablets and desktops ...
+    expect(css).toMatch(/\.hero \.hero-eyebrow \{\n\s*margin: 0 0 8px;/);
+    // ... and the markup still carries it, so nothing is removed from the page
+    expect(hero).toContain('className="hero-eyebrow display"');
+  });
+
+  it("leaves the round-24 short-phone band exactly as it was", () => {
+    const r24 = css.slice(css.indexOf("@media (max-width: 700px) and (max-height: 790px)"));
+    expect(r24.slice(0, r24.indexOf("\n}"))).toContain("padding-bottom: 14px");
+  });
+});

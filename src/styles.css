@@ -2202,6 +2202,22 @@ select.admin-input::-ms-expand { display: none; }
   .hero-ctas { margin-top: 10px; gap: 8px; }
 }
 
+/* Very short phones (iPhone SE class, ~640-700px tall): after round 24's
+   tightening the CTA row still sat 23-29px below the first screen there. The
+   last recoverable line is the eyebrow — and on phones it is now a duplicate:
+   round 25 put the FULL name in the header, so within ~90px the name appeared
+   twice. On short viewports the header's copy wins and the hero's eyebrow steps
+   aside. Nothing else in the composition moves: the mark keeps its size and its
+   centre, the h1, the lead sentence and the lamps all stay exactly as they are.
+   On a tall phone, a tablet or a desktop the eyebrow is untouched. */
+@media (max-width: 700px) and (max-height: 46.5em) { /* 744px: measured hole ran 701-744 */
+  .hero .hero-eyebrow { display: none; }
+  .hero { padding-bottom: 10px; }
+  .hero h1 { margin: 4px 0 2px; }
+  .hero .hero-line { margin-top: 4px; line-height: 1.5; }
+  .hero-ctas { margin-top: 8px; }
+}
+
 /* Buttons that sit in a row rather than filling a form */
 .btn-inline { display: inline-flex; width: auto; align-items: center; justify-content: center; gap: 6px; }
 .btn-quiet {
