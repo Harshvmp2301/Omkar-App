@@ -465,7 +465,7 @@ describe("the logo is served at the resolution it is drawn at", () => {
   });
 });
 
-describe("the program rows show the next occurrence, never the past one", () => {
+describe("the program rows show stored dates — never the past, never an invented year", () => {
   const app = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
 
   it("derives the programme list through upcomingEvents", () => {
@@ -505,13 +505,19 @@ describe("the program rows show the next occurrence, never the past one", () => 
     expect(diya).toMatch(/This is what the LAMPS render/);
   });
 
-  it("never sends a row an event it must hide, so reminders cannot fire for a past day", () => {
-    // toggleNotify fires the "upcoming program" notification straight away.
-    // With the rows rolled forward there is no past date left to tap.
+  it("never sends a row a year nobody entered, so reminders cannot fire for one", () => {
+    // toggleNotify fires the "upcoming program" notification straight away,
+    // and the reminder line counts down to programs[0]: both must only ever
+    // see dates the dashboard actually stores.
     const utils = readFileSync(new URL("../src/utils/events.js", import.meta.url), "utf8");
-    const body = utils.slice(utils.indexOf("export function upcomingEvents"));
-    expect(body).toContain("if (thisYear && thisYear >= today) return thisYear;");
-    expect(body).toContain("return occurrenceInYear(date, year + 1);");
+    const body = utils.slice(
+      utils.indexOf("export function upcomingEvents"),
+      utils.indexOf("export function nextEvent")
+    );
+    expect(body).not.toContain("occurrenceInYear");
+    expect(body).toContain("dateOnly(event.date) >= today");
+    // the lamps keep their same-year view, and only the lamps
+    expect(utils).toMatch(/export function rollDates/);
   });
 });
 

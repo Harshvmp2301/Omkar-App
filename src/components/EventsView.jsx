@@ -11,10 +11,12 @@ import FestivalCalendar from "./FestivalCalendar.jsx";
  * the times a reminder can be set for, the .ics downloads and the program chips
  * in the calendar — so none of them can contradict another.
  *
- * This view deliberately does not fetch them itself — doing so is what let the
- * calendar show a date the list had already replaced. The rows therefore only
- * ever carry a date the visitor can still act on: a programme that has already
- * happened this year is shown at next year's occurrence, never as upcoming.
+ * This view deliberately does not fetch them itself — doing so is what let
+ * the calendar show a date the list had already replaced. The rows carry
+ * exactly the dates the dashboard stores (round 30): a programme whose date
+ * has passed has happened, so it leaves the upcoming list rather than being
+ * re-dated into a year nobody entered. With nothing ahead, one plain line
+ * says so, in both languages.
  */
 export default function EventsView({ t, lang, events, notify, onToggleNotify, flash }) {
 
@@ -34,6 +36,8 @@ export default function EventsView({ t, lang, events, notify, onToggleNotify, fl
         <h1 className="section-title display">{t.upcomingPrograms}</h1>
         <span className="note">{t.sampleDates}</span>
       </div>
+
+      {events.length === 0 ? <p className="note events-empty">{t.noUpcoming}</p> : null}
 
       <div className="event-list">
         {events.map((e) => {

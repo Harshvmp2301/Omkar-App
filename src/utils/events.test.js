@@ -272,15 +272,13 @@ describe("upcomingEvents — the list the program rows render", () => {
     expect(upcoming.find((e) => e.title === "Sri Anjaneya Pooje").date).toBe("2026-12-18");
   });
 
-  it("moves a program that has already happened to next year's occurrence", () => {
-    // The defect this replaces: on 8 October 2026 the list showed Jnanamrutha
-    // as 1 April 2026 and Naadamrutha as 2 October 2026 — six months and six
-    // days in the past — under the heading "Upcoming Programs".
+  it("drops a program that has happened instead of inventing next year", () => {
+    // The defect this replaces: on 10 October 2026 the list showed Jnanamrutha
+    // as 1 April 2027 and Naadamrutha as 2 October 2027 — years nobody had
+    // entered — while the dashboard correctly said 01 Apr 2026 / 02 Oct 2026.
     const upcoming = upcomingEvents(curated, at("2026-10-08"));
-    const dateOf = (title) => upcoming.find((e) => e.title === title).date;
-    expect(dateOf("Omkar Jnanamrutha")).toBe("2027-04-01");
-    expect(dateOf("Omkar Naadamrutha")).toBe("2027-10-02");
-    expect(dateOf("Sri Anjaneya Pooje")).toBe("2026-12-18");
+    expect(upcoming.map((e) => e.title)).toEqual(["Sri Anjaneya Pooje"]);
+    expect(upcoming[0].date).toBe("2026-12-18");
   });
 
   it("counts today as still ahead, so the day itself is not skipped", () => {
@@ -288,17 +286,24 @@ describe("upcomingEvents — the list the program rows render", () => {
     // jumping a whole year forward.
     const upcoming = upcomingEvents(curated, at("2026-12-18"));
     expect(upcoming.find((e) => e.title === "Sri Anjaneya Pooje").date).toBe("2026-12-18");
-    expect(upcoming.find((e) => e.title === "Omkar Jnanamrutha").date).toBe("2027-04-01");
+    expect(upcoming.find((e) => e.title === "Omkar Jnanamrutha")).toBeUndefined();
   });
 
-  it("rolls every program when the year turns", () => {
-    const upcoming = upcomingEvents(curated, at("2027-01-05"));
-    expect(upcoming.map((e) => e.date)).toEqual(["2027-04-01", "2027-10-02", "2027-12-18"]);
+  it("shows nothing at all once every stored date is past", () => {
+    // 5 January 2027 and the dashboard has not entered the new year's dates
+    // yet: the honest answer is an empty list — and one plain line on the
+    // page — not April 2027 by arithmetic.
+    expect(upcomingEvents(curated, at("2027-01-05"))).toEqual([]);
   });
 
   it("sorts by next date, so the list reads as what is ahead", () => {
     // Dec 2026 first, then the two 2027 dates — not the stored order.
-    const upcoming = upcomingEvents(curated, at("2026-10-08"));
+    const stored = [
+      { id: "n", title: "Omkar Naadamrutha", date: "2027-10-02" },
+      { id: "a", title: "Sri Anjaneya Pooje", date: "2026-12-18" },
+      { id: "j", title: "Omkar Jnanamrutha", date: "2027-04-01" },
+    ];
+    const upcoming = upcomingEvents(stored, at("2026-10-08"));
     expect(upcoming.map((e) => e.date)).toEqual(["2026-12-18", "2027-04-01", "2027-10-02"]);
     expect(upcoming.map((e) => e.title)).toEqual([
       "Sri Anjaneya Pooje",
@@ -326,12 +331,8 @@ describe("upcomingEvents — the list the program rows render", () => {
       { id: "e3", title: "Sri Anjaneya Pooje", date: "2026-12-18" },
     ];
     const upcoming = upcomingEvents(mixed, at("2026-10-08"));
-    expect(upcoming.map((e) => e.title)).toEqual([
-      "Sri Anjaneya Pooje",
-      "Omkar Naadamrutha",
-      "No date yet",
-    ]);
-    expect(upcoming[2].date).toBe("");
+    expect(upcoming.map((e) => e.title)).toEqual(["Sri Anjaneya Pooje", "No date yet"]);
+    expect(upcoming[1].date).toBe("");
   });
 
   it("leaves a date the Samithi set for a future year alone", () => {
@@ -346,12 +347,17 @@ describe("upcomingEvents — the list the program rows render", () => {
   });
 
   it("agrees with nextEvent — the homepage and the first row cannot disagree", () => {
-    for (const iso of ["2026-10-07", "2026-12-18", "2026-12-20", "2027-01-05", "2027-04-02"]) {
+    for (const iso of ["2026-10-07", "2026-12-18"]) {
       const featured = nextEvent(curated, at(iso));
       const firstDated = upcomingEvents(curated, at(iso)).find((e) => e.date);
       expect(featured.title).toBe(firstDated.title);
       expect(featured.date).toBe(firstDated.date);
     }
+  });
+
+  it("stays empty-handed together with nextEvent when nothing is ahead", () => {
+    expect(upcomingEvents(curated, at("2026-12-20")).find((e) => e.date)).toBeUndefined();
+    expect(nextEvent(curated, at("2026-12-20"))).toBeNull();
   });
 
   it("rolls a dashboard date through the merge the same way", () => {
@@ -360,7 +366,9 @@ describe("upcomingEvents — the list the program rows render", () => {
     ];
     const merged = mergeEvents(curated, rows, "en");
     const upcoming = upcomingEvents(merged, at("2026-10-08"));
-    expect(upcoming.find((e) => e.title === "Omkar Naadamrutha").date).toBe("2027-10-02");
+    // the dashboard row's own date has passed, so it leaves the public list
+    expect(upcoming.find((e) => e.title === "Omkar Naadamrutha")).toBeUndefined();
+    expect(upcoming.find((e) => e.title === "Sri Anjaneya Pooje").date).toBe("2026-12-18");
   });
 });
 
@@ -421,12 +429,11 @@ describe("nextEvent — the program the homepage leads with", () => {
     expect(nextEvent(rolled, at("2027-02-01")).date).toBe("2027-04-01");
   });
 
-  it("counts a finished program into next year rather than dropping it", () => {
-    // 20 December 2026: everything in the list has happened, so the featured
-    // card looks ahead to the April program instead of showing a stale date.
-    const next = nextEvent(curated, at("2026-12-20"));
-    expect(next.title).toBe("Omkar Jnanamrutha");
-    expect(next.date).toBe("2027-04-01");
+  it("steps aside when every stored date is behind the Samithi", () => {
+    // 20 December 2026: the year's programmes are done and the dashboard has
+    // not entered the next ones. The homepage block hides (null) rather than
+    // leading with a year nobody entered.
+    expect(nextEvent(curated, at("2026-12-20"))).toBeNull();
   });
 
   it("never features an undated program while a dated one is ahead", () => {

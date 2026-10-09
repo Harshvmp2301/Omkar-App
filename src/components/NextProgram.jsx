@@ -12,9 +12,9 @@ import { directionsUrl } from "../utils/venue.js";
  * a way to read the full list. The programs that follow are listed quietly
  * underneath — the featured one is the point.
  *
- * The date is `nextEvent`'s, which counts a program that has already passed
- * this year into next year's occurrence, so this block never leads with a date
- * in the past.
+ * The date is `nextEvent`'s: the first stored date still ahead (round 30),
+ * so this block never leads with a date that has passed — and with nothing
+ * ahead it renders nothing at all, rather than a year nobody entered.
  */
 export default function NextProgram({ t, lang, events, onViewAll, flash }) {
   const featured = nextEvent(events);

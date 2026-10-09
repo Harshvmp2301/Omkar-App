@@ -10,7 +10,7 @@
  * src/data/content.js, so the dropdown and the built-in list cannot drift.
  */
 
-import { annualOccurrence, dateOnly, occurrenceInYear } from "./calendar.js";
+import { annualOccurrence, dateOnly } from "./calendar.js";
 import { listPublishedEvents, supabaseEnabled } from "./supabase.js";
 
 export const EVENT_TITLES = [
@@ -200,53 +200,37 @@ export function rollDates(events = [], now = new Date()) {
 }
 
 /**
- * Every program at its NEXT occurrence — today or later — in date order.
+ * The programs a visitor may still act on — at the dates the Samithi stored,
+ * and at nothing else (round 30).
  *
- * This is the list the program rows, the homepage blocks and the festival
- * calendar render, and it answers one question: when is this program next?
+ * The dashboard is where a committee decision becomes a date. Until this
+ * round the public list re-dated a program whose day had passed to the same
+ * day NEXT year, so on 10 October 2026 a visitor read "1 Apr 2027, 173 days
+ * to go" while the dashboard — correctly — said 01 Apr 2026. Two truths on
+ * two screens: the owner's complaint was exactly that drift.
  *
- * `rollDates` below answers a different question — "what date does this
- * programme fall on in the year we are in?" — and the two must not be
- * confused. The lamps need `rollDates`: a lamp stays lit after its programme
- * has finished, until New Year, so the April programme is still April once it
- * is behind us. A list headed "Upcoming Programs" cannot use that: on 8
- * October 2026 it showed the April and the 2 October programmes, both of them
- * already past, above countdowns that no longer existed.
+ * The rule now: a dated program appears while its stored date is today or
+ * later, and leaves the upcoming list once that date is past — it has
+ * happened. No year anybody did not enter ever reaches a visitor. The
+ * dashboard keeps every row (it is the record), the lamps keep `rollDates`
+ * (a lamp stays lit until New Year), and the festival calendar computes its
+ * own dates; only THIS list changed, and it now agrees with the dashboard
+ * line for line.
  *
- * So: a programme whose day has passed this year moves to next year's
- * occurrence, a programme dated today stays today (the day itself is still
- * ahead of the visitor), a date the Samithi set for a future year is already
- * the next occurrence and is left alone, and the result is sorted by date so
- * the list reads as a calendar of what is ahead.
- *
- * Sorting is stable: programmes sharing a date keep their existing order, and
- * an undated programme (TBA) has no place in time, so it keeps its order at
- * the end and still renders as TBA, exactly as before.
+ * A program with no date (TBA) has no place in time: it keeps its order at
+ * the end of the list and renders as TBA, exactly as before. Sorting is
+ * stable, so programs sharing a date keep their stored order.
  */
 export function upcomingEvents(events = [], now = new Date()) {
   const list = Array.isArray(events) ? events : [];
   const today = dateOnly(now.toISOString());
-  const year = now.getFullYear();
-
-  /** The next occurrence of one stored date: today or later, never earlier. */
-  const nextOccurrence = (dateISO) => {
-    const date = dateOnly(dateISO);
-    // A date already set for a future year is the next occurrence as written.
-    if (Number(date.slice(0, 4)) > year) return date;
-    const thisYear = occurrenceInYear(date, year);
-    if (thisYear && thisYear >= today) return thisYear;
-    return occurrenceInYear(date, year + 1);
-  };
 
   return list
-    .map((event, index) => {
-      const rolled = event && event.date ? nextOccurrence(event.date) : "";
-      const item = rolled && rolled !== event.date ? { ...event, date: rolled } : event;
-      return { item, index };
-    })
+    .map((event, index) => ({ event, index }))
+    .filter(({ event }) => !event || !event.date || dateOnly(event.date) >= today)
     .sort((a, b) => {
-      const left = a.item && a.item.date;
-      const right = b.item && b.item.date;
+      const left = a.event && a.event.date;
+      const right = b.event && b.event.date;
       if (left && right) {
         if (left === right) return a.index - b.index;
         return left < right ? -1 : 1;
@@ -255,28 +239,26 @@ export function upcomingEvents(events = [], now = new Date()) {
       if (right) return 1;
       return a.index - b.index;
     })
-    .map(({ item }) => item);
+    .map(({ event }) => event);
 }
 
 /**
  * The one program to put in front of a visitor: the next dated one.
  *
  * The homepage leads with a single featured program, and "next" has to mean
- * next — a program that finished yesterday must not be the headline. Dates
- * repeat annually, so a program whose day has already passed this year is
- * counted into next year rather than dropped: after Anjaneya Pooje in
- * December, the featured program becomes April's Jnanamrutha.
- *
- * It is the first dated programme of `upcomingEvents`, which is sorted, so the
- * featured card and the first row of the list can never disagree about what is
- * next. A program with no date is never featured (there is no date to act on),
- * and when nothing has a date at all the first program is returned so the
- * caller still has something to show — it renders as TBA, exactly like the
- * list.
+ * next — a program that finished yesterday must not be the headline, and a
+ * year nobody entered must not be the headline either. It is the first dated
+ * programme of `upcomingEvents`, which is sorted, so the featured card and
+ * the first row of the list can never disagree about what is next. With no
+ * dated program ahead (this year's programmes are behind the Samithi and the
+ * dashboard has not entered the next ones yet) a TBA row may still lead —
+ * there is a program, its date is simply not announced — and with nothing at
+ * all ahead this returns null and the homepage block steps aside.
  */
 export function nextEvent(events = [], now = new Date()) {
   const list = Array.isArray(events) ? events : [];
-  return upcomingEvents(list, now).find((e) => e && e.date) || list[0] || null;
+  const ahead = upcomingEvents(list, now);
+  return ahead.find((e) => e && e.date) || ahead[0] || null;
 }
 
 /**

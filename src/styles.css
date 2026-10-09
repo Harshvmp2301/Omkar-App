@@ -2235,6 +2235,15 @@ select.admin-input::-ms-expand { display: none; }
   .hero-ctas { margin-top: 8px; }
 }
 
+/* The empty upcoming list (round 30): one plain line where the rows would be,
+   so a visitor never reads an invented year and never reads nothing at all. */
+.events-empty {
+  display: block;
+  margin: 4px 0 18px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 /* The reminder line (round 28): one quiet notice under the header, never
    more than one at a time. It sits in the flow between the sticky header and
    the view, so nothing jumps when it appears or is dismissed mid-read. The

@@ -250,8 +250,10 @@ describe("every tab, rendered in full", () => {
       return Date.UTC(Number(year), months.indexOf(month), Number(day));
     };
     // Announced dates only: an undated programme renders as TBA, not a date.
+    // The "also" row may legitimately be EMPTY: round 30 lists only programs
+    // whose stored date is still ahead, and late in the year that can be one
+    // programme — the featured one — with nothing after it.
     const announced = others.filter((d) => months.some((m) => d.includes(m)));
-    expect(announced.length).toBeGreaterThan(0);
     const today = new Date();
     const midnight = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
     for (const human of [featured, ...announced]) {
