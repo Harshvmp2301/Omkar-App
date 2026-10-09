@@ -140,26 +140,157 @@ describe("the archive reads as curated, not as a CMS listing", () => {
   });
 });
 
-describe("the voices read as a roll of honour, not a tag cloud", () => {
+describe("the voices are visible, readable tiles", () => {
   const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8")
     .replace(/\/\*[\s\S]*?\*\//g, "");
   const block = css.slice(css.indexOf(".voices-name {"), css.indexOf(".voices-note"));
 
-  it("has no chips: no pill radius, no card background", () => {
-    expect(block).not.toMatch(/border-radius: var\(--r-pill\)/);
-    expect(block).not.toMatch(/background: var\(--panel\)/);
-    expect(block).not.toMatch(/border: 1px solid/);
+  it("gives every name a visible container again", () => {
+    // The roll-of-honour treatment (bare names, dot separators) is what the
+    // owner's screenshots show as unreadable: with nothing else on the line the
+    // dots looked like debris. The tiles are back — and they are the thing that
+    // makes the block read as a list of people.
+    expect(block).toMatch(/border: 1px solid var\(--line\)/);
+    expect(block).toMatch(/background: var\(--panel\)/);
+    expect(block).toMatch(/border-radius: var\(--r-pill\)/);
   });
 
-  it("separates the names with a restrained interpunct instead", () => {
-    expect(css).toMatch(/\.voices-name:not\(:last-child\)::after/);
-    expect(css).toMatch(/content: "·"/);
+  it("carries the separation in the GAP, not in a character", () => {
+    // The old `::after` dot sat inside each name, so a wrapped flex line ended
+    // with a stray "·" — the "hanging dots" in the report.
+    expect(css).not.toMatch(/\.voices-name:not\(:last-child\)::after/);
+    expect(css).not.toMatch(/content: "·"/);
+    expect(css).toMatch(/\.voices-names \{[^}]*gap:/);
   });
 
-  it("keeps the list semantics", () => {
+  it("keeps the list semantics and the centring", () => {
     const voices = component("Voices.jsx");
     expect(voices).toContain('<ul className="voices-names">');
     expect(voices).toContain("<li key={p.id}");
+    expect(css).toMatch(/\.voices-names \{[^}]*justify-content: center/);
+  });
+});
+
+describe("the header can never be overprinted by the wordmark", () => {
+  const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "");
+
+  it("lets the wordmark shrink and ellipsise instead of sliding under the icons", () => {
+    // The owner's screenshot: "OMKAR SAMITHI" running beneath the theme and
+    // language buttons, because neither the text nor its group could shrink.
+    // Every `.wordmark` rule that can apply must be able to truncate — the
+    // responsive ones included, or a breakpoint could reintroduce the overflow.
+    const rules = [...css.matchAll(/\.wordmark \{[^}]*\}/g)].map((m) => m[0]);
+    expect(rules.length).toBeGreaterThanOrEqual(3);
+    for (const rule of rules) {
+      if (rule.includes("white-space: nowrap")) {
+        expect(rule, rule).toMatch(/overflow: hidden/);
+        expect(rule, rule).toMatch(/text-overflow: ellipsis/);
+        expect(rule, rule).toMatch(/min-width: 0/);
+      }
+    }
+    expect(rules.some((r) => /min-width: 0/.test(r) && /text-overflow: ellipsis/.test(r))).toBe(true);
+  });
+
+  it("keeps the action buttons their full size and the left group shrinkable", () => {
+    expect(css).toMatch(/\.header-actions \{ flex: 0 0 auto; \}/);
+    expect(css).toMatch(/\.header-left \{[^}]*min-width: 0/);
+  });
+});
+
+describe("the header wordmark steps down by what fits, and is never cut mid-word", () => {
+  // The owner's phones read "OMKAR S…": beside four controls a 390px screen
+  // leaves the wordmark 85px and the whole name needs 129px. Rather than truncate,
+  // it steps down — the whole name, its first word, nothing — at widths measured
+  // in a real browser with the real typefaces.
+  const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "");
+  const header = readFileSync(new URL("../src/components/Header.jsx", import.meta.url), "utf8");
+
+  // MEASURED (Chromium, Cinzel / Noto Sans Kannada, 0.85rem, 0.05em tracking).
+  // Re-measure these if the header's controls or the wordmark's type change.
+  const NEED = { en: { full: 129.2, lead: 58.2 }, kn: { full: 85.8, lead: 44 } };
+  const ROOM = (width, lang) => width - (lang === "en" ? 305 : 320); // what the four controls leave
+
+  const queries = [...css.matchAll(/@media \(max-width: ([\d.]+)em\) \{\s*([^{}]+)\{([^{}]*)\}\s*\}/g)].map((m) => ({
+    px: Number(m[1]) * 16,
+    selector: m[2].trim(),
+    body: m[3],
+  }));
+  const tailQuery = queries.find((q) => q.selector === ".wordmark-tail");
+  const noneQuery = queries.find((q) => q.selector === ".wordmark");
+
+  it("splits the translated name into a lead word and a tail, inventing no text", () => {
+    expect(header).toMatch(/const \[nameLead, \.\.\.nameRest\] = t\.appName\.split\(" "\);/);
+    expect(header).toMatch(/<span className="wordmark-tail"> \{nameRest\.join\(" "\)\}<\/span>/);
+    // still decorative: the logo's alt text and the menu's label carry the name
+    expect(header).toMatch(/<div className="wordmark display" aria-hidden="true">/);
+  });
+
+  it("hides the tail from 439px down and the whole wordmark from 374px down", () => {
+    expect(tailQuery, "a max-width query must hide .wordmark-tail").toBeTruthy();
+    expect(noneQuery, "a max-width query must hide .wordmark").toBeTruthy();
+    expect(tailQuery.body).toMatch(/display: none/);
+    expect(noneQuery.body).toMatch(/display: none/);
+    expect(tailQuery.px).toBe(439);
+    expect(noneQuery.px).toBe(374);
+    expect(noneQuery.px).toBeLessThan(tailQuery.px);
+  });
+
+  it("writes the steps in em, so they move with the visitor's text size", () => {
+    expect(css).toMatch(/@media \(max-width: 27\.4375em\)/);
+    expect(css).toMatch(/@media \(max-width: 23\.375em\)/);
+  });
+
+  it("never shows a step that does not fit — in either language, at every phone width", () => {
+    expect(tailQuery && noneQuery).toBeTruthy();
+    for (let width = 320; width <= 767; width += 1) {
+      const state = width <= noneQuery.px ? "none" : width <= tailQuery.px ? "lead" : "full";
+      if (state === "none") continue;
+      for (const lang of ["en", "kn"]) {
+        // 640px and up the header has more room and a bigger wordmark: out of scope
+        // of this model, which covers the phone header (<= 600px).
+        if (width > 600) continue;
+        const spare = ROOM(width, lang) - NEED[lang][state];
+        expect(spare, `${lang} ${state} at ${width}px`).toBeGreaterThanOrEqual(5);
+      }
+    }
+  });
+
+  it("would NOT fit without the steps — that is the defect this replaces", () => {
+    // The whole English name on a 390px screen: 85px of room for 129px of text.
+    expect(ROOM(390, "en")).toBeLessThan(NEED.en.full);
+    expect(ROOM(412, "en")).toBeLessThan(NEED.en.full);
+    // ...and the first word alone fits where the whole name does not.
+    expect(ROOM(390, "en")).toBeGreaterThan(NEED.en.lead);
+  });
+
+  it("keeps the ellipsis as the last line of defence", () => {
+    const rules = [...css.matchAll(/\.wordmark \{[^}]*\}/g)].map((m) => m[0]);
+    expect(rules.some((r) => /text-overflow: ellipsis/.test(r) && /overflow: hidden/.test(r))).toBe(true);
+  });
+});
+
+describe("Kannada is legible in the small labels", () => {
+  const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "");
+
+  it("raises and de-tracks the footer headings when the document is Kannada", () => {
+    // ಅನ್ವೇಷಿಸಿ / ಸಂಪರ್ಕ at 0.66rem with 0.2em tracking — the owner could not
+    // read them. Kannada has no upper case and sets wider than Latin.
+    expect(css).toMatch(/:root\[lang="kn"\] \.footer-col-title \{[^}]*font-size: 0\.86rem/);
+    expect(css).toMatch(/:root\[lang="kn"\] \.footer-col-title \{[^}]*letter-spacing: 0\.05em/);
+    expect(css).toMatch(/:root\[lang="kn"\] \.footer-link/);
+  });
+
+  it("does not touch the English sizes", () => {
+    // The un-scoped rule keeps its own values; only `:root[lang="kn"]` overrides.
+    const base = css.slice(
+      css.lastIndexOf("\n.footer-col-title {"),
+      css.lastIndexOf("\n.footer-col-title {") + 220
+    );
+    expect(base).toMatch(/font-size: 0\.66rem/);
+    expect(base).toMatch(/letter-spacing: 0\.2em/);
   });
 });
 
@@ -253,6 +384,56 @@ describe("the logo is served at the resolution it is drawn at", () => {
   });
 });
 
+describe("the program rows show the next occurrence, never the past one", () => {
+  const app = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
+
+  it("derives the programme list through upcomingEvents", () => {
+    // The defect: rollDates() answers "which day is this programme in THIS
+    // year", so on 8 October 2026 the rows still said 1 April and 2 October —
+    // both already past — under the heading "Upcoming Programs".
+    expect(app).toMatch(/upcomingEvents\(events\)/);
+    expect(app).toMatch(/import \{[^}]*upcomingEvents[^}]*\} from "\.\/utils\/events\.js"/);
+  });
+
+  it("hands that list to the program rows, the homepage blocks and the calendar", () => {
+    // ContentHub carries the homepage program blocks, EventsView carries the
+    // rows and the calendar. Both must get the rolled list.
+    expect(app).toMatch(/<ContentHub[\s\S]{0,180}events=\{programs\}/);
+    expect(app).toMatch(/<EventsView[\s\S]{0,180}events=\{programs\}/);
+  });
+
+  it("gives the Seva page the same list, so it cannot print a past year", () => {
+    // Third surface found by reading the owner's screenshots: the Seva page's
+    // "Our Yearly Programs" chips printed the curated list verbatim — on
+    // 8 October 2026 they still said "1 April 2026" and "2 October 2026".
+    expect(app).toMatch(/<SevaView[\s\S]{0,160}events=\{programs\}/);
+    const view = readFileSync(new URL("../src/components/SevaView.jsx", import.meta.url), "utf8");
+    expect(view).toContain("const programs =");
+    expect(view).toContain("programs.map((e) => (");
+    // and no longer maps the raw curated list into the chips
+    expect(view).not.toMatch(/\{t\.eventsList\.map/);
+  });
+
+  it("keeps the same-year list for the lamps, which need a lit past programme", () => {
+    // PR #8's rule: a lamp stays lit from a month before its programme until
+    // New Year, so after the April programme the lamp is still burning. Feeding
+    // the lamps the rolled list would put it out early.
+    expect(app).toMatch(/<Hero[\s\S]{0,120}events=\{events\}/);
+    const diya = readFileSync(new URL("../src/utils/events.js", import.meta.url), "utf8");
+    expect(diya).toMatch(/export function rollDates/);
+    expect(diya).toMatch(/This is what the LAMPS render/);
+  });
+
+  it("never sends a row an event it must hide, so reminders cannot fire for a past day", () => {
+    // toggleNotify fires the "upcoming program" notification straight away.
+    // With the rows rolled forward there is no past date left to tap.
+    const utils = readFileSync(new URL("../src/utils/events.js", import.meta.url), "utf8");
+    const body = utils.slice(utils.indexOf("export function upcomingEvents"));
+    expect(body).toContain("if (thisYear && thisYear >= today) return thisYear;");
+    expect(body).toContain("return occurrenceInYear(date, year + 1);");
+  });
+});
+
 describe("the sitemap advertises only what exists", () => {
   const xml = readFileSync(new URL("../public/sitemap.xml", import.meta.url), "utf8");
 
@@ -283,7 +464,10 @@ describe("reduced motion switches the flight off entirely", () => {
 
   it("does not run the eased flight when motion is reduced", () => {
     // the smoothstep lives only in the un-reduced branch
-    const snapped = code.slice(code.indexOf("if (!home || reduced)"), code.indexOf("let p = maxScroll"));
+    const snapped = code.slice(
+      code.indexOf("if (!home || reduced)"),
+      code.indexOf("let p = scrollY / flightPx")
+    );
     expect(snapped).not.toMatch(/smoothstep/);
     expect(snapped).not.toMatch(/p \* p \* \(3 - 2 \* p\)/);
   });

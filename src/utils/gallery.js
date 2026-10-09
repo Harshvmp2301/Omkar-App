@@ -72,3 +72,81 @@ export async function loadGalleryPhotos(curated = [], lang = "en") {
   const rows = await fetchPhotoRows();
   return mergeGallery(curated, rows, lang);
 }
+
+/* ── the bundled photographs, at the sizes they are actually painted ─────── */
+
+/**
+ * Every bundled photograph, with the candidate widths the TILE may use.
+ *
+ * The originals are 1600x1067 (four of them), 800x600 (three) and 640x438
+ * (one): around 1.28 MB for eight pictures. On a phone the largest tile is
+ * about 350 CSS px wide, so a 1600 px file was ~4.5x more pixels than the
+ * screen could show — on the very device the Samithi cares about most. The
+ * gallery now offers the browser a ladder instead:
+ *
+ *   `tiles` — the widths a gallery tile or a homepage strip tile may take.
+ *             The ladder stops at 900: no tile is ever wider than ~560 CSS px,
+ *             so 900 covers a 2.5x phone and every desktop/retina case, and a
+ *             3x phone gets a 900 px file rather than the 1600 px original.
+ *   `full`  — the original, which only the LIGHTBOX requests, when it opens.
+ *
+ * Files are named by convention: `F28A5437.webp` → `F28A5437-480.webp`. They
+ * are generated from the originals with ImageMagick and committed, and
+ * tests/gallery-images.test.js checks each one exists, decodes to the width
+ * declared here, keeps the source's aspect ratio and is smaller than it.
+ *
+ * A photograph uploaded through the dashboard is not in this map — it has no
+ * generated variants, so gallerySrcSet() returns undefined for it and the tile
+ * renders the plain src exactly as before.
+ */
+export const GALLERY_SOURCES = {
+  "/gallery/OJ2026_DSC06494.webp": { full: 1600, tiles: [480, 900] },
+  "/gallery/imga-sEgru_e_BFHf-5SY.webp": { full: 800, tiles: [480, 800] },
+  "/gallery/imga-sEhySs0wHN7Rj2P-.webp": { full: 640, tiles: [480, 640] },
+  "/gallery/LIR09963.webp": { full: 1600, tiles: [480, 900] },
+  "/gallery/Blog-6.webp": { full: 800, tiles: [480, 800] },
+  "/gallery/Blog-10.webp": { full: 800, tiles: [480, 800] },
+  "/gallery/F28A5437.webp": { full: 1600, tiles: [480, 900] },
+  "/gallery/F28A4999.webp": { full: 1600, tiles: [480, 900] },
+};
+
+/** Where a resized copy of `src` lives: `Photo.webp` → `Photo-480.webp`. */
+export function galleryVariantHref(src, width) {
+  const entry = GALLERY_SOURCES[src];
+  if (!entry) return src;
+  if (width >= entry.full) return src;
+  return String(src).replace(/\.webp$/i, `-${width}.webp`);
+}
+
+/**
+ * The `srcset` for a gallery tile — or undefined for a photograph with no
+ * generated variants, so the tile falls back to a plain `src`.
+ *
+ * The `src` attribute stays the ORIGINAL in the markup, which is what a
+ * browser without srcset support downloads; a browser that understands the
+ * width descriptors ignores `src` entirely and fetches one candidate, so
+ * nothing is downloaded twice.
+ */
+export function gallerySrcSet(src) {
+  const entry = GALLERY_SOURCES[src];
+  if (!entry) return undefined;
+  return entry.tiles
+    .map((width) => `${galleryVariantHref(src, width)} ${width}w`)
+    .join(", ");
+}
+
+/**
+ * The rendered width of each place a photograph appears, read off the layout
+ * (max-width 880px section, minus its 20px padding; the homepage strip is a
+ * 2fr/1fr grid, the gallery is `repeat(auto-fit, minmax(240px, 1fr))` with a
+ * 16px gap). Accurate `sizes` is what lets the browser pick the smallest
+ * candidate that still fills the box.
+ */
+export const GALLERY_SIZES = {
+  /** Gallery tab card: 3 columns on a desktop, 1 on a phone. */
+  tile: "(min-width: 940px) 270px, (min-width: 700px) 46vw, calc(100vw - 40px)",
+  /** Homepage strip: the lead photograph (2fr of the 2fr/1fr grid). */
+  stripLead: "(min-width: 940px) 552px, (min-width: 700px) 61vw, calc(100vw - 40px)",
+  /** Homepage strip: the two beside it, and the row underneath. */
+  stripSmall: "(min-width: 940px) 276px, (min-width: 700px) 30vw, calc(50vw - 26px)",
+};

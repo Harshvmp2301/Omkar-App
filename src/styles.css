@@ -14,6 +14,14 @@
   --gold: #C9972C;
   --gold-bright: #E8B84B;
   --gold-deep: #8A6416;
+  /* The focus ring is its own token, for the same reason text gold is: a
+     keyboard user has to SEE it, and WCAG 2.1 asks for 3:1 against whatever is
+     behind it (SC 1.4.11, non-text contrast). On the dark ground the bright
+     metal is 10.43:1 and reads beautifully — so the dark theme keeps exactly
+     the ring it had. On cream the same colour is 1.79:1, which is no indicator
+     at all: the light theme overrides this with a deep gold (see the light
+     block below). Nothing decorative changed. */
+  --focus-ring: var(--gold-bright);
   /* Gold as TEXT is a separate token from gold as DECORATION. Borders,
      fills, hairlines and the lamps keep the bright metal in both themes; the
      text token is what the light theme deepens, because bright gold on cream
@@ -84,9 +92,14 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: rgba(var(--gold-rgb), 0.65); }
 
 button, a { -webkit-tap-highlight-color: transparent; }
+/* Taps are taps. Without this a quick second tap on a button or a chevron is read
+   as double-tap-to-zoom by iOS Safari and by Chrome for Android: the page zooms,
+   and the fixed mark and the sticky header stop lining up until the visitor
+   pinches back out. Pinch-zoom itself is untouched, so text can still be enlarged. */
+button, a, summary, label, input, select, textarea, [role="button"] { touch-action: manipulation; }
 
 :focus-visible {
-  outline: 2px solid var(--gold-bright);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -117,7 +130,19 @@ button, a { -webkit-tap-highlight-color: transparent; }
   from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: none; }
 }
-.view { animation: viewIn 0.45s var(--ease) both; }
+.view {
+  /* `backwards`, NEVER `both`/`forwards`. Those keep the animation's end state
+     applied after it has finished, and the end state of a transform animation is
+     an identity transform — `matrix(1, 0, 0, 1, 0, 0)`, not `none`. An ancestor
+     with ANY transform becomes the containing block for `position: fixed`
+     descendants and traps their z-index in its own stacking context, so the
+     photo viewer — a fixed overlay inside this element — was laid out against the
+     PAGE instead of the screen (a 2,500px-tall panel on a phone, with the photo
+     and the arrows far below the fold and only the close button in view) and was
+     painted under the header and the logo. `backwards` plays the identical
+     entrance and then leaves the element exactly as the stylesheet describes it. */
+  animation: viewIn 0.45s var(--ease) backwards;
+}
 
 /* Scroll-reveal primitives — hydrated by the observer in App.jsx */
 @keyframes riseIn {
@@ -152,7 +177,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
   flex-wrap: wrap;
   gap: 10px;
 }
-.header-left { display: flex; align-items: center; gap: 12px; }
+/* The left group yields before it collides: on mid-width phones the wordmark
+   used to run underneath the theme/language buttons, because neither the group
+   nor the text could shrink. Now the text shrinks and ellipsises instead. */
+.header-left { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 0 1 auto; }
+.header-actions { flex: 0 0 auto; }
 
 /* The single logo: fixed-positioned, starts centred in the viewport at
    scrollY=0 (matching the JS animation's starting geometry exactly) and is
@@ -160,7 +189,19 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .app-logo {
   position: fixed;
   left: 50%;
-  top: 50%;
+  /* The rest line is HALF THE SMALL VIEWPORT (svh), not 50%.
+     `50%` of a fixed box is half the DYNAMIC viewport: in a phone browser it is
+     recomputed every time the address bar or toolbar slides, so the mark drifted
+     20-45px by itself and the flight — which cannot know that — landed 28-43px
+     off its slot. `svh` is the viewport with the toolbar shown: constant while
+     the toolbar moves, and exactly the visible height when the page opens. On a
+     desktop and in an installed app there is no toolbar, so every one of these
+     units is the same number and nothing changes there. The hero's clearance
+     (.hero::after) uses the same unit. Engines without svh get the old 50% from
+     the @supports block below the rule — a block, not a repeated declaration,
+     because the minifier drops a fallback it believes the build targets do not
+     need. */
+  top: 50svh;
   z-index: 1200;
   /* The design size, full stop: the mark does not shrink to make room for the
      copy — the copy is laid out below the mark instead (.hero::after). The
@@ -179,6 +220,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
      `will-change: transform, height` promised a size animation the compositor
      can never perform — every frame re-rasterised the image on the CPU. */
   will-change: transform;
+}
+
+@supports not (top: 1svh) {
+  .app-logo { top: 50%; }
 }
 
 /* Reserves the logo's final navbar position so the flight has a target. */
@@ -264,7 +309,13 @@ button, a { -webkit-tap-highlight-color: transparent; }
    into the navbar as you scroll. */
 .hero {
   text-align: center;
-  min-height: calc(100dvh - var(--header-h, 80px));
+  /* svh, never dvh. `dvh` is the dynamic viewport: it changes size every frame
+     the browser toolbar slides, which re-laid the hero out in the middle of the
+     scroll (and fired the ResizeObserver) — in a phone browser only; an
+     installed app has no toolbar, which is why only the website glitched. The
+     first declaration is the fallback for engines without svh. */
+  min-height: calc(100vh - var(--header-h, 80px));
+  min-height: calc(100svh - var(--header-h, 80px));
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -281,7 +332,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
    the line where the mark ends — the viewport centre, half the mark, and the
    rest gap:
 
-     copy top >= 50vh + clamp(...)/2 + REST_GAP
+     copy top >= 50svh + clamp(...)/2 + REST_GAP
 
    On a window too short for both, the hero grows a few pixels and the page
    scrolls; it never shrinks the mark and never lifts it off centre. */
@@ -290,9 +341,15 @@ button, a { -webkit-tap-highlight-color: transparent; }
   order: -1; /* first in the column, above the copy */
   flex: 1 1 auto; /* absorbs the slack on a tall screen */
   width: 100%;
-  /* 50vh, not 50dvh: the percentage in the mark's own `top: 50%` resolves
-     against the same viewport box, so the two can never disagree. */
+  /* The same line the mark rests on: half the SMALL viewport (svh), the unit
+     `.app-logo` anchors to, so the two cannot disagree. This used to say 50vh
+     "because top: 50% resolves against the same box" — true only where there is
+     no toolbar: vh is the LARGE viewport and 50% the dynamic one. The mark's
+     SIZE keeps 30vh (the large viewport): that is the design size on a phone,
+     220px, and it is constant while the toolbar moves. The first declaration is
+     the fallback for engines without svh. */
   min-height: calc(50vh - var(--header-h, 80px) + clamp(88px, 30vh, 220px) / 2 + 28px);
+  min-height: calc(50svh - var(--header-h, 80px) + clamp(88px, 30vh, 220px) / 2 + 28px);
 }
 /* Ambient gold halo + vignette behind the centred logo (decorative only) */
 .hero::before {
@@ -735,6 +792,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
   position: fixed;
   inset: 0;
   z-index: 2000;
+  /* Rendered into <body> (see GalleryView), outside .app — so it sets its own
+     type instead of inheriting it. */
+  font-family: var(--font-body);
+  color: var(--ivory);
+  -webkit-font-smoothing: antialiased;
   background: rgba(10, 4, 7, 0.92);
   display: flex;
   align-items: center;
@@ -752,10 +814,35 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .lightbox-figure img {
   max-width: 100%;
   max-height: 72vh;
+  min-width: 220px;
+  min-height: 150px;
   object-fit: contain;
   border-radius: 6px;
   border: 1px solid var(--line);
+  /* The placeholder is the 480px variant set as a background (GalleryView),
+     which the grid has already fetched — so opening a photograph shows it
+     immediately on a slow connection instead of an empty panel, and the full
+     source paints over it when it arrives. */
+  background-color: var(--panel);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
 }
+.lightbox-figure img.lb-loading { animation: lbPulse 1.5s ease-in-out infinite; }
+@keyframes lbPulse { 0%, 100% { opacity: 0.72; } 50% { opacity: 1; } }
+.lightbox-retry {
+  margin-top: 10px;
+  padding: 9px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ivory);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lightbox-retry:hover { border-color: var(--gold); color: var(--gold-text-bright); }
 .lightbox-figure figcaption {
   color: var(--ivory);
   font-size: 0.85rem;
@@ -942,7 +1029,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   /* Round-10: header stays ONE row on phones — tabs live in the drawer. */
   .header { flex-wrap: nowrap; gap: 8px; padding: 10px 12px; }
   .header-left { justify-content: flex-start; gap: 6px; min-width: 0; }
-  .header-left .wordmark { font-size: 0.85rem; white-space: nowrap; }
+  .header-left .wordmark { font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .header-actions { flex-wrap: nowrap; margin-left: auto; gap: 5px; }
   .fest-grid { grid-template-columns: 1fr; gap: 16px; }
   .fest-card { min-height: auto; }
@@ -1151,8 +1238,31 @@ button, a { -webkit-tap-highlight-color: transparent; }
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: var(--gold-text-bright);
+  /* It shrinks and truncates rather than sliding under the icons. */
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-size: 1.05rem;
   letter-spacing: 0.08em;
+}
+
+/* The wordmark steps down by what actually fits, never truncating mid-word.
+   Beside the four controls a phone leaves it W - 305px (English) or W - 320px
+   (Kannada, whose language button reads "English"). Measured with the real
+   typefaces: the whole name needs 129px in English and 86px in Kannada; its first
+   word needs 58px and 44px. So:
+     from 440px   the whole name            (it used to read "OMKAR S…" up to there)
+     375 - 439px  its first word            ("OMKAR" / "ಓಂಕಾರ", 11px or more to spare)
+     below 375px  the logo and the controls only
+   Written in em so the steps move with the visitor's text-size setting; the
+   ellipsis on .wordmark stays as the last line of defence. The wordmark is
+   aria-hidden — the logo's alt text and the menu's label carry the name. */
+@media (max-width: 27.4375em) {
+  .wordmark-tail { display: none; }
+}
+@media (max-width: 23.375em) {
+  .wordmark { display: none; }
 }
 
 /* Sub section headings inside Content Hub */
@@ -1458,6 +1568,12 @@ button, a { -webkit-tap-highlight-color: transparent; }
   --gold-text-bright: #7A5713;
   --gold-text-hot: #6E5210;
   --gold-text-deep: #A8842A;
+  /* The focus ring on cream: the bright metal measured 1.79:1 here, so the
+     ring uses the deepest text gold instead — 6.83:1 on the ground, 7.30:1 on
+     a white field, and 3.47:1 even on a gold-filled button, so it clears the
+     3:1 SC 1.4.11 bar on every surface it can be drawn against. Buttons, tabs,
+     cards and links all keep the two-pixel ring they had. */
+  --focus-ring: var(--gold-text-hot);
   --gold-hot: #E9CB6B;
   --line: rgba(212, 175, 55, 0.28);
   --line-strong: rgba(212, 175, 55, 0.5);
@@ -1507,9 +1623,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .reveal.in > *:nth-child(10) { animation-delay: 0.45s; }
 .reveal.in > *:nth-child(n + 11) { animation-delay: 0.50s; }
 
-/* Focus: gold halo with a breathing offset — shape-agnostic, unmistakable */
+/* Focus: gold halo with a breathing offset — shape-agnostic, unmistakable.
+   The RING is --focus-ring (deepened on cream, see the light block); the halo
+   stays the decorative bright metal, as it always was. */
 :focus-visible {
-  outline: 2px solid var(--gold-bright);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
   box-shadow: 0 0 0 6px rgba(var(--gold-bright-rgb), 0.16);
 }
@@ -1548,7 +1666,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   /* wordmark stays visible at every desktop/tablet width (user report:
      the brand name must precede the tabs) */
   .header { padding: 12px 16px; gap: 8px; }
-  .wordmark { font-size: 0.9rem; white-space: nowrap; }
+  .wordmark { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 42vw; }
   .tabs { gap: 4px; }
   .tab-btn { padding: 7px 10px; font-size: 0.74rem; }
   .lang-btn,
@@ -1639,7 +1757,7 @@ h1, .section-title, .pillar-title, .video-title, .blog-title, .fest-title, .cal-
   .nav-drawer { animation: none !important; }
   .view { animation: none !important; }
   .toast { animation: none !important; transform: translateX(-50%) !important; }
-  .lightbox, .lightbox-figure { animation: none !important; }
+  .lightbox, .lightbox-figure, .lightbox-figure img { animation: none !important; }
   .gallery-card img.ph { animation: none !important; }
 }
 
@@ -2305,11 +2423,13 @@ select.admin-input::-ms-expand { display: none; }
   text-transform: uppercase;
   color: var(--gold-text);
 }
-/* The names are a roll of honour, not a tag cloud. They were 22 identical
-   rounded chips — the one unmistakably dashboard-looking element on the site.
-   Printed-programme treatment instead: the names themselves, centred, in the
-   display face, separated by a restrained gold interpunct. Same markup, same
-   list semantics. */
+/* The names are the Samithi's cultural credentials and they must READ as
+   names. The roll-of-honour treatment that replaced the chips left two problems
+   in the owner's screenshots: the separator dot sat INSIDE each name, so every
+   line of the wrapped flex row ended with a stray "·", and with no container at
+   all the names floated unanchored. Back to a visible tile per name — same
+   markup, same list semantics, centred as before — with the separator carried
+   by the GAP instead of by a character, so wrapping can never leave one behind. */
 .voices-names {
   list-style: none;
   margin: 0;
@@ -2317,23 +2437,43 @@ select.admin-input::-ms-expand { display: none; }
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  row-gap: 8px;
+  gap: 9px 10px;
 }
 .voices-name {
+  padding: 8px 17px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--panel);
   color: var(--ivory);
-  font-size: 1.04rem;
+  font-size: 1rem;
   letter-spacing: 0.02em;
-}
-.voices-name:not(:last-child)::after {
-  content: "·";
-  margin: 0 15px;
-  color: var(--gold-text);
-  opacity: 0.55;
+  line-height: 1.25;
+  text-wrap: balance;
 }
 .voices-note { max-width: 62ch; margin: 24px 0 0; color: var(--muted); font-size: 0.86rem; line-height: 1.65; }
 
 /* ---- the About headings lose their gold rules, keep the gold ------------ */
 .about-block h2::before { background: rgba(var(--gold-rgb), 0.45); width: 18px; }
+
+
+/* ---- Kannada: the small, widely-tracked labels were unreadable ------------
+   Kannada has no upper case and sets taller and wider than Latin at the same
+   font size, so the uppercase-style treatment (0.66rem with 0.2em tracking,
+   used for the footer headings, the voices labels and the fact labels) is
+   legible in English and not in Kannada. Only those labels change, and only
+   when the document is Kannada — the owner's report was about the footer's
+   ಅನ್ವೇಷಿಸಿ / ಸಂಪರ್ಕ headings specifically. */
+:root[lang="kn"] .footer-col-title { font-size: 0.86rem; letter-spacing: 0.05em; }
+:root[lang="kn"] .footer-link { font-size: 0.92rem; }
+:root[lang="kn"] .footer-pranaams { font-size: 0.82rem; letter-spacing: 0.08em; }
+:root[lang="kn"] .voices-label { font-size: 0.82rem; letter-spacing: 0.06em; }
+:root[lang="kn"] .also-heading { font-size: 0.86rem; letter-spacing: 0.04em; }
+:root[lang="kn"] .feature-fact dt { font-size: 0.78rem; letter-spacing: 0.06em; }
+:root[lang="kn"] .seva-programs-label { font-size: 0.82rem; letter-spacing: 0.05em; }
+
+/* The Om mark beside the Seva function: a real glyph, not an emoji, so it
+   keeps the page's own colour and a transparent background on every device. */
+.om-mark { width: 1.05em; height: 1.05em; flex: none; color: var(--gold-text-bright); }
 
 /* ---- the archive is level 4: usefulness, not presence ------------------- */
 .section--archive .section-title { font-size: clamp(1.02rem, 0.95rem + 0.45vw, 1.28rem); }

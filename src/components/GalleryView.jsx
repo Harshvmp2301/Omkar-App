@@ -1,7 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X, ImageOff } from "lucide-react";
 import useFocusTrap from "../hooks/useFocusTrap.js";
-import { loadGalleryPhotos } from "../utils/gallery.js";
+import {
+  GALLERY_SIZES,
+  gallerySrcSet,
+  galleryVariantHref,
+  loadGalleryPhotos,
+} from "../utils/gallery.js";
 
 export default function GalleryView({ t, lang }) {
   // Photographs the Samithi uploads in the dashboard are added in front of the
@@ -29,6 +35,7 @@ export default function GalleryView({ t, lang }) {
   // plain label still beats an unlabelled button.
   const labelFor = (item) => item.caption || t.photoLabel;
   const [openIndex, setOpenIndex] = useState(null);
+  const [retry, setRetry] = useState(0);
   const [loaded, setLoaded] = useState({}); // src → decoded
   const [failed, setFailed] = useState({}); // src → permanently broken
   const touchX = useRef(null);
@@ -89,6 +96,11 @@ export default function GalleryView({ t, lang }) {
             className="gallery-card"
             onClick={(e) => {
               openerRef.current = e.currentTarget;
+              // A failure from an earlier, transient error must not follow the
+              // photograph into the lightbox — it used to: one dropped request
+              // in the grid left the full-screen view showing "unavailable"
+              // with nothing to retry.
+              setFailed((m) => (m[item.src] ? { ...m, [item.src]: false } : m));
               setOpenIndex(i);
             }}
             aria-label={labelFor(item)}
@@ -101,6 +113,8 @@ export default function GalleryView({ t, lang }) {
             ) : (
               <img
                 src={item.src}
+                srcSet={gallerySrcSet(item.src)}
+                sizes={GALLERY_SIZES.tile}
                 alt={labelFor(item)}
                 loading="lazy"
                 decoding="async"
@@ -114,75 +128,108 @@ export default function GalleryView({ t, lang }) {
         ))}
       </div>
 
-      {open && (
-        <div
-          ref={lightboxRef}
-          className="lightbox"
-          role="dialog"
-          aria-modal="true"
-          aria-label={labelFor(open)}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) close();
-          }}
-          onTouchStart={(e) => {
-            touchX.current = e.touches[0].clientX;
-          }}
-          onTouchEnd={(e) => {
-            if (touchX.current === null) return;
-            const dx = e.changedTouches[0].clientX - touchX.current;
-            touchX.current = null;
-            if (Math.abs(dx) > 48) (dx < 0 ? next : prev)();
-          }}
-        >
-          <button
-            type="button"
-            className="lightbox-close"
-            onClick={close}
-            aria-label={t.closePhoto}
-            autoFocus
+      {/* Rendered into <body>, not into this view. The view is wrapped in an entrance
+          animation, and anything that leaves a transform behind on an ancestor makes
+          it the containing block for `position: fixed` — which is how this viewer
+          once ended up laid out against the whole page and painted under the header.
+          A portal makes the viewer immune to whatever its ancestors do. */}
+      {open &&
+        createPortal(
+          <div
+            ref={lightboxRef}
+            className="lightbox"
+            role="dialog"
+            aria-modal="true"
+            aria-label={labelFor(open)}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) close();
+            }}
+            onTouchStart={(e) => {
+              touchX.current = e.touches[0].clientX;
+            }}
+            onTouchEnd={(e) => {
+              if (touchX.current === null) return;
+              const dx = e.changedTouches[0].clientX - touchX.current;
+              touchX.current = null;
+              if (Math.abs(dx) > 48) (dx < 0 ? next : prev)();
+            }}
           >
-            <X size={22} aria-hidden="true" />
-          </button>
-          <button type="button" className="lightbox-nav left" onClick={prev} aria-label={t.prevPhoto}>
-            <ChevronLeft size={28} aria-hidden="true" />
-          </button>
-          <figure className="lightbox-figure">
-            {failed[open.src] ? (
-              <span className="photo-failed photo-failed--big">
-                <ImageOff size={30} aria-hidden="true" />
-                <span>{t.photoFailed}</span>
-              </span>
-            ) : (
-              <img
-                src={open.src}
-                alt={labelFor(open)}
-                decoding="async"
-                onLoad={() => markLoaded(open.src)}
-                onError={() => markFailed(open.src)}
-              />
-            )}
-            <figcaption>
-              {open.caption || labelFor(open)}
-              <span className="lightbox-hint">{t.lightboxHint}</span>
-            </figcaption>
-          </figure>
-          <button type="button" className="lightbox-nav right" onClick={next} aria-label={t.nextPhoto}>
-            <ChevronRight size={28} aria-hidden="true" />
-          </button>
-          <div className="lightbox-dots">
-            {items.map((item, i) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`dot ${i === openIndex ? "on" : ""}`}
-                onClick={() => setOpenIndex(i)}
-                aria-label={`${i + 1} / ${items.length}`}
-                aria-current={i === openIndex}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+            <button
+              type="button"
+              className="lightbox-close"
+              onClick={close}
+              aria-label={t.closePhoto}
+              autoFocus
+            >
+              <X size={22} aria-hidden="true" />
+            </button>
+            <button type="button" className="lightbox-nav left" onClick={prev} aria-label={t.prevPhoto}>
+              <ChevronLeft size={28} aria-hidden="true" />
+            </button>
+            <figure className="lightbox-figure">
+              {failed[open.src] ? (
+                <span className="photo-failed photo-failed--big">
+                  <ImageOff size={30} aria-hidden="true" />
+                  <span>{t.photoFailed}</span>
+                  <button
+                    type="button"
+                    className="lightbox-retry"
+                    onClick={() => {
+                      setFailed((m) => ({ ...m, [open.src]: false }));
+                      setRetry((n) => n + 1);
+                    }}
+                  >
+                    {t.tryAgain}
+                  </button>
+                </span>
+              ) : (
+                // The lightbox is the one place the ORIGINAL is right: it is
+                // opened deliberately, one photograph at a time, at up to 960px
+                // on a retina screen. No srcset here — this is the full source,
+                // fetched when the visitor actually asks for it.
+                //
+                // While that arrives, the panel shows the 480px variant as a
+                // background (already downloaded for the grid), so opening a
+                // photograph is never an empty maroon rectangle on a slow
+                // connection — which is how it read on every device the owner
+                // tried except the one with the images already cached.
+                // `key` restarts the element on an explicit retry.
+                <img
+                  key={`${open.src}-${retry}`}
+                  src={open.src}
+                  alt={labelFor(open)}
+                  decoding="async"
+                  className={loaded[open.src] ? "" : "lb-loading"}
+                  style={{
+                    backgroundImage: `url(${galleryVariantHref(open.src, 480)})`,
+                  }}
+                  onLoad={() => markLoaded(open.src)}
+                  onError={() => markFailed(open.src)}
+                />
+              )}
+              <figcaption>
+                {open.caption || labelFor(open)}
+                <span className="lightbox-hint">{t.lightboxHint}</span>
+              </figcaption>
+            </figure>
+            <button type="button" className="lightbox-nav right" onClick={next} aria-label={t.nextPhoto}>
+              <ChevronRight size={28} aria-hidden="true" />
+            </button>
+            <div className="lightbox-dots">
+              {items.map((item, i) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`dot ${i === openIndex ? "on" : ""}`}
+                  onClick={() => setOpenIndex(i)}
+                  aria-label={`${i + 1} / ${items.length}`}
+                  aria-current={i === openIndex}
+                />
+              ))}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

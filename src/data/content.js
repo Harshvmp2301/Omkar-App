@@ -128,6 +128,7 @@ export const translations = {
     footerFeedback: "Feedback Form",
     backToTop: "Back to top",
     photoFailed: "Photo unavailable",
+    tryAgain: "Try again",
     photoLabel: "Photo",
     emailOpensNote:
       "Your details go to the Samithi team and are kept private. No payment is taken on this site.",
@@ -349,6 +350,7 @@ export const translations = {
     footerFeedback: "ಪ್ರತಿಕ್ರಿಯೆ ಫಾರ್ಮ್",
     backToTop: "ಮೇಲಕ್ಕೆ ಹೋಗಿ",
     photoFailed: "ಛಾಯಾಚಿತ್ರ ಲಭ್ಯವಿಲ್ಲ",
+    tryAgain: "ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ",
     photoLabel: "ಛಾಯಾಚಿತ್ರ",
     emailOpensNote:
       "ನಿಮ್ಮ ಮಾಹಿತಿ ಸಮಿತಿಯ ತಂಡಕ್ಕೆ ತಲುಪುತ್ತದೆ; ಅದನ್ನು ಗೌಪ್ಯವಾಗಿ ಇಡಲಾಗುತ್ತದೆ. ಈ ಸೈಟ್‌ನಲ್ಲಿ ಯಾವುದೇ ಪಾವತಿ ಸ್ವೀಕರಿಸುವುದಿಲ್ಲ.",

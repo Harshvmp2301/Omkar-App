@@ -160,3 +160,73 @@ describe("gold is two jobs, and they are two tokens", () => {
     expect(darkGold).toBeGreaterThan(luminance(resolve(dark, "--bg")));
   });
 });
+
+/* ── the focus ring ──────────────────────────────────────────────────────── */
+/**
+ * A focus ring is not decoration, it is the only thing telling a keyboard user
+ * where they are, so SC 1.4.11 (non-text contrast) applies: 3:1 against
+ * whatever the ring is drawn on. The light theme shipped the bright metal
+ * (#DCB849) here, which measures 1.79:1 on the cream ground and 1.10:1 on a
+ * gold-filled button — an indicator that was effectively invisible. These
+ * assertions are what stop it coming back.
+ */
+describe.each([
+  ["dark", dark],
+  ["light", light],
+])("%s theme: the focus ring is visible (WCAG 2.1 SC 1.4.11)", (themeName, tokens) => {
+  const ring = resolve(tokens, "--focus-ring");
+
+  it("is a real colour", () => {
+    expect(ring).toMatch(/^#[0-9a-f]{6}$/i);
+  });
+
+  it.each(["--bg", "--panel", "--panel-light", "--field"])(
+    "clears 3:1 on %s",
+    (surface) => {
+      const bg = resolve(tokens, surface);
+      const ratio = contrast(ring, bg);
+      expect(ratio, `--focus-ring on ${surface} (${bg}) is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(3);
+    }
+  );
+
+});
+
+describe("the light focus ring also survives a gold-filled control", () => {
+  // The ring is drawn outside the element (outline-offset), so its real
+  // backdrop is the page or a card. This covers the remaining case — a
+  // gold-filled control sitting on gold — for the LIGHT theme, which is the one
+  // that was wrong. The dark theme's ring is deliberately unchanged (its bright
+  // metal is 10.4:1 on the ground and it is the approved appearance), so no new
+  // constraint is placed on it here.
+  it("clears 3:1 on --gold", () => {
+    const ratio = contrast(resolve(light, "--focus-ring"), resolve(light, "--gold"));
+    expect(ratio, `--focus-ring on --gold is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("the focus ring is a token, and the old one cannot come back", () => {
+  it("draws every focus ring from --focus-ring", () => {
+    const rings = css.match(/outline:\s*2px solid var\((--[\w-]+)\)/g) || [];
+    expect(rings.length).toBeGreaterThanOrEqual(2);
+    for (const rule of rings) expect(rule).toContain("var(--focus-ring)");
+  });
+
+  it("leaves no focus ring on the decorative bright gold", () => {
+    // The regression: `outline: 2px solid var(--gold-bright)` is 1.79:1 on
+    // cream, and it was the ONLY indicator there was.
+    expect(css).not.toMatch(/outline:\s*2px solid var\(--gold-bright\)/);
+  });
+
+  it("keeps the light ring off the colour that failed", () => {
+    expect(resolve(light, "--focus-ring").toLowerCase()).not.toBe("#dcb849");
+    expect(contrast("#DCB849", resolve(light, "--bg"))).toBeLessThan(3); // the reason it went
+  });
+
+  it("keeps the dark ring exactly as it was — the change is light-theme only", () => {
+    expect(resolve(dark, "--focus-ring")).toBe(resolve(dark, "--gold-bright"));
+  });
+
+  it("stays a two-pixel ring, not a hairline", () => {
+    expect(css).toMatch(/:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--focus-ring\)/);
+  });
+});

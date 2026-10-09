@@ -165,6 +165,103 @@ describe("every tab, rendered in full", () => {
     }
   });
 
+  it("never shows a past date on the Events tab — the whole point of the fix", () => {
+    // The defect, as a visitor met it: on 8 October 2026 the page headed
+    // "Upcoming Programs" listed 1 April and 2 October as the next programmes.
+    // Every date the page prints now comes from upcomingEvents(), so this is
+    // checked against the rendered document rather than the helper alone.
+    const html = at("#/events");
+    // The full date lives in the title attributes (and in the calendar chips).
+    const printed = [...html.matchAll(/title="(\d{1,2} [A-Za-z]+ (\d{4}))"/g)].map((m) => m[1]);
+    expect(printed.length).toBeGreaterThan(0);
+
+    const parse = (human) => {
+      const [day, month, year] = human.split(" ");
+      const months = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December",
+      ];
+      return Date.UTC(Number(year), months.indexOf(month), Number(day));
+    };
+    const today = new Date();
+    const midnight = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+    for (const human of printed) {
+      expect(parse(human), `${human} is in the past`).toBeGreaterThanOrEqual(midnight);
+    }
+  });
+
+  it("prints no past date on the Seva tab either", () => {
+    // The chips under "Our Yearly Programs" print a full date WITH the year,
+    // so a stale one is unmistakable — which is how the owner's screenshot of
+    // 8 October 2026 showed "1 April 2026".
+    const html = at("#/seva");
+    const months = ["January", "February", "March", "April", "May", "June", "July",
+      "August", "September", "October", "November", "December"];
+    const printed = [...html.matchAll(/>([0-9]{1,2} (?:January|February|March|April|May|June|July|August|September|October|November|December) [0-9]{4})</g)]
+      .map((m) => m[1]);
+    expect(printed.length).toBeGreaterThan(0);
+    const parse = (human) => {
+      const [day, month, year] = human.split(" ");
+      return Date.UTC(Number(year), months.indexOf(month), Number(day));
+    };
+    const today = new Date();
+    const midnight = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+    for (const human of printed) {
+      expect(parse(human), `${human} is in the past`).toBeGreaterThanOrEqual(midnight);
+    }
+  });
+
+  it("shows the same next programme on the homepage and on the Events tab", () => {
+    // The featured card and the first row of the list are the same programme
+    // from the same list, so the two pages cannot advertise different dates.
+    const hub = at("#/hub").match(/class="feature-date-text"[^>]*>\s*([^<]+?)\s*</)[1];
+    const rows = [...at("#/events").matchAll(/class="countdown-chip"[^>]*title="([^"]+)"/g)].map(
+      (m) => m[1]
+    );
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows[0]).toBe(hub);
+  });
+
+  it("lists the Events rows in the order they happen", () => {
+    const rows = [...at("#/events").matchAll(/class="countdown-chip"[^>]*title="([^"]+)"/g)].map(
+      (m) => m[1]
+    );
+    const months = ["January", "February", "March", "April", "May", "June", "July",
+      "August", "September", "October", "November", "December"];
+    const parse = (human) => {
+      const [day, month, year] = human.split(" ");
+      return Date.UTC(Number(year), months.indexOf(month), Number(day));
+    };
+    const times = rows.map(parse);
+    expect(times).toEqual([...times].sort((a, b) => a - b));
+  });
+
+  it("starts the homepage list of programmes with the one that is next", () => {
+    // "More Programs" must run forward from the featured programme, not from
+    // the stored order — otherwise the homepage shows a past programme first.
+    const html = at("#/hub");
+    const featured = html.match(/class="feature-date-text"[^>]*>\s*([^<]+?)\s*</)[1];
+    const others = [...html.matchAll(/class="also-meta"[^>]*>\s*([^<]+?)\s*</g)].map((m) => m[1]);
+
+    const months = ["January", "February", "March", "April", "May", "June", "July",
+      "August", "September", "October", "November", "December"];
+    const parse = (human) => {
+      const [day, month, year] = human.split(" ");
+      return Date.UTC(Number(year), months.indexOf(month), Number(day));
+    };
+    // Announced dates only: an undated programme renders as TBA, not a date.
+    const announced = others.filter((d) => months.some((m) => d.includes(m)));
+    expect(announced.length).toBeGreaterThan(0);
+    const today = new Date();
+    const midnight = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+    for (const human of [featured, ...announced]) {
+      expect(parse(human), `${human} is in the past`).toBeGreaterThanOrEqual(midnight);
+    }
+    // Ascending: the featured one is the earliest of them all.
+    const order = [featured, ...announced].map(parse);
+    expect(order[0]).toBe(Math.min(...order));
+  });
+
   it("sends a retired #/donate link home rather than to a dead view", () => {
     const html = at("#/donate");
     expect(html).toContain('class="hero"'); // the hub, not an empty page

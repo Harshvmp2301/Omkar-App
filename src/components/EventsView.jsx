@@ -6,8 +6,15 @@ import FestivalCalendar from "./FestivalCalendar.jsx";
  * The program list and the festival calendar below it.
  *
  * `events` arrives already merged from App: the Samithi's stored dates laid
- * over the curated list. This view deliberately does not fetch them itself —
- * doing so is what let the calendar show a date the list had already replaced.
+ * over the curated list, each at its NEXT occurrence (App asks for
+ * `upcomingEvents`). Everything on this page reads that one list — the rows,
+ * the times a reminder can be set for, the .ics downloads and the program chips
+ * in the calendar — so none of them can contradict another.
+ *
+ * This view deliberately does not fetch them itself — doing so is what let the
+ * calendar show a date the list had already replaced. The rows therefore only
+ * ever carry a date the visitor can still act on: a programme that has already
+ * happened this year is shown at next year's occurrence, never as upcoming.
  */
 export default function EventsView({ t, lang, events, notify, onToggleNotify, flash }) {
 

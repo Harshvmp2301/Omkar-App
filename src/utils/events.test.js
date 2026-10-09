@@ -11,6 +11,7 @@ import {
   nextEvent,
   rollDates,
   titleKnFor,
+  upcomingEvents,
 } from "./events.js";
 
 describe("the three programs", () => {
@@ -220,7 +221,7 @@ describe("mergeEvents — the dashboard laid over the curated list", () => {
   });
 });
 
-describe("rollDates — the programs repeat every year", () => {
+describe("rollDates — the same-year view the lamps and calendar use", () => {
   const at = (iso) => new Date(`${iso}T12:00:00`);
   const curated = translations.en.eventsList;
 
@@ -232,6 +233,16 @@ describe("rollDates — the programs repeat every year", () => {
   it("leaves this year's dates exactly as they are", () => {
     const rolled = rollDates(curated, at("2026-06-01"));
     expect(rolled.map((e) => e.date)).toEqual(curated.map((e) => e.date));
+  });
+
+  it("keeps a date that has already passed in this year — the lamps need it", () => {
+    // 8 October 2026: the April programme has happened. Its lamp stays lit to
+    // the end of the year (PR #8's rule), and diyaLit() reads the same-year
+    // occurrence to work that out — so rollDates must NOT roll it forward.
+    // The program LIST is the thing that rolls, and it does not use this
+    // function: see upcomingEvents below.
+    const rolled = rollDates(curated, at("2026-10-08"));
+    expect(rolled.map((e) => e.date)).toEqual(["2026-04-01", "2026-10-02", "2026-12-18"]);
   });
 
   it("keeps a program with no date empty — TBA stays TBA", () => {
@@ -248,6 +259,108 @@ describe("rollDates — the programs repeat every year", () => {
     const rows = [{ id: "row-1", title_en: "Omkar Naadamrutha", starts_at: "2026-11-15T00:00:00+00:00" }];
     const merged = rollDates(mergeEvents(curated, rows, "en"), at("2027-02-01"));
     expect(merged.find((e) => e.title === "Omkar Naadamrutha").date).toBe("2027-11-15");
+  });
+});
+
+describe("upcomingEvents — the list the program rows render", () => {
+  const at = (iso) => new Date(`${iso}T12:00:00`);
+  const curated = translations.en.eventsList;
+
+  it("keeps a program that is still ahead on this year's date", () => {
+    // 7 October 2026: Anjaneya Pooje in December has not happened yet.
+    const upcoming = upcomingEvents(curated, at("2026-10-07"));
+    expect(upcoming.find((e) => e.title === "Sri Anjaneya Pooje").date).toBe("2026-12-18");
+  });
+
+  it("moves a program that has already happened to next year's occurrence", () => {
+    // The defect this replaces: on 8 October 2026 the list showed Jnanamrutha
+    // as 1 April 2026 and Naadamrutha as 2 October 2026 — six months and six
+    // days in the past — under the heading "Upcoming Programs".
+    const upcoming = upcomingEvents(curated, at("2026-10-08"));
+    const dateOf = (title) => upcoming.find((e) => e.title === title).date;
+    expect(dateOf("Omkar Jnanamrutha")).toBe("2027-04-01");
+    expect(dateOf("Omkar Naadamrutha")).toBe("2027-10-02");
+    expect(dateOf("Sri Anjaneya Pooje")).toBe("2026-12-18");
+  });
+
+  it("counts today as still ahead, so the day itself is not skipped", () => {
+    // On the morning of the programme, the row must read "today" rather than
+    // jumping a whole year forward.
+    const upcoming = upcomingEvents(curated, at("2026-12-18"));
+    expect(upcoming.find((e) => e.title === "Sri Anjaneya Pooje").date).toBe("2026-12-18");
+    expect(upcoming.find((e) => e.title === "Omkar Jnanamrutha").date).toBe("2027-04-01");
+  });
+
+  it("rolls every program when the year turns", () => {
+    const upcoming = upcomingEvents(curated, at("2027-01-05"));
+    expect(upcoming.map((e) => e.date)).toEqual(["2027-04-01", "2027-10-02", "2027-12-18"]);
+  });
+
+  it("sorts by next date, so the list reads as what is ahead", () => {
+    // Dec 2026 first, then the two 2027 dates — not the stored order.
+    const upcoming = upcomingEvents(curated, at("2026-10-08"));
+    expect(upcoming.map((e) => e.date)).toEqual(["2026-12-18", "2027-04-01", "2027-10-02"]);
+    expect(upcoming.map((e) => e.title)).toEqual([
+      "Sri Anjaneya Pooje",
+      "Omkar Jnanamrutha",
+      "Omkar Naadamrutha",
+    ]);
+  });
+
+  it("never returns a date in the past, on any day of the year", () => {
+    for (let day = 1; day <= 28; day += 1) {
+      for (const month of ["01", "04", "10", "12"]) {
+        const now = at(`2026-${month}-${String(day).padStart(2, "0")}`);
+        const today = dateOnly(now.toISOString());
+        for (const event of upcomingEvents(curated, now)) {
+          expect(event.date >= today).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("keeps an undated program undated, at the end of the list", () => {
+    const mixed = [
+      { id: "x", title: "No date yet", date: "" },
+      { id: "e2", title: "Omkar Naadamrutha", date: "2026-10-02" },
+      { id: "e3", title: "Sri Anjaneya Pooje", date: "2026-12-18" },
+    ];
+    const upcoming = upcomingEvents(mixed, at("2026-10-08"));
+    expect(upcoming.map((e) => e.title)).toEqual([
+      "Sri Anjaneya Pooje",
+      "Omkar Naadamrutha",
+      "No date yet",
+    ]);
+    expect(upcoming[2].date).toBe("");
+  });
+
+  it("leaves a date the Samithi set for a future year alone", () => {
+    const upcoming = upcomingEvents([{ id: "x", date: "2028-04-01" }], at("2026-10-08"));
+    expect(upcoming[0].date).toBe("2028-04-01");
+  });
+
+  it("does not mutate the list it was given", () => {
+    const before = JSON.stringify(curated);
+    upcomingEvents(curated, at("2026-10-08"));
+    expect(JSON.stringify(curated)).toBe(before);
+  });
+
+  it("agrees with nextEvent — the homepage and the first row cannot disagree", () => {
+    for (const iso of ["2026-10-07", "2026-12-18", "2026-12-20", "2027-01-05", "2027-04-02"]) {
+      const featured = nextEvent(curated, at(iso));
+      const firstDated = upcomingEvents(curated, at(iso)).find((e) => e.date);
+      expect(featured.title).toBe(firstDated.title);
+      expect(featured.date).toBe(firstDated.date);
+    }
+  });
+
+  it("rolls a dashboard date through the merge the same way", () => {
+    const rows = [
+      { id: "row-1", title_en: "Omkar Naadamrutha", starts_at: "2026-10-02T00:00:00+00:00" },
+    ];
+    const merged = mergeEvents(curated, rows, "en");
+    const upcoming = upcomingEvents(merged, at("2026-10-08"));
+    expect(upcoming.find((e) => e.title === "Omkar Naadamrutha").date).toBe("2027-10-02");
   });
 });
 

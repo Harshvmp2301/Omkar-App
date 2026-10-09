@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, lazy, Suspense } from "react";
 import { Facebook, Youtube, ExternalLink, MapPin, Mail } from "lucide-react";
 import Header from "./components/Header.jsx";
 import Hero from "./components/Hero.jsx";
@@ -12,9 +12,16 @@ import Contact from "./components/Contact.jsx";
 import { translations } from "./data/content.js";
 import useLocalStorage from "./hooks/useLocalStorage.js";
 import { tabFromHash } from "./utils/route.js";
-import { loadEvents } from "./utils/events.js";
+import { loadEvents, upcomingEvents } from "./utils/events.js";
 import { directionsUrl } from "./utils/venue.js";
-import { NAV_H, liftAtRest, logoLayout, logoOffset } from "./utils/logo.js";
+import {
+  NAV_H,
+  REST_TRANSFORM,
+  flightDistance,
+  logoOffset,
+  restGeometry,
+  scrollFraction,
+} from "./utils/logo.js";
 
 // The admin dashboard is code-split: it pulls in the Supabase SDK and a lot of
 // UI that no ordinary visitor needs. Loading it lazily keeps all of that out of
@@ -74,6 +81,19 @@ export default function OmkarSamithiApp() {
 
   const events =
     liveEvents.lang === lang && liveEvents.events ? liveEvents.events : t.eventsList;
+
+  // One loaded list, two questions asked of it.
+  //
+  //   programs — when is each programme NEXT? Today or later, in date order.
+  //              This is what the programme rows, the homepage blocks and the
+  //              festival calendar render, so a programme that has already
+  //              happened this year can never appear under "Upcoming".
+  //   events   — the same-year view (past dates included), which the LAMPS
+  //              need: a lamp stays lit from a month before its programme
+  //              until New Year, so April's lamp is still burning in October.
+  //
+  // Both come from the same loaded list, so the two can never drift apart.
+  const programs = useMemo(() => upcomingEvents(events), [events]);
 
   // --- hash routing (deep-linkable: #/hub, #/events, #/gallery, #/about) -----
   useEffect(() => {
@@ -167,8 +187,8 @@ export default function OmkarSamithiApp() {
 
   // --- single-logo scroll transition (every tab) ---------------------------
   // The ONE logo (rendered once at page level) starts centred in the viewport
-  // at scrollY=0 and flies into its slot in the sticky navbar over the first
-  // 15% of the page's scrollable range — on EVERY tab, exactly as before.
+  // at scrollY=0 and flies into its slot in the sticky navbar over a fixed
+  // distance (flightDistance, derived from its own size) — on EVERY tab.
   // Scroll back to the top and it glides back to the centre; it follows the
   // scroll wherever you are.
   useLayoutEffect(() => {
@@ -206,15 +226,11 @@ export default function OmkarSamithiApp() {
     // were still unflushed.
     const geom = {
       aspect: aspectRef.current || 1, // width / height, measured from the file
-      size: 0, // the logo's size at rest, from logoLayout
-      baseW: 0, // the box it is rasterised in, fixed for the whole flight
-      baseH: 0,
+      size: 0, // the mark's height at rest — READ BACK from the rendered mark
+      startX: 0, // the centre it rests on, read back the same way
       startY: 0,
-      targetX: 0,
+      targetX: 0, // the navbar slot's centre
       targetY: 0,
-      headerH: 0,
-      copyTopDoc: Infinity, // hero copy top in DOCUMENT space — scroll-proof
-      vw: 0,
       maxScroll: 0, // measured, so the frame loop never reads layout
       ready: false, // no transform is written until measure() has run once
     };
@@ -246,42 +262,46 @@ export default function OmkarSamithiApp() {
         geom.aspect = logo.naturalWidth / logo.naturalHeight;
         aspectRef.current = geom.aspect;
       }
+      slot.style.width = `${Math.round(NAV_H * geom.aspect)}px`; // the docked size
       const rect = slot.getBoundingClientRect();
       geom.targetX = rect.left + rect.width / 2;
       geom.targetY = rect.top + rect.height / 2;
-      geom.headerH = headerRef.current ? headerRef.current.offsetHeight : 0;
-      // clientWidth/clientHeight are the LAYOUT viewport — the same box the
-      // CSS `left: 50%` resolves against. window.innerWidth/innerHeight
-      // include the scrollbars, which is what used to put the mark a
-      // scrollbar's width to the right of everything else on the page.
-      geom.vw = doc.clientWidth;
       // How far the page can scroll. Cheap here (measure() runs a handful of
-      // times per scene), never in the frame loop.
+      // times per scene), never in the frame loop. It only drives the 1px
+      // progress bar; the flight does not depend on it.
       geom.maxScroll = Math.max(0, doc.scrollHeight - doc.clientHeight);
-      slot.style.width = `${Math.round(NAV_H * geom.aspect)}px`; // the docked size
 
-      const copyTopDoc = heroContent
-        ? heroContent.getBoundingClientRect().top + window.scrollY
-        : Infinity;
-
-      // The logo's rest size and centre. See src/utils/logo.js: this mirrors
-      // `.app-logo`'s clamp exactly, and the hero reserves the clearance for it
-      // in the layout (.hero::after) — so the mark is never shrunk or nudged to
-      // make room for the copy.
-      const { startY, size } = logoLayout({ viewportH: doc.clientHeight });
-      geom.startY = startY;
-      geom.size = size;
-      geom.copyTopDoc = copyTopDoc;
-      // The box the image is rasterised in: its SIZE AT REST. The flight then
-      // only scales that box down, so the mark is drawn once and never
-      // re-sampled while it moves.
-      geom.baseH = size;
-      geom.baseW = size * geom.aspect;
-      // NOTE: left/top are deliberately NOT written. The stylesheet anchors the
-      // mark at left/top 50% with translate(-50%, -50%), so its rest position is
-      // a CSS guarantee; the flight is added as an offset on top of that.
-      logo.style.height = `${geom.baseH}px`;
-      logo.style.width = `${geom.baseW}px`;
+      // The mark's rest size and centre are READ BACK from what the stylesheet
+      // drew — never recomputed here from a viewport number.
+      //
+      // They used to come from documentElement.clientHeight, written over the
+      // stylesheet as pixels. That agrees with the CSS on a desktop and in an
+      // installed app, where "the viewport height" has one answer. In a phone
+      // BROWSER it has several — the address bar and toolbars retract, so the
+      // small, large and dynamic viewports differ by 50-90px, clientHeight is
+      // a different one on iOS and on Chrome, and the mark's own `top: 50%`
+      // follows yet another. Measured in a real engine with the toolbar
+      // modelled, that gave a mark 10-25% smaller than designed, a rest
+      // position that slid 28-43px whenever the bar moved, and a docked mark
+      // 28-43px below its slot that never corrected itself — browser-only,
+      // and none of it in the installed app, where there is no toolbar.
+      //
+      // So: park the mark on the stylesheet's own anchor, read the box, and fly
+      // from exactly there. The anchor is a STATIC unit (svh — see .app-logo),
+      // so what is read here stays true while the toolbar moves. All of this
+      // is synchronous, so the parked position is never painted.
+      logo.style.transform = REST_TRANSFORM;
+      const rest = restGeometry(logo.getBoundingClientRect());
+      // Not laid out (hidden, or the stylesheet has not arrived): keep the CSS
+      // fallback rather than flying from a made-up position.
+      if (!(rest.size > 0)) return;
+      geom.size = rest.size;
+      geom.startX = rest.startX;
+      geom.startY = rest.startY;
+      // NOTE: neither the size nor left/top are written. The stylesheet owns
+      // the mark's size and its rest position; the flight is a transform added
+      // on top, so the box the image is rasterised in never changes while it
+      // moves.
       geom.ready = true;
       lastTransform = "";
       update();
@@ -307,7 +327,9 @@ export default function OmkarSamithiApp() {
       // :root. A custom property on the root invalidates style for the whole
       // document on every scroll frame; scoped to the header it is one tiny
       // subtree. Written only when the value actually changed.
-      const scrollP = maxScroll > 0 ? Math.min(1, scrollY / maxScroll) : 0;
+      // Clamped at BOTH ends: iOS rubber-bands, so scrollY goes negative above
+      // the top, and a negative scaleX would draw the bar mirrored.
+      const scrollP = scrollFraction(scrollY, maxScroll);
       // Written STRAIGHT onto the 1px bar, not as a custom property on the
       // header. A custom property is inherited, so setting one on the header
       // restyled its whole subtree (tabs, buttons, wordmark) on every frame —
@@ -331,13 +353,13 @@ export default function OmkarSamithiApp() {
         const snapped = logoOffset({
           startY: geom.startY,
           size: geom.size,
-          centerX: geom.vw / 2,
+          centerX: geom.startX,
           targetX: geom.targetX,
           targetY: geom.targetY,
           progress: pSnap,
           aspect: geom.aspect,
         });
-        const snapTransform = `translate(-50%, -50%) translate3d(${snapped.dx.toFixed(2)}px, ${snapped.dy.toFixed(2)}px, 0) scale(${snapped.scale.toFixed(4)})`;
+        const snapTransform = `${REST_TRANSFORM} translate3d(${snapped.dx.toFixed(2)}px, ${snapped.dy.toFixed(2)}px, 0) scale(${snapped.scale.toFixed(4)})`;
         if (snapTransform !== lastTransform) {
           lastTransform = snapTransform;
           logo.style.transform = snapTransform;
@@ -345,33 +367,25 @@ export default function OmkarSamithiApp() {
         return;
       }
 
-      // Flight ramp: the first 15% of the page's scrollable range.
-      let p = maxScroll > 0 ? scrollY / (maxScroll * 0.15) : 0;
+      // Flight ramp: a FIXED distance derived from the mark's own size — never
+      // a fraction of the page's scrollable range.
+      //
+      // It used to be the first 15% of the whole range. On a long page — a
+      // phone, with the gallery and the feeds loaded — that is 600-1200px, so
+      // the mark barely moved while the copy slid up behind it, and any change
+      // in the page's height (a feed arriving, an image settling, the
+      // ResizeObserver on <body>) RESCALED the ramp mid-scroll and made the
+      // mark jump. That is the jitter, the mark-over-the-name overlap and the
+      // "it never reaches the corner" report, all from one line.
+      //
+      // The stylesheet owns the mark's size (clamp(88px, 30vh, 220px)) and the
+      // hero reserves REST_GAP of clearance below it, so docking within about
+      // three quarters of the mark's own height clears the copy before the copy
+      // can ever reach it — at every viewport, on any page length.
+      const flightPx = flightDistance(geom.size);
+      let p = scrollY / flightPx;
       p = Math.min(1, Math.max(0, p));
       p = p * p * (3 - 2 * p); // smoothstep for a natural glide
-
-      // Copy that has scrolled up into the logo's path lifts the progress, so
-      // the mark reaches the navbar before the two can touch. Derived from the
-      // measured document position minus the scroll — no layout read, and no
-      // reaction to the address bar changing the viewport height mid-scroll.
-      //
-      // The lift is faded in over the first 40px of scrolling, so at rest it is
-      // exactly zero and the logo sits on the CSS centre line. It is a
-      // scroll-induced correction only; if the geometry ever went stale, it can
-      // no longer leave the mark parked off-centre at the top of the page.
-      let pEff = p;
-      if (Number.isFinite(geom.copyTopDoc) && scrollY > 0) {
-        const lift = liftAtRest({
-          copyTopVisible: geom.copyTopDoc - scrollY,
-          headerH: geom.headerH,
-          startY: geom.startY,
-          size: geom.size,
-          targetY: geom.targetY,
-        });
-        const fade = Math.min(1, scrollY / 40);
-        const lifted = lift * fade;
-        if (lifted > pEff) pEff = lifted;
-      }
 
       // One compositor-only write. The element's width and height never change
       // after measure, so this is a transform and never a layout. The
@@ -380,13 +394,13 @@ export default function OmkarSamithiApp() {
       const t = logoOffset({
         startY: geom.startY,
         size: geom.size,
-        centerX: geom.vw / 2,
+        centerX: geom.startX,
         targetX: geom.targetX,
         targetY: geom.targetY,
-        progress: pEff,
+        progress: p,
         aspect: geom.aspect,
       });
-      const transform = `translate(-50%, -50%) translate3d(${t.dx.toFixed(2)}px, ${t.dy.toFixed(2)}px, 0) scale(${t.scale.toFixed(4)})`;
+      const transform = `${REST_TRANSFORM} translate3d(${t.dx.toFixed(2)}px, ${t.dy.toFixed(2)}px, 0) scale(${t.scale.toFixed(4)})`;
       if (transform !== lastTransform) {
         lastTransform = transform;
         logo.style.transform = transform;
@@ -398,11 +412,12 @@ export default function OmkarSamithiApp() {
     };
 
     // Re-measuring is deferred until the page is still. On phones the address
-    // bar collapsing fires `resize` DURING a scroll, and the viewport height
-    // changes with it — re-measuring there re-sizes the mark and moves its
-    // target mid-flight. Devices differ in whether and when that happens,
-    // which is exactly why this looked like "only some phones". A short hard
-    // cap guarantees the measure still runs on a long momentum scroll.
+    // bar sliding fires `resize` (and moves the ResizeObserver) DURING a
+    // scroll. Nothing measure() reads depends on the toolbar any more — the
+    // mark's anchor and the hero are static units — so those events are
+    // harmless; the deferral is only so a forced layout never lands in the
+    // middle of a gesture. A short hard cap guarantees the measure still runs
+    // on a long momentum scroll.
     const measureSoon = () => {
       if (measureTimer) return;
       if (!measureDeadline) measureDeadline = performance.now() + 1200;
@@ -478,8 +493,19 @@ export default function OmkarSamithiApp() {
         `${headerRef.current?.offsetHeight || 80}px`
       );
     setH();
-    window.addEventListener("resize", setH);
-    return () => window.removeEventListener("resize", setH);
+    // The header's height depends on the WIDTH (it wraps), never on the height.
+    // A phone browser fires `resize` on every frame while its address bar
+    // slides, with the width unchanged — and each of those events forced a
+    // synchronous layout (offsetHeight) in the middle of the scroll, on the
+    // browser only: an installed app has no address bar to slide.
+    let lastWidth = window.innerWidth;
+    const onResize = () => {
+      if (window.innerWidth === lastWidth) return;
+      lastWidth = window.innerWidth;
+      setH();
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, [lang, tab]);
 
   // Page height changes with tabs — re-sync the logo position directly.
@@ -642,7 +668,7 @@ export default function OmkarSamithiApp() {
           <ContentHub
             t={t}
             lang={lang}
-            events={events}
+            events={programs}
             flash={flash}
             onTab={setTab}
           />
@@ -650,7 +676,7 @@ export default function OmkarSamithiApp() {
         {tab === "events" && (
           <EventsView
             t={t}
-            events={events}
+            events={programs}
             lang={lang}
             notify={notify}
             onToggleNotify={toggleNotify}
@@ -665,7 +691,9 @@ export default function OmkarSamithiApp() {
             <Contact t={t} />
           </>
         )}
-        {tab === "seva" && <SevaView t={t} lang={lang} flash={flash} />}
+        {tab === "seva" && (
+          <SevaView t={t} lang={lang} flash={flash} events={programs} />
+        )}
       </main>
 
       <footer className="footer">

@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import { GALLERY_SIZES, gallerySrcSet } from "../utils/gallery.js";
 
 /**
  * Photography, given room to be the point.
@@ -24,7 +25,19 @@ export default function GalleryStrip({ t, onOpenGallery }) {
       onClick={onOpenGallery}
       aria-label={item.caption || t.photoLabel}
     >
-      <img src={item.src} alt="" loading="lazy" decoding="async" />
+      {/* The lead paints at ~552px on a desktop and the others at ~276px, so
+          each tile offers the width ladder it can actually use — see
+          GALLERY_SIZES in utils/gallery.js. `src` stays the original for
+          browsers without srcset; the box is sized by CSS (aspect-ratio), so
+          the smaller candidates cannot shift the layout. */}
+      <img
+        src={item.src}
+        srcSet={gallerySrcSet(item.src)}
+        sizes={className === "strip-lead" ? GALLERY_SIZES.stripLead : GALLERY_SIZES.stripSmall}
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
       {item.caption ? <span className="strip-caption">{item.caption}</span> : null}
     </button>
   );
