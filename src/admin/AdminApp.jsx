@@ -1,17 +1,19 @@
 import { useState } from "react";
-import { ArrowLeft, LogOut, Inbox, CalendarDays, Images, HandHeart } from "lucide-react";
+import { ArrowLeft, LogOut, Inbox, CalendarDays, Images, HandHeart, Bell } from "lucide-react";
 import useAdminSession from "./useAdminSession.js";
 import { adminMissing, getSupabase, signInWithGoogle, signOut } from "./client.js";
 import SevaAdmin from "./views/SevaAdmin.jsx";
 import MessagesAdmin from "./views/MessagesAdmin.jsx";
 import EventsAdmin from "./views/EventsAdmin.jsx";
 import PhotosAdmin from "./views/PhotosAdmin.jsx";
+import PushAdmin from "./views/PushAdmin.jsx";
 
 const TABS = [
   { id: "seva", label: "Seva signups", Icon: HandHeart },
   { id: "messages", label: "Messages", Icon: Inbox },
   { id: "events", label: "Events", Icon: CalendarDays },
   { id: "photos", label: "Photos", Icon: Images },
+  { id: "push", label: "Push", Icon: Bell },
 ];
 
 /** The addresses that may sign in, for a clearer "not allowed" message. */
@@ -139,6 +141,7 @@ export default function AdminApp() {
     messages: MessagesAdmin,
     events: EventsAdmin,
     photos: PhotosAdmin,
+    push: PushAdmin,
   }[tab];
 
   return (

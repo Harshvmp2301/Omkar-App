@@ -206,3 +206,60 @@ export function photoUrl(storagePath) {
     .map(encodeURIComponent)
     .join("/")}`;
 }
+
+/* ------------------------------------------------------- push subscriptions */
+
+/**
+ * Store (or refresh) one device's push subscription, round 29.
+ *
+ * Same insert-only posture as the forms: the anon key may add a row and
+ * update its own endpoint's keys, and nothing else — the table's Row Level
+ * Security (see TRANSFER-NOTES for the exact SQL) refuses reads and refuses
+ * every other table. `resolution=merge-duplicates` makes a re-subscribe from
+ * the same device update its row instead of failing on the unique endpoint.
+ */
+export async function savePushSubscription({ endpoint, p256dh, auth }) {
+  if (!supabaseEnabled) return { ok: false, reason: "not-configured" };
+  if (!endpoint || !p256dh || !auth) return { ok: false, reason: "bad-subscription" };
+  try {
+    const res = await fetch(`${URL_BASE}/rest/v1/push_subscriptions`, {
+      method: "POST",
+      headers: {
+        apikey: KEY,
+        Authorization: `Bearer ${KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify({ endpoint, p256dh, auth, updated_at: new Date().toISOString() }),
+    });
+    if (res.ok) return { ok: true };
+    let detail = "";
+    try {
+      const body = await res.json();
+      detail = body?.message || body?.hint || body?.error || "";
+    } catch {
+      /* the status is enough */
+    }
+    return { ok: false, reason: `http-${res.status}`, detail: detail || undefined };
+  } catch {
+    return { ok: false, reason: "network" };
+  }
+}
+
+/** Forget a device (the admin panel's "Disable"): delete by exact endpoint. */
+export async function deletePushSubscription(endpoint) {
+  if (!supabaseEnabled) return { ok: false, reason: "not-configured" };
+  if (!endpoint) return { ok: false, reason: "bad-subscription" };
+  try {
+    const res = await fetch(
+      `${URL_BASE}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(endpoint)}`,
+      {
+        method: "DELETE",
+        headers: { apikey: KEY, Authorization: `Bearer ${KEY}` },
+      }
+    );
+    return res.ok ? { ok: true } : { ok: false, reason: `http-${res.status}` };
+  } catch {
+    return { ok: false, reason: "network" };
+  }
+}

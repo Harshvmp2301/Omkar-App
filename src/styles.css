@@ -1866,6 +1866,23 @@ h1, .section-title, .pillar-title, .video-title, .blog-title, .fest-title, .cal-
 }
 
 .admin-main { max-width: 1180px; margin: 0 auto; padding: 20px 22px 0; }
+/* The push panel's subscription readout: the one place a long machine string
+   (the endpoint URL plus the two key halves) is shown verbatim, so it wraps
+   anywhere and stays monospace for copying. */
+.admin-push .admin-filters { margin: 10px 0; }
+.admin-sub-wrap { margin-top: 12px; }
+.admin-sub {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--field);
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 
 /* ---- controls ---- */
 .admin-btn {
