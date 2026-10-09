@@ -2,25 +2,6 @@ import { useState } from "react";
 import { formatFullDate } from "../utils/calendar.js";
 import { submitForm } from "../utils/submitForm.js";
 
-/**
- * The Om mark beside the Seva function.
- *
- * It was the 🕉 emoji, which the device draws as its OWN coloured glyph — on
- * Android that is a purple tile, on the Samithi's maroon page. An emoji cannot
- * be themed, so the mark is now real text inside an SVG: it uses the loaded
- * Kannada webfont, takes the page's gold through `currentColor`, and has a
- * genuinely transparent background everywhere.
- */
-function OmMark() {
-  return (
-    <svg className="om-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <text x="12" y="19" textAnchor="middle" fontSize="20" fill="currentColor">
-        ಓಂ
-      </text>
-    </svg>
-  );
-}
-
 export default function SevaView({ t, lang, flash, events }) {
   const programs =
     Array.isArray(events) && events.length ? events : t.eventsList;
@@ -125,10 +106,11 @@ export default function SevaView({ t, lang, flash, events }) {
         {/* Seva is offered for Sri Anjaneya Pooja only — fixed, no date field */}
         <div className="function-row">
           <span className="function-key">{t.sevaFunctionLabel}</span>
-          <span className="function-val">
-            <OmMark />
-            {t.sevaFunction}
-          </span>
+          {/* No Om mark here: round 21 replaced the device emoji with an SVG
+              glyph, and round 26 removed even that at the owner's request —
+              beside the function name it read as misaligned decoration. The
+              name stands alone. */}
+          <span className="function-val">{t.sevaFunction}</span>
         </div>
 
         <div className="field">

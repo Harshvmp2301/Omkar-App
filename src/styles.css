@@ -2510,7 +2510,6 @@ select.admin-input::-ms-expand { display: none; }
 
 /* The Om mark beside the Seva function: a real glyph, not an emoji, so it
    keeps the page's own colour and a transparent background on every device. */
-.om-mark { width: 1.05em; height: 1.05em; flex: none; color: var(--gold-text-bright); }
 
 /* ---- the archive is level 4: usefulness, not presence ------------------- */
 .section--archive .section-title { font-size: clamp(1.02rem, 0.95rem + 0.45vw, 1.28rem); }

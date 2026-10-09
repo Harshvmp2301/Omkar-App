@@ -285,21 +285,26 @@ describe("the lightbox is laid out against the screen, not the page", () => {
   });
 });
 
-describe("the Seva Om mark is a real glyph, not an emoji", () => {
+describe("the Seva function row carries no Om glyph at all", () => {
+  // History: the 🕉 emoji was the device's own coloured glyph (a purple tile on
+  // Android); round 21 replaced it with an SVG ಓಂ in the page's gold; the owner
+  // then saw it beside "Sri Anjaneya Pooje" as misaligned decoration and asked
+  // for it to go completely. So: neither the emoji nor any glyph stands beside
+  // the function name. Both absences are asserted, or a future round could
+  // reintroduce either.
   const view = readFileSync(new URL("../src/components/SevaView.jsx", import.meta.url), "utf8");
   const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8")
     .replace(/\/\*[\s\S]*?\*\//g, "");
+  const jsx = view.replace(/\{\/\*[\s\S]*?\*\/\}/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 
-  it("no longer uses the platform emoji that Android draws as a purple tile", () => {
-    // Comments may name the emoji it replaced; only the JSX is evidence.
-    const jsx = view.replace(/\{\/\*[\s\S]*?\*\/\}/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+  it("has neither the device emoji nor the SVG mark", () => {
     expect(jsx).not.toContain("🕉");
+    expect(jsx).not.toMatch(/OmMark/);
+    expect(jsx).not.toContain("ಓಂ");
+    expect(css).not.toMatch(/\.om-mark/);
   });
 
-  it("draws the mark as SVG text that inherits the page's colour", () => {
-    expect(view).toContain("ಓಂ");
-    expect(view).toMatch(/<svg className="om-mark"/);
-    expect(css).toMatch(/\.om-mark \{[^}]*color: var\(--gold-text-bright\)/);
-    expect(css).toMatch(/\.om-mark \{[^}]*width: 1\.05em/);
+  it("lets the function name stand alone", () => {
+    expect(jsx).toMatch(/<span className="function-val">\{t\.sevaFunction\}<\/span>/);
   });
 });
