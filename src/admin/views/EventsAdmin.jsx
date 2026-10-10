@@ -1,291 +1,181 @@
 import { useCallback, useEffect, useState } from "react";
-import { Trash2 } from "lucide-react";
-import { AdminEmpty, AdminError, AdminLoading } from "../ui.jsx";
-import { formatDate } from "../format.js";
+import { AdminError, AdminLoading } from "../ui.jsx";
+import { EVENT_TITLES, eventRowFromForm } from "../../utils/events.js";
 import { dateOnly } from "../../utils/calendar.js";
-import {
-  EVENT_TITLES,
-  TITLE_EN,
-  titleKnFor,
-  eventRowFromForm,
-} from "../../utils/events.js";
 
 /**
- * Three programs, three choices. The form deliberately cannot type a title or
- * a venue: a typo there is a typo on the public website. The only free text is
- * the guest's name, and the only other decision is the date.
+ * The three programs, as three fixed tiles (round 31).
+ *
+ * The owner's rule: the programs never change — Jnanamrutha, Naadamrutha and
+ * the Anjaneya Pooje are the Samithi's year — so nothing here can add, rename
+ * or delete one. Each tile holds exactly what moves: the date, and for the
+ * two programs that have one, the guest's name in English and Kannada. The
+ * Anjaneya Pooje tile carries the date alone, as asked.
+ *
+ * Saving writes the one row for that program (updating it if the dashboard
+ * already holds one, inserting it the first time), and the public site shows
+ * exactly what was saved: the Events tab at the stored date, the homepage
+ * under "Upcoming Programs" while the date is still ahead.
  */
-const BLANK = {
-  id: null,
-  title_en: "",
-  title_kn: "",
-  starts_at: "",
-  guest_en: "",
-  guest_kn: "",
-  published: true,
-};
+
+/** The two programs with a guest; the Pooje tile shows the date only. */
+const WITH_GUEST = new Set(["Omkar Jnanamrutha", "Omkar Naadamrutha"]);
+
+const BLANK_TILE = { starts_at: "", guest_en: "", guest_kn: "" };
 
 export default function EventsAdmin({ getSupabase }) {
   const [rows, setRows] = useState(null);
-  const [form, setForm] = useState(BLANK);
+  const [tiles, setTiles] = useState({});
   const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState("");
+  const [saving, setSaving] = useState("");
 
   const fetchRows = useCallback(
     () =>
       getSupabase().then((supabase) =>
         supabase
-          ? supabase
-              .from("events")
-              .select("*")
-              .order("starts_at", { ascending: true, nullsFirst: false })
+          ? supabase.from("events").select("*")
           : { data: [], error: null }
       ),
     [getSupabase]
+  );
+
+  /** The row a tile edits: the stored row for that program, latest date first. */
+  const rowFor = useCallback(
+    (title) =>
+      (rows || [])
+        .filter((r) => r.title_en === title)
+        .sort((a, b) => String(b.starts_at || "").localeCompare(String(a.starts_at || "")))[0],
+    [rows]
   );
 
   useEffect(() => {
     let alive = true;
     fetchRows().then(({ data, error: err }) => {
       if (!alive) return;
-      if (err) setError(err.message);
-      else setRows(data || []);
+      if (err) return setError(err.message);
+      const list = data || [];
+      setRows(list);
+      const seeded = {};
+      for (const { en } of EVENT_TITLES) {
+        const row = list
+          .filter((r) => r.title_en === en)
+          .sort((a, b) => String(b.starts_at || "").localeCompare(String(a.starts_at || "")))[0];
+        seeded[en] = row
+          ? {
+              starts_at: dateOnly(row.starts_at),
+              guest_en: row.description_en || "",
+              guest_kn: row.description_kn || "",
+            }
+          : { ...BLANK_TILE };
+      }
+      setTiles(seeded);
     });
     return () => {
       alive = false;
     };
   }, [fetchRows]);
 
-  const reload = () =>
-    fetchRows().then(({ data, error: err }) => {
-      if (err) setError(err.message);
-      else setRows(data || []);
-    });
+  const set = (title, field, value) =>
+    setTiles((all) => ({ ...all, [title]: { ...all[title], [field]: value } }));
 
-  function edit(row) {
-    setForm({
-      id: row.id,
-      title_en: row.title_en || "",
-      title_kn: row.title_kn || "",
-      starts_at: dateOnly(row.starts_at),
-      guest_en: row.description_en || "",
-      guest_kn: row.description_kn || "",
-      published: row.published !== false,
-    });
-    setStatus("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  async function save(e) {
-    e.preventDefault();
-    setSaving(true);
-    setStatus("");
+  async function save(title) {
+    setSaving(title);
     setError("");
-
-    if (!form.title_en) {
-      setError("Choose which program this is.");
-      setSaving(false);
-      return;
-    }
-
+    setStatus("");
+    const tile = tiles[title] || BLANK_TILE;
     const supabase = await getSupabase();
-    if (!supabase) return setSaving(false);
+    if (!supabase) return setSaving("");
 
-    const payload = eventRowFromForm(form);
-    const { error: err } = form.id
-      ? await supabase.from("events").update(payload).eq("id", form.id)
+    const payload = eventRowFromForm({
+      title_en: title,
+      starts_at: tile.starts_at || null,
+      guest_en: WITH_GUEST.has(title) ? tile.guest_en : "",
+      guest_kn: WITH_GUEST.has(title) ? tile.guest_kn : "",
+    });
+    const row = rowFor(title);
+    const { error: err } = row
+      ? await supabase.from("events").update(payload).eq("id", row.id)
       : await supabase.from("events").insert(payload);
 
-    setSaving(false);
-    if (err) {
-      setError(err.message);
-      return;
-    }
-    setStatus(form.id ? "Event updated." : "Event added.");
-    setForm(BLANK);
-    reload();
-  }
-
-  async function remove(row) {
-    if (!window.confirm(`Delete "${row.title_en}"? This cannot be undone.`)) return;
-    const supabase = await getSupabase();
-    const { error: err } = await supabase.from("events").delete().eq("id", row.id);
+    setSaving("");
     if (err) return setError(err.message);
-    reload();
+    setStatus(`${title} saved — the site now shows exactly this.`);
+    fetchRows().then(({ data, error: err2 }) => {
+      if (err2) return setError(err2.message);
+      setRows(data || []);
+    });
   }
 
-  const alreadyListed = (title) =>
-    Boolean(rows && rows.some((r) => r.title_en === title && r.id !== form.id));
+  if (!rows) return <AdminLoading label="Reading the three programs…" />;
 
   return (
-    <>
-      <form className="admin-card admin-form" onSubmit={save}>
-        <p className="admin-card-title">
-          {form.id ? `Editing: ${form.title_en}` : "Add an event"}
-        </p>
+    <div className="admin-tiles">
+      <p className="admin-muted">
+        The three programs are fixed. Update a date or a guest and save — the
+        public site shows exactly what is stored here: every program on the
+        Events page at its stored date, and under “Upcoming Programs” on the
+        homepage while its date is still ahead.
+      </p>
+      {error ? <AdminError>{error}</AdminError> : null}
+      {status ? <p className="admin-muted">{status}</p> : null}
 
-        <div className="admin-grid-2">
-          <label className="admin-field">
-            <span>Program — English *</span>
-            <select
-              className="admin-input"
-              value={form.title_en}
-              onChange={(e) =>
-                // The Kannada name belongs to the English one, so it follows.
-                // It stays a dropdown, so it can still be changed on its own.
-                setForm({
-                  ...form,
-                  title_en: e.target.value,
-                  title_kn: titleKnFor(e.target.value),
-                })
-              }
-            >
-              <option value="">Choose a program…</option>
-              {TITLE_EN.map((title) => (
-                <option key={title} value={title}>
-                  {title}
-                  {alreadyListed(title) ? " — already on the list" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="admin-field">
-            <span>Program — Kannada</span>
-            <select
-              className="admin-input"
-              value={form.title_kn}
-              onChange={(e) => setForm({ ...form, title_kn: e.target.value })}
-            >
-              <option value="">Choose a program…</option>
-              {EVENT_TITLES.map((t) => (
-                <option key={t.kn} value={t.kn}>
-                  {t.kn}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+      {EVENT_TITLES.map(({ en, kn }) => {
+        const tile = tiles[en] || BLANK_TILE;
+        return (
+          <section className="admin-tile" key={en} aria-label={en}>
+            <h3>
+              {en} <span className="admin-tile-kn">{kn}</span>
+            </h3>
 
-        <label className="admin-field">
-          <span>Date</span>
-          <input
-            className="admin-input"
-            type="date"
-            value={form.starts_at}
-            onChange={(e) => setForm({ ...form, starts_at: e.target.value })}
-          />
-          <em className="admin-hint">
-            Not decided yet? Leave this empty — the website shows “Date TBA” by
-            itself. The date is the day of the program, not the year: the
-            website repeats it every year on its own, so there is nothing to
-            update in January. The venue is always Sri Krishna Temple, Darsait.
-          </em>
-        </label>
+            <label className="admin-field">
+              Date of the program
+              <input
+                className="admin-input"
+                type="date"
+                value={tile.starts_at}
+                onChange={(e) => set(en, "starts_at", e.target.value)}
+              />
+            </label>
 
-        <div className="admin-grid-2">
-          <label className="admin-field">
-            <span>Guest names — English</span>
-            <input
-              className="admin-input"
-              value={form.guest_en}
-              onChange={(e) => setForm({ ...form, guest_en: e.target.value })}
-              placeholder="Smt. Amrutha Naidu"
-            />
-          </label>
-          <label className="admin-field">
-            <span>Guest names — Kannada</span>
-            <input
-              className="admin-input"
-              value={form.guest_kn}
-              onChange={(e) => setForm({ ...form, guest_kn: e.target.value })}
-              placeholder="ಶ್ರೀಮತಿ ಅಮೃತಾ ನಾಯ್ಡು"
-            />
-          </label>
-        </div>
+            {WITH_GUEST.has(en) ? (
+              <>
+                <label className="admin-field">
+                  Guest (English)
+                  <input
+                    className="admin-input"
+                    type="text"
+                    value={tile.guest_en}
+                    placeholder="e.g. Smt. Amrutha Naidu"
+                    onChange={(e) => set(en, "guest_en", e.target.value)}
+                  />
+                </label>
+                <label className="admin-field">
+                  Guest (Kannada)
+                  <input
+                    className="admin-input"
+                    type="text"
+                    value={tile.guest_kn}
+                    placeholder="ಉದಾ. ಶ್ರೀಮತಿ ಅಮೃತಾ ನಾಯ್ಡು"
+                    onChange={(e) => set(en, "guest_kn", e.target.value)}
+                  />
+                </label>
+              </>
+            ) : (
+              <p className="admin-muted">This program carries no guest — the date alone.</p>
+            )}
 
-        <label className="admin-check">
-          <input
-            type="checkbox"
-            checked={form.published}
-            onChange={(e) => setForm({ ...form, published: e.target.checked })}
-          />
-          <span>Show on the website</span>
-        </label>
-
-        <div className="admin-form-actions">
-          <button className="admin-btn admin-btn--primary" disabled={saving}>
-            {saving ? "Saving…" : form.id ? "Save changes" : "Add event"}
-          </button>
-          {form.id && (
             <button
               type="button"
               className="admin-btn"
-              onClick={() => {
-                setForm(BLANK);
-                setStatus("");
-              }}
+              disabled={saving !== ""}
+              onClick={() => save(en)}
             >
-              Cancel
+              {saving === en ? "Saving…" : "Save"}
             </button>
-          )}
-          {status && <span className="admin-ok">{status}</span>}
-        </div>
-      </form>
-
-      {error && <AdminError>{error}</AdminError>}
-
-      {!rows ? (
-        <AdminLoading />
-      ) : rows.length === 0 ? (
-        <AdminEmpty>
-          No events stored yet — the website is showing its built-in list. Any
-          event you add here takes over from it.
-        </AdminEmpty>
-      ) : (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Program</th>
-                <th>Date</th>
-                <th>Guest</th>
-                <th>On site</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id}>
-                  <td className="admin-strong">
-                    {r.title_en}
-                    {r.title_kn ? (
-                      <span className="admin-muted"> · {r.title_kn}</span>
-                    ) : null}
-                  </td>
-                  <td className="admin-nowrap">
-                    {r.starts_at ? formatDate(r.starts_at) : "Date TBA"}
-                  </td>
-                  <td>{r.description_en || "—"}</td>
-                  <td>{r.published ? "Yes" : "Hidden"}</td>
-                  <td className="admin-row-actions">
-                    <button className="admin-btn admin-btn--quiet" onClick={() => edit(r)}>
-                      Edit
-                    </button>
-                    <button
-                      className="admin-btn admin-btn--danger"
-                      onClick={() => remove(r)}
-                      aria-label={`Delete ${r.title_en}`}
-                    >
-                      <Trash2 size={14} aria-hidden="true" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </>
+          </section>
+        );
+      })}
+    </div>
   );
 }

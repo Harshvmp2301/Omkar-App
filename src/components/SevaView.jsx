@@ -68,7 +68,7 @@ export default function SevaView({ t, lang, flash, events }) {
       <p className="seva-what">{t.sevaWhat}</p>
 
       {/* The three yearly programs and their announced dates (read-only).
-          `events` is App's rolled list (upcomingEvents) — the SAME list the
+          `events` is App's stored list (sortedByDate) — the SAME list the
           program rows and the homepage use, so this page cannot print a date
           that has already passed. It falls back to the curated list only when
           the prop is absent, which is how the standalone render test mounts

@@ -19,6 +19,7 @@ import FestivalCalendar from "./FestivalCalendar.jsx";
  * says so, in both languages.
  */
 export default function EventsView({ t, lang, events, notify, onToggleNotify, flash }) {
+  const today = new Date().toISOString().slice(0, 10);
 
   const handleIcs = (e) => {
     const ok = downloadIcs({
@@ -33,7 +34,7 @@ export default function EventsView({ t, lang, events, notify, onToggleNotify, fl
   return (
     <div className="section section--narrow">
       <div className="section-head reveal">
-        <h1 className="section-title display">{t.upcomingPrograms}</h1>
+        <h1 className="section-title display">{t.allPrograms}</h1>
         <span className="note">{t.sampleDates}</span>
       </div>
 
@@ -43,6 +44,7 @@ export default function EventsView({ t, lang, events, notify, onToggleNotify, fl
         {events.map((e) => {
           const parts = e.date ? dateParts(e.date, lang) : { day: e.day, mon: e.mon };
           const countdown = countdownLabel(e.date, t);
+          const past = Boolean(e.date) && e.date < today;
           return (
             <div key={e.id} className="event-row">
               <div className="event-date">
@@ -60,8 +62,10 @@ export default function EventsView({ t, lang, events, notify, onToggleNotify, fl
                   <span>
                     <MapPin size={12} aria-hidden="true" /> {e.venue}
                   </span>
-                  {countdown ? (
-                    <span className="countdown-chip" title={e.date ? formatFullDate(e.date, lang) : undefined}>
+                  {past ? (
+                    <span className="countdown-chip muted-chip">{t.held}</span>
+                  ) : countdown ? (
+                    <span className="countdown-chip" title={formatFullDate(e.date, lang)}>
                       ⏳ {countdown}
                     </span>
                   ) : (
@@ -69,6 +73,7 @@ export default function EventsView({ t, lang, events, notify, onToggleNotify, fl
                   )}
                 </div>
               </div>
+              {past ? null : (
               <div className="event-actions">
                 <button
                   type="button"
@@ -96,6 +101,7 @@ export default function EventsView({ t, lang, events, notify, onToggleNotify, fl
                   <span className="ics-label">{t.addToCalendar}</span>
                 </button>
               </div>
+              )}
             </div>
           );
         })}

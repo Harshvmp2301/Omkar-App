@@ -263,11 +263,37 @@ export function nextEvent(events = [], now = new Date()) {
 
 /**
  * The public programme list, from the database to the page: the Samithi's
- * published rows laid over the curated list, dated in the year we are in.
- * App derives the two views it needs from this — `upcomingEvents` for the
- * programme rows and the homepage, this same-year list for the lamps.
+ * published rows laid over the curated list, at the dates exactly as they
+ * were stored (round 31 — the year-roll lived here before, and it is gone).
+ * App asks this one list the three questions it needs: `sortedByDate` for the
+ * Events page (the year's record, past included), `upcomingEvents` for the
+ * homepage, the bells and the reminder line, and `rollDates` for the lamps.
  */
-export async function loadEvents(curated = [], lang = "en", now = new Date()) {
+export async function loadEvents(curated = [], lang = "en") {
   const rows = await fetchEventRows();
-  return rollDates(mergeEvents(curated, rows, lang), now);
+  return mergeEvents(curated, rows, lang);
+}
+
+/**
+ * The year's record: every program at its stored date, soonest first, undated
+ * rows last. This is what the Events tab renders — a visitor who wants to
+ * check when a past program was finds it here, marked "Held", exactly as the
+ * dashboard stores it.
+ */
+export function sortedByDate(events = []) {
+  const list = Array.isArray(events) ? events : [];
+  return list
+    .map((event, index) => ({ event, index }))
+    .sort((a, b) => {
+      const left = a.event && a.event.date;
+      const right = b.event && b.event.date;
+      if (left && right) {
+        if (left === right) return a.index - b.index;
+        return left < right ? -1 : 1;
+      }
+      if (left) return -1;
+      if (right) return 1;
+      return a.index - b.index;
+    })
+    .map(({ event }) => event);
 }

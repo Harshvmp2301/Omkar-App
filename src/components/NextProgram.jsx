@@ -105,7 +105,7 @@ export default function NextProgram({ t, lang, events, onViewAll, flash }) {
 
       {others.length > 0 && (
         <div className="also-coming reveal">
-          <h3 className="also-heading display">{t.morePrograms}</h3>
+          <h3 className="also-heading display">{t.upcomingPrograms}</h3>
           <ul className="also-list">
             {others.map((e) => {
               const p = e.date ? dateParts(e.date, lang) : { day: e.day, mon: e.mon };

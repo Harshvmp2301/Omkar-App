@@ -1866,6 +1866,24 @@ h1, .section-title, .pillar-title, .video-title, .blog-title, .fest-title, .cal-
 }
 
 .admin-main { max-width: 1180px; margin: 0 auto; padding: 20px 22px 0; }
+/* The three fixed program tiles (round 31): the dashboard's whole events
+   section is these three cards — nothing to add, nothing to delete, only the
+   date and the guests to update. Plain panel cards in the admin's own grid. */
+.admin-tile {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  padding: 14px 16px 16px;
+  margin: 0 0 14px;
+}
+.admin-tile h3 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  color: var(--ivory);
+}
+.admin-tile-kn { color: var(--muted); font-weight: 400; }
+.admin-tile .admin-btn { margin-top: 12px; }
+
 /* The push panel's subscription readout: the one place a long machine string
    (the endpoint URL plus the two key halves) is shown verbatim, so it wraps
    anywhere and stays monospace for copying. */

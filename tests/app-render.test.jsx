@@ -190,25 +190,15 @@ describe("every tab, rendered in full", () => {
     }
   });
 
-  it("prints no past date on the Seva tab either", () => {
-    // The chips under "Our Yearly Programs" print a full date WITH the year,
-    // so a stale one is unmistakable — which is how the owner's screenshot of
-    // 8 October 2026 showed "1 April 2026".
+  it("prints the stored dates on the Seva tab — the dashboard's own list", () => {
+    // Round 31 parity: the chips under "Our Yearly Programs" print exactly the
+    // dates the dashboard stores, past ones included (the Events tab is the
+    // record, and the Seva chips read the same list). What must never appear
+    // is a date NOBODY stored — the old year-roll's invented April 2027.
     const html = at("#/seva");
-    const months = ["January", "February", "March", "April", "May", "June", "July",
-      "August", "September", "October", "November", "December"];
     const printed = [...html.matchAll(/>([0-9]{1,2} (?:January|February|March|April|May|June|July|August|September|October|November|December) [0-9]{4})</g)]
       .map((m) => m[1]);
-    expect(printed.length).toBeGreaterThan(0);
-    const parse = (human) => {
-      const [day, month, year] = human.split(" ");
-      return Date.UTC(Number(year), months.indexOf(month), Number(day));
-    };
-    const today = new Date();
-    const midnight = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-    for (const human of printed) {
-      expect(parse(human), `${human} is in the past`).toBeGreaterThanOrEqual(midnight);
-    }
+    expect(printed).toEqual(["1 April 2026", "2 October 2026", "18 December 2026"]);
   });
 
   it("shows the same next programme on the homepage and on the Events tab", () => {
@@ -262,6 +252,29 @@ describe("every tab, rendered in full", () => {
     // Ascending: the featured one is the earliest of them all.
     const order = [featured, ...announced].map(parse);
     expect(order[0]).toBe(Math.min(...order));
+  });
+
+  it("keeps past programs on the Events tab as the year's record", () => {
+    // Round 31: the owner's complaint was that a visitor could no longer check
+    // when a past program was. The Events tab lists every stored program —
+    // past rows marked "Held", without a bell or a calendar button.
+    const html = at("#/events");
+    const today = new Date().toISOString().slice(0, 10);
+    const curated = [
+      ["Omkar Jnanamrutha", "2026-04-01"],
+      ["Omkar Naadamrutha", "2026-10-02"],
+      ["Sri Anjaneya Pooje", "2026-12-18"],
+    ];
+    for (const [title, date] of curated) {
+      expect(html, `${title} must stay on the Events tab`).toContain(title);
+      void date;
+    }
+    const pastCount = curated.filter(([, d]) => d < today).length;
+    const aheadCount = curated.filter(([, d]) => d >= today).length;
+    const held = (html.match(/countdown-chip muted-chip">Held</g) || []).length;
+    const bells = (html.match(/class="bell-btn"/g) || []).length;
+    expect(held).toBe(pastCount);
+    expect(bells).toBe(aheadCount);
   });
 
   it("sends a retired #/donate link home rather than to a dead view", () => {

@@ -13,7 +13,7 @@ import ReminderStrip from "./components/ReminderStrip.jsx";
 import { translations } from "./data/content.js";
 import useLocalStorage from "./hooks/useLocalStorage.js";
 import { tabFromHash } from "./utils/route.js";
-import { loadEvents, upcomingEvents } from "./utils/events.js";
+import { loadEvents, rollDates, sortedByDate, upcomingEvents } from "./utils/events.js";
 import { directionsUrl } from "./utils/venue.js";
 import {
   NAV_H,
@@ -83,18 +83,22 @@ export default function OmkarSamithiApp() {
   const events =
     liveEvents.lang === lang && liveEvents.events ? liveEvents.events : t.eventsList;
 
-  // One loaded list, two questions asked of it.
+  // One loaded list — the dates exactly as the dashboard stores them — and
+  // three questions asked of it (round 31):
   //
-  //   programs — when is each programme NEXT? Today or later, in date order.
-  //              This is what the programme rows, the homepage blocks and the
-  //              festival calendar render, so a programme that has already
-  //              happened this year can never appear under "Upcoming".
-  //   events   — the same-year view (past dates included), which the LAMPS
-  //              need: a lamp stays lit from a month before its programme
-  //              until New Year, so April's lamp is still burning in October.
+  //   yearList — every program at its stored date, soonest first. The Events
+  //              tab is the year's RECORD: past programs stay, marked "Held",
+  //              so a visitor can always check when a program was.
+  //   programs — only the dates still ahead. The homepage's "Upcoming
+  //              Programs" bar, the per-row bells and the reminder line read
+  //              this, so nothing promises a date that has passed.
+  //   lamps    — the same-year view the LAMPS need: a lamp stays lit from a
+  //              month before its programme until New Year.
   //
-  // Both come from the same loaded list, so the two can never drift apart.
+  // All three come from the same loaded list, so none of them can drift.
   const programs = useMemo(() => upcomingEvents(events), [events]);
+  const yearList = useMemo(() => sortedByDate(events), [events]);
+  const lamps = useMemo(() => rollDates(events), [events]);
 
   // --- hash routing (deep-linkable: #/hub, #/events, #/gallery, #/about) -----
   useEffect(() => {
@@ -651,7 +655,7 @@ export default function OmkarSamithiApp() {
       {tab === "hub" && (
         <Hero
           t={t}
-          events={events}
+          events={lamps}
           onGoToEvents={() => setTab("events")}
           onGoToAbout={() => setTab("about")}
         />
@@ -679,7 +683,7 @@ export default function OmkarSamithiApp() {
         {tab === "events" && (
           <EventsView
             t={t}
-            events={programs}
+            events={yearList}
             lang={lang}
             notify={notify}
             onToggleNotify={toggleNotify}
@@ -695,7 +699,7 @@ export default function OmkarSamithiApp() {
           </>
         )}
         {tab === "seva" && (
-          <SevaView t={t} lang={lang} flash={flash} events={programs} />
+          <SevaView t={t} lang={lang} flash={flash} events={yearList} />
         )}
       </main>
 

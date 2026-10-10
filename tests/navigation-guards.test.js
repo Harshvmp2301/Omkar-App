@@ -63,7 +63,7 @@ describe("a tab change starts at the top of the new view", () => {
 
 describe("every view has one h1", () => {
   const views = [
-    ["EventsView.jsx", "t.upcomingPrograms"],
+    ["EventsView.jsx", "t.allPrograms"],
     ["GalleryView.jsx", "t.galleryTitle"],
     ["SevaView.jsx", "t.sevaTitle"],
     ["AboutView.jsx", "t.aboutTitle"],
@@ -476,18 +476,32 @@ describe("the program rows show stored dates — never the past, never an invent
     expect(app).toMatch(/import \{[^}]*upcomingEvents[^}]*\} from "\.\/utils\/events\.js"/);
   });
 
-  it("hands that list to the program rows, the homepage blocks and the calendar", () => {
-    // ContentHub carries the homepage program blocks, EventsView carries the
-    // rows and the calendar. Both must get the rolled list.
+  it("hands the upcoming list to the homepage, the bells and the reminder line", () => {
+    // ContentHub carries the homepage program blocks; the bells and the
+    // reminder line must never attach to a date that has passed.
     expect(app).toMatch(/<ContentHub[\s\S]{0,180}events=\{programs\}/);
-    expect(app).toMatch(/<EventsView[\s\S]{0,180}events=\{programs\}/);
+    expect(app).toMatch(/<ReminderStrip[\s\S]{0,120}programs=\{programs\}/);
   });
 
-  it("gives the Seva page the same list, so it cannot print a past year", () => {
+  it("gives the Events tab and the Seva chips the year's record, stored dates", () => {
+    // Round 31: a visitor who wants to check when a PAST program was finds it
+    // on the Events page, marked "Held", at the date the dashboard stores —
+    // and the Seva page's chips read the same stored list.
+    expect(app).toMatch(/<EventsView[\s\S]{0,180}events=\{yearList\}/);
+    expect(app).toMatch(/<SevaView[\s\S]{0,160}events=\{yearList\}/);
+    expect(app).toMatch(/const yearList = useMemo\(\(\) => sortedByDate\(events\)/);
+  });
+
+  it("feeds the lamps their own same-year view, not the record", () => {
+    expect(app).toMatch(/<Hero[\s\S]{0,120}events=\{lamps\}/);
+    expect(app).toMatch(/const lamps = useMemo\(\(\) => rollDates\(events\)/);
+  });
+
+  it("gives the Seva page the stored list, so its chips match the dashboard", () => {
     // Third surface found by reading the owner's screenshots: the Seva page's
     // "Our Yearly Programs" chips printed the curated list verbatim — on
     // 8 October 2026 they still said "1 April 2026" and "2 October 2026".
-    expect(app).toMatch(/<SevaView[\s\S]{0,160}events=\{programs\}/);
+    expect(app).toMatch(/<SevaView[\s\S]{0,160}events=\{yearList\}/);
     const view = readFileSync(new URL("../src/components/SevaView.jsx", import.meta.url), "utf8");
     expect(view).toContain("const programs =");
     expect(view).toContain("programs.map((e) => (");
@@ -497,9 +511,7 @@ describe("the program rows show stored dates — never the past, never an invent
 
   it("keeps the same-year list for the lamps, which need a lit past programme", () => {
     // PR #8's rule: a lamp stays lit from a month before its programme until
-    // New Year, so after the April programme the lamp is still burning. Feeding
-    // the lamps the rolled list would put it out early.
-    expect(app).toMatch(/<Hero[\s\S]{0,120}events=\{events\}/);
+    // New Year, so after the April programme the lamp is still burning.
     const diya = readFileSync(new URL("../src/utils/events.js", import.meta.url), "utf8");
     expect(diya).toMatch(/export function rollDates/);
     expect(diya).toMatch(/This is what the LAMPS render/);
@@ -604,5 +616,33 @@ describe("very short phones trade the duplicated eyebrow for the fold", () => {
   it("leaves the round-24 short-phone band exactly as it was", () => {
     const r24 = css.slice(css.indexOf("@media (max-width: 700px) and (max-height: 790px)"));
     expect(r24.slice(0, r24.indexOf("\n}"))).toContain("padding-bottom: 14px");
+  });
+});
+
+describe("the dashboard's events section is three fixed tiles, update-only", () => {
+  const admin = readFileSync(new URL("../src/admin/views/EventsAdmin.jsx", import.meta.url), "utf8");
+
+  it("builds one tile per program from the single source of names", () => {
+    expect(admin).toContain('import { EVENT_TITLES, eventRowFromForm }');
+    expect(admin).toContain("EVENT_TITLES.map(");
+  });
+
+  it("lets the admin update dates and guests, and nothing else", () => {
+    expect(admin).toContain('type="date"');
+    expect(admin).toContain("guest_en");
+    expect(admin).toContain("guest_kn");
+    // no way to add, rename or delete a program from the dashboard
+    expect(admin).not.toContain(".delete(");
+    expect(admin).not.toContain("<select");
+  });
+
+  it("gives the Anjaneya Pooje tile the date alone", () => {
+    expect(admin).toContain('const WITH_GUEST = new Set(["Omkar Jnanamrutha", "Omkar Naadamrutha"]);');
+    expect(admin).toContain("WITH_GUEST.has(en)");
+  });
+
+  it("updates the stored row when there is one, inserts it the first time", () => {
+    expect(admin).toContain('? await supabase.from("events").update(payload).eq("id", row.id)');
+    expect(admin).toContain(': await supabase.from("events").insert(payload)');
   });
 });

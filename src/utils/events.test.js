@@ -10,6 +10,7 @@ import {
   mergeEvents,
   nextEvent,
   rollDates,
+  sortedByDate,
   titleKnFor,
   upcomingEvents,
 } from "./events.js";
@@ -369,6 +370,43 @@ describe("upcomingEvents — the list the program rows render", () => {
     // the dashboard row's own date has passed, so it leaves the public list
     expect(upcoming.find((e) => e.title === "Omkar Naadamrutha")).toBeUndefined();
     expect(upcoming.find((e) => e.title === "Sri Anjaneya Pooje").date).toBe("2026-12-18");
+  });
+});
+
+describe("sortedByDate — the year's record the Events tab renders", () => {
+  const at = (iso) => new Date(`${iso}T12:00:00`);
+  void at;
+
+  it("keeps every program, past ones included, at the stored date", () => {
+    const stored = [
+      { id: "n", title: "Omkar Naadamrutha", date: "2026-10-02" },
+      { id: "a", title: "Sri Anjaneya Pooje", date: "2026-12-18" },
+      { id: "j", title: "Omkar Jnanamrutha", date: "2026-04-01" },
+    ];
+    expect(sortedByDate(stored).map((e) => e.date)).toEqual([
+      "2026-04-01",
+      "2026-10-02",
+      "2026-12-18",
+    ]);
+  });
+
+  it("puts undated programs last, and never rewrites a date", () => {
+    const stored = [
+      { id: "x", title: "No date yet", date: "" },
+      { id: "j", title: "Omkar Jnanamrutha", date: "2025-04-01" },
+    ];
+    const record = sortedByDate(stored);
+    expect(record.map((e) => e.title)).toEqual(["Omkar Jnanamrutha", "No date yet"]);
+    expect(record[0].date).toBe("2025-04-01");
+  });
+});
+
+describe("the record and the upcoming list speak both languages", () => {
+  it("carries the Events heading and the Held chip in English and Kannada", () => {
+    expect(translations.en.allPrograms).toBeTruthy();
+    expect(translations.kn.allPrograms).toBeTruthy();
+    expect(translations.en.held).toBeTruthy();
+    expect(translations.kn.held).toBeTruthy();
   });
 });
 
