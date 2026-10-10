@@ -40,12 +40,24 @@ export default function EventsAdmin({ getSupabase }) {
     [getSupabase]
   );
 
-  /** The row a tile edits: the stored row for that program, latest date first. */
+  /**
+   * The row a tile edits — and it must be the SAME row the public site reads.
+   * The public fetch filters `published=eq.true` and orders by starts_at, so
+   * the row a visitor sees is the published one with the latest date. Round
+   * 31 sorted by date alone and never touched `published`, so a save could
+   * land on a row the public page never reads (the owner's 7 Dec save stayed
+   * invisible behind an unpublished April row). Published first, then latest
+   * date, puts the tile on exactly the public row.
+   */
   const rowFor = useCallback(
     (title) =>
       (rows || [])
         .filter((r) => r.title_en === title)
-        .sort((a, b) => String(b.starts_at || "").localeCompare(String(a.starts_at || "")))[0],
+        .sort(
+          (a, b) =>
+            (b.published === true) - (a.published === true) ||
+            String(b.starts_at || "").localeCompare(String(a.starts_at || ""))
+        )[0],
     [rows]
   );
 
@@ -60,7 +72,11 @@ export default function EventsAdmin({ getSupabase }) {
       for (const { en } of EVENT_TITLES) {
         const row = list
           .filter((r) => r.title_en === en)
-          .sort((a, b) => String(b.starts_at || "").localeCompare(String(a.starts_at || "")))[0];
+          .sort(
+            (a, b) =>
+              (b.published === true) - (a.published === true) ||
+              String(b.starts_at || "").localeCompare(String(a.starts_at || ""))
+          )[0];
         seeded[en] = row
           ? {
               starts_at: dateOnly(row.starts_at),
@@ -87,12 +103,18 @@ export default function EventsAdmin({ getSupabase }) {
     const supabase = await getSupabase();
     if (!supabase) return setSaving("");
 
-    const payload = eventRowFromForm({
-      title_en: title,
-      starts_at: tile.starts_at || null,
-      guest_en: WITH_GUEST.has(title) ? tile.guest_en : "",
-      guest_kn: WITH_GUEST.has(title) ? tile.guest_kn : "",
-    });
+    const payload = {
+      ...eventRowFromForm({
+        title_en: title,
+        starts_at: tile.starts_at || null,
+        guest_en: WITH_GUEST.has(title) ? tile.guest_en : "",
+        guest_kn: WITH_GUEST.has(title) ? tile.guest_kn : "",
+      }),
+      // The public page only ever reads published rows: saving a program is
+      // publishing it. Without this, a row born unpublished in the old table
+      // stayed invisible no matter how many times it was saved.
+      published: true,
+    };
     const row = rowFor(title);
     const { error: err } = row
       ? await supabase.from("events").update(payload).eq("id", row.id)
@@ -122,11 +144,21 @@ export default function EventsAdmin({ getSupabase }) {
 
       {EVENT_TITLES.map(({ en, kn }) => {
         const tile = tiles[en] || BLANK_TILE;
+        const stored = (rows || []).filter((r) => r.title_en === en);
         return (
           <section className="admin-tile" key={en} aria-label={en}>
             <h3>
               {en} <span className="admin-tile-kn">{kn}</span>
             </h3>
+            {stored.length > 1 ? (
+              <p className="admin-muted">
+                Heads-up: {stored.length} stored rows carry this program's name
+                (left over from the old free-form table). This tile edits the
+                published one with the latest date — the same row the site
+                reads. The duplicates can be removed with the SQL in
+                TRANSFER-NOTES; until then they are simply ignored.
+              </p>
+            ) : null}
 
             <label className="admin-field">
               Date of the program

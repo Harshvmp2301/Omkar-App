@@ -645,4 +645,13 @@ describe("the dashboard's events section is three fixed tiles, update-only", () 
     expect(admin).toContain('? await supabase.from("events").update(payload).eq("id", row.id)');
     expect(admin).toContain(': await supabase.from("events").insert(payload)');
   });
+
+  it("edits exactly the row the public site reads, and publishes it", () => {
+    // Round 32: the public fetch is published=eq.true ordered by starts_at, so
+    // a tile that ignores `published` can save into invisibility — which is
+    // exactly what happened to the owner's 7 December save.
+    expect(admin).toContain("(b.published === true) - (a.published === true)");
+    expect(admin).toContain("published: true,");
+    expect(admin).toContain("stored rows carry this program's name");
+  });
 });
