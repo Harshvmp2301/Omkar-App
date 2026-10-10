@@ -67,6 +67,7 @@ describe("every view has one h1", () => {
     ["GalleryView.jsx", "t.galleryTitle"],
     ["SevaView.jsx", "t.sevaTitle"],
     ["AboutView.jsx", "t.aboutTitle"],
+    ["AlertsView.jsx", "t.alertsTitle"],
   ];
 
   it.each(views)("%s opens on an <h1>", (file, title) => {
@@ -644,6 +645,28 @@ describe("the dashboard's events section is three fixed tiles, update-only", () 
   it("updates the stored row when there is one, inserts it the first time", () => {
     expect(admin).toContain('? await supabase.from("events").update(payload).eq("id", row.id)');
     expect(admin).toContain(': await supabase.from("events").insert(payload)');
+  });
+
+  it("wires round 33: public opt-in tab, sender invoke, custom block", () => {
+    // The installed-app opt-in is a first-class tab, not an admin favour.
+    expect(readFileSync(new URL("../src/utils/route.js", import.meta.url), "utf8"))
+      .toContain('"alerts"');
+    expect(app).toContain("AlertsView");
+    expect(readFileSync(new URL("../src/components/Header.jsx", import.meta.url), "utf8"))
+      .toContain("t.alertsTab");
+    // Save and custom-send both ask the edge function to deliver now.
+    expect(admin).toContain('supabase.functions.invoke("push-send")');
+    const pushAdmin = readFileSync(new URL("../src/admin/views/PushAdmin.jsx", import.meta.url), "utf8");
+    expect(pushAdmin).toContain('supabase.rpc("push_custom"');
+    expect(pushAdmin).toContain("Send to everyone");
+    // The sender itself lives in the repo, reading the queue and the subs.
+    const sender = readFileSync(new URL("../supabase/functions/push-send/index.ts", import.meta.url), "utf8");
+    expect(sender).toContain("push_outbox");
+    expect(sender).toContain("push_subscriptions");
+    expect(sender).toContain("pollFeed");
+    // Kannada parity for the new public page.
+    const content = readFileSync(new URL("../src/data/content.js", import.meta.url), "utf8");
+    expect(content).toContain('alertsTab: "ಸೂಚನೆಗಳು"');
   });
 
   it("edits exactly the row the public site reads, and publishes it", () => {

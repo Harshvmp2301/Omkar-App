@@ -22,6 +22,7 @@ const Header = forwardRef(function Header(
     { id: "gallery", label: t.galleryTab },
     { id: "seva", label: t.sevaTab },
     { id: "about", label: t.aboutTab },
+    { id: "alerts", label: t.alertsTab },
   ];
 
   // Round-10 / audit A1: below 768px the tabs collapse into a focus-

@@ -2714,3 +2714,18 @@ select.admin-input::-ms-expand { display: none; }
   .footer-inner { grid-template-columns: 1fr; gap: 22px; }
   .footer-link { min-height: 44px; }
 }
+
+/* ---- Round 33: the public notifications page ------------------------- */
+.alerts-view { max-width: 640px; margin: 0 auto; padding: 28px 20px 40px; }
+.alerts-intro { margin: 0 0 10px; color: var(--ivory); }
+.alerts-list { margin: 0 0 18px; padding-left: 20px; color: var(--muted); }
+.alerts-list li { margin: 4px 0; }
+.alerts-box {
+  border: 1px solid var(--line); border-radius: 12px;
+  padding: 16px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start;
+}
+.alerts-note { margin: 0; color: var(--muted); }
+.alerts-quiet { margin: 14px 0 0; color: var(--muted); font-size: 0.9rem; }
+
+/* Round 33: the custom-notification textareas in the push panel. */
+textarea.admin-input { resize: vertical; min-height: 74px; font: inherit; color: var(--ivory); }

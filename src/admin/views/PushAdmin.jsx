@@ -22,8 +22,10 @@ import { deletePushSubscription, savePushSubscription } from "../../utils/supaba
  * from Vercel, store the subscription in Supabase, and hand the JSON to
  * tools/send-test-push.mjs on the owner's machine.
  */
-export default function PushAdmin() {
+export default function PushAdmin({ getSupabase }) {
   const [state, setState] = useState(null); // { supported, permission, endpoint }
+  const [customEn, setCustomEn] = useState("");
+  const [customKn, setCustomKn] = useState("");
   const [busy, setBusy] = useState("");
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
@@ -122,6 +124,32 @@ export default function PushAdmin() {
     setNote("This device will no longer receive push.");
   });
 
+  /* Round 33: the owner's own megaphone. The message is queued in the
+     database (rpc push_custom — only a signed-in session may call it) and
+     the edge function is asked to deliver it immediately, so "Send" means
+     sent, not "sent whenever the cron next wakes". */
+  const sendCustom = run("custom", async () => {
+    if (!customEn.trim() || !customKn.trim()) {
+      throw new Error("Write the message in both languages first.");
+    }
+    const supabase = await getSupabase();
+    if (!supabase) throw new Error("No session — sign in again.");
+    const { error: rpcErr } = await supabase.rpc("push_custom", {
+      body_en: customEn.trim(),
+      body_kn: customKn.trim(),
+    });
+    if (rpcErr) {
+      throw new Error(
+        `Queueing failed: ${rpcErr.message}. Run the round-33 SQL in TRANSFER-NOTES if the outbox is missing.`
+      );
+    }
+    const { error: fnErr } = await supabase.functions.invoke("push-send");
+    if (fnErr) throw new Error(`Queued, but the sender answered: ${fnErr.message}`);
+    setCustomEn("");
+    setCustomKn("");
+    setNote("Sent — every subscribed device has it now.");
+  });
+
   if (!state) return <AdminLoading label="Reading this device's push state…" />;
 
   return (
@@ -160,6 +188,37 @@ export default function PushAdmin() {
       {busy ? <AdminLoading label="Working…" /> : null}
       {error ? <AdminError>{error}</AdminError> : null}
       {note ? <p className="admin-muted">{note}</p> : null}
+
+      <section className="admin-tile" aria-label="Custom notification">
+        <h3>Write a notification for everyone</h3>
+        <p className="admin-muted">
+          For a gathering, an appeal, awareness — anything the Samithi wants to
+          say. It goes to every device that enabled notifications, in the
+          language each device reads.
+        </p>
+        <label className="admin-field">
+          <span>Message (English)</span>
+          <textarea
+            className="admin-input admin-textarea"
+            rows={3}
+            value={customEn}
+            onChange={(e) => setCustomEn(e.target.value)}
+          />
+        </label>
+        <label className="admin-field">
+          <span>Message (Kannada)</span>
+          <textarea
+            className="admin-input admin-textarea"
+            rows={3}
+            lang="kn"
+            value={customKn}
+            onChange={(e) => setCustomKn(e.target.value)}
+          />
+        </label>
+        <button className="admin-btn" onClick={sendCustom} disabled={busy !== ""}>
+          <Send size={14} aria-hidden="true" /> Send to everyone
+        </button>
+      </section>
 
       {subJson ? (
         <details className="admin-sub-wrap">

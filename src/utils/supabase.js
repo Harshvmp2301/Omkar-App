@@ -230,7 +230,21 @@ export async function savePushSubscription({ endpoint, p256dh, auth }) {
         "Content-Type": "application/json",
         Prefer: "resolution=merge-duplicates,return=minimal",
       },
-      body: JSON.stringify({ endpoint, p256dh, auth, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({
+        endpoint,
+        p256dh,
+        auth,
+        // Round 33: the sender writes to each device in that device's own
+        // language, so the subscription remembers it at enable time.
+        lang: String(
+          typeof navigator !== "undefined" ? navigator.language || "" : ""
+        )
+          .toLowerCase()
+          .startsWith("kn")
+          ? "kn"
+          : "en",
+        updated_at: new Date().toISOString(),
+      }),
     });
     if (res.ok) return { ok: true };
     let detail = "";

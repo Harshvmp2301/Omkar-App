@@ -39,6 +39,23 @@ export function urlBase64ToUint8Array(base64String) {
   return out;
 }
 
+/**
+ * Is the site running as an installed app? Round 33 gates the public
+ * opt-in on this: the owner's rule is that the phone rings only for people
+ * who installed the app — a visitor merely browsing is told by the quiet
+ * line under the header, never by a pop-up. Browsers report the installed
+ * state through the display-mode media query (Android, desktop) or
+ * navigator.standalone (iOS Safari).
+ */
+export function isInstalled() {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: fullscreen)").matches ||
+    window.navigator.standalone === true
+  );
+}
+
 export async function getPushSubscription() {
   const reg = await navigator.serviceWorker.ready;
   return reg.pushManager.getSubscription();

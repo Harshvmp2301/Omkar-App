@@ -70,14 +70,35 @@ self.addEventListener("push", (event) => {
     data = { body: event.data ? event.data.text() : "" };
   }
   const title = data.title || "Omkar Samithi";
+  const body = data.body || "";
+
   event.waitUntil(
-    self.registration.showNotification(title, {
-      body: data.body || "",
-      icon: "/icon-192.png",
-      badge: "/icon-192.png",
-      tag: data.tag || "omkar",
-      data: { url: data.url || "/" },
-    })
+    (async () => {
+      /* Round 33: a visitor looking at the site is told in the tab, by the
+         quiet line under the header — ringing their phone on top of that was
+         ruled out. So when any window of the site is in front of them, the
+         push is handed to those windows instead of shown, and they refresh
+         the strip. Same rule as anyClientOpen in src/utils/push-text.js; the
+         tests read both copies and fail if they drift. */
+      const clients = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      const open = clients.some((c) => c.focused || c.visibilityState === "visible");
+      if (open) {
+        await Promise.all(
+          clients.map((c) => c.postMessage({ type: "omkar:push", title, body }))
+        );
+        return;
+      }
+      await self.registration.showNotification(title, {
+        body,
+        icon: "/icon-192.png",
+        badge: "/icon-192.png",
+        tag: data.tag || "omkar",
+        data: { url: data.url || "/" },
+      });
+    })()
   );
 });
 

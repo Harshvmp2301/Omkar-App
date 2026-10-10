@@ -123,6 +123,11 @@ export default function EventsAdmin({ getSupabase }) {
     setSaving("");
     if (err) return setError(err.message);
     setStatus(`${title} saved — the site now shows exactly this.`);
+    /* Round 33: the database trigger has already queued this change for
+       every subscribed device; this asks the edge function to deliver it
+       now instead of at the next cron tick. Fire-and-forget on purpose —
+       the save succeeded either way, and the cron is the safety net. */
+    supabase.functions.invoke("push-send").catch(() => {});
     fetchRows().then(({ data, error: err2 }) => {
       if (err2) return setError(err2.message);
       setRows(data || []);

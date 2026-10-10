@@ -7,6 +7,7 @@ import EventsView from "./components/EventsView.jsx";
 import GalleryView from "./components/GalleryView.jsx";
 import AboutView from "./components/AboutView.jsx";
 import SevaView from "./components/SevaView.jsx";
+import AlertsView from "./components/AlertsView.jsx";
 import ContactView from "./components/ContactView.jsx";
 import Contact from "./components/Contact.jsx";
 import ReminderStrip from "./components/ReminderStrip.jsx";
@@ -701,6 +702,7 @@ export default function OmkarSamithiApp() {
         {tab === "seva" && (
           <SevaView t={t} lang={lang} flash={flash} events={yearList} />
         )}
+        {tab === "alerts" && <AlertsView t={t} lang={lang} />}
       </main>
 
       <footer className="footer">
