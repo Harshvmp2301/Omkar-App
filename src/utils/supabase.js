@@ -215,46 +215,70 @@ export function photoUrl(storagePath) {
  * Same insert-only posture as the forms: the anon key may add a row and
  * update its own endpoint's keys, and nothing else — the table's Row Level
  * Security (see TRANSFER-NOTES for the exact SQL) refuses reads and refuses
- * every other table. `resolution=merge-duplicates` makes a re-subscribe from
- * the same device update its row instead of failing on the unique endpoint.
+ * every other table. A re-subscribe from the same device is handled in two
+ * plain statements — the insert answers 409 on the unique endpoint, and the
+ * code then updates that row — because the old upsert-on-conflict Prefer
+ * header tripped row-level security for anon on this project (round 34).
  */
+/** The refusal text PostgREST puts in an error body, for the panel's note. */
+async function detailOf(res) {
+  try {
+    const body = await res.json();
+    return body?.message || body?.hint || body?.error || "";
+  } catch {
+    return "";
+  }
+}
+
 export async function savePushSubscription({ endpoint, p256dh, auth }) {
   if (!supabaseEnabled) return { ok: false, reason: "not-configured" };
   if (!endpoint || !p256dh || !auth) return { ok: false, reason: "bad-subscription" };
+  const lang = String(
+    typeof navigator !== "undefined" ? navigator.language || "" : ""
+  )
+    .toLowerCase()
+    .startsWith("kn")
+    ? "kn"
+    : "en";
+  const payload = { endpoint, p256dh, auth, lang, updated_at: new Date().toISOString() };
   try {
+    /* Round 34: a PLAIN insert, then an explicit update if this endpoint is
+       already stored. The old upsert-on-conflict Prefer header made
+       PostgREST run an ON CONFLICT DO UPDATE — and on this project that
+       path trips row-level security for anon (401/42501) while the plain
+       insert sails through, which is why every enable died at "storing
+       the device failed". Two simple statements, no upsert. */
     const res = await fetch(`${URL_BASE}/rest/v1/push_subscriptions`, {
       method: "POST",
       headers: {
         apikey: KEY,
         Authorization: `Bearer ${KEY}`,
         "Content-Type": "application/json",
-        Prefer: "resolution=merge-duplicates,return=minimal",
+        Prefer: "return=minimal",
       },
-      body: JSON.stringify({
-        endpoint,
-        p256dh,
-        auth,
-        // Round 33: the sender writes to each device in that device's own
-        // language, so the subscription remembers it at enable time.
-        lang: String(
-          typeof navigator !== "undefined" ? navigator.language || "" : ""
-        )
-          .toLowerCase()
-          .startsWith("kn")
-          ? "kn"
-          : "en",
-        updated_at: new Date().toISOString(),
-      }),
+      body: JSON.stringify(payload),
     });
     if (res.ok) return { ok: true };
-    let detail = "";
-    try {
-      const body = await res.json();
-      detail = body?.message || body?.hint || body?.error || "";
-    } catch {
-      /* the status is enough */
+    if (res.status === 409) {
+      // This device re-enabled: same endpoint, fresh keys. Plain update,
+      // which the anon update policy allows.
+      const up = await fetch(
+        `${URL_BASE}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(endpoint)}`,
+        {
+          method: "PATCH",
+          headers: {
+            apikey: KEY,
+            Authorization: `Bearer ${KEY}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+      if (up.ok) return { ok: true };
+      return { ok: false, reason: `http-${up.status}`, detail: (await detailOf(up)) || undefined };
     }
-    return { ok: false, reason: `http-${res.status}`, detail: detail || undefined };
+    return { ok: false, reason: `http-${res.status}`, detail: (await detailOf(res)) || undefined };
   } catch {
     return { ok: false, reason: "network" };
   }

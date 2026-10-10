@@ -67,7 +67,6 @@ describe("every view has one h1", () => {
     ["GalleryView.jsx", "t.galleryTitle"],
     ["SevaView.jsx", "t.sevaTitle"],
     ["AboutView.jsx", "t.aboutTitle"],
-    ["AlertsView.jsx", "t.alertsTitle"],
   ];
 
   it.each(views)("%s opens on an <h1>", (file, title) => {
@@ -647,13 +646,8 @@ describe("the dashboard's events section is three fixed tiles, update-only", () 
     expect(admin).toContain(': await supabase.from("events").insert(payload)');
   });
 
-  it("wires round 33: public opt-in tab, sender invoke, custom block", () => {
-    // The installed-app opt-in is a first-class tab, not an admin favour.
-    expect(readFileSync(new URL("../src/utils/route.js", import.meta.url), "utf8"))
-      .toContain('"alerts"');
-    expect(app).toContain("AlertsView");
-    expect(readFileSync(new URL("../src/components/Header.jsx", import.meta.url), "utf8"))
-      .toContain("t.alertsTab");
+  it("wires round 33: sender invoke and the custom block", () => {
+    expect(app).toContain("NotifyPanel");
     // Save and custom-send both ask the edge function to deliver now.
     expect(admin).toContain('supabase.functions.invoke("push-send")');
     const pushAdmin = readFileSync(new URL("../src/admin/views/PushAdmin.jsx", import.meta.url), "utf8");
@@ -664,9 +658,26 @@ describe("the dashboard's events section is three fixed tiles, update-only", () 
     expect(sender).toContain("push_outbox");
     expect(sender).toContain("push_subscriptions");
     expect(sender).toContain("pollFeed");
-    // Kannada parity for the new public page.
+    // Kannada parity for the panel's strings.
     const content = readFileSync(new URL("../src/data/content.js", import.meta.url), "utf8");
-    expect(content).toContain('alertsTab: "ಸೂಚನೆಗಳು"');
+    expect(content).toContain('closeNotify: "ಮುಚ್ಚಿ"');
+  });
+
+  it("round 34: the bell is the only door, and the save never upserts", () => {
+    // No alerts tab anywhere: route, header, app.
+    expect(readFileSync(new URL("../src/utils/route.js", import.meta.url), "utf8"))
+      .not.toContain('"alerts"');
+    const header = readFileSync(new URL("../src/components/Header.jsx", import.meta.url), "utf8");
+    expect(header).not.toContain('id: "alerts"');
+    expect(header).toContain("onBell");
+    expect(app).not.toContain("AlertsView");
+    // The panel carries the opt-in, the gate and the self-reporting note.
+    const panel = readFileSync(new URL("../src/components/NotifyPanel.jsx", import.meta.url), "utf8");
+    expect(panel).toContain("t.alertsInstallHint");
+    expect(panel).toContain("saved.reason");
+    // The upsert that tripped RLS on this project must never come back.
+    expect(readFileSync(new URL("../src/utils/supabase.js", import.meta.url), "utf8"))
+      .not.toContain("resolution=merge-duplicates");
   });
 
   it("edits exactly the row the public site reads, and publishes it", () => {

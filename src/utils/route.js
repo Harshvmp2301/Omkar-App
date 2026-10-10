@@ -17,7 +17,7 @@
  *   5. otherwise the hub
  */
 
-export const TABS = ["hub", "events", "gallery", "about", "seva", "alerts"];
+export const TABS = ["hub", "events", "gallery", "about", "seva"];
 
 export function tabFromHash(location = typeof window !== "undefined" ? window.location : null) {
   if (!location) return "hub";

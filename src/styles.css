@@ -2716,7 +2716,6 @@ select.admin-input::-ms-expand { display: none; }
 }
 
 /* ---- Round 33: the public notifications page ------------------------- */
-.alerts-view { max-width: 640px; margin: 0 auto; padding: 28px 20px 40px; }
 .alerts-intro { margin: 0 0 10px; color: var(--ivory); }
 .alerts-list { margin: 0 0 18px; padding-left: 20px; color: var(--muted); }
 .alerts-list li { margin: 4px 0; }
@@ -2729,3 +2728,28 @@ select.admin-input::-ms-expand { display: none; }
 
 /* Round 33: the custom-notification textareas in the push panel. */
 textarea.admin-input { resize: vertical; min-height: 74px; font: inherit; color: var(--ivory); }
+
+/* ---- Round 34: the bell's panel — one door, no tab ------------------- */
+.notify-scrim {
+  position: fixed; inset: 0; z-index: 70;
+  background: rgba(10, 4, 7, 0.55);
+}
+.notify-panel {
+  position: fixed; z-index: 71; top: 76px; right: 12px;
+  width: min(430px, calc(100vw - 24px));
+  max-height: calc(100svh - 100px); overflow: auto;
+  background: var(--panel); border: 1px solid var(--line-strong);
+  border-radius: 14px; padding: 18px 18px 20px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+}
+.notify-close {
+  position: absolute; top: 10px; right: 10px;
+  width: 32px; height: 32px; display: grid; place-items: center;
+  background: transparent; border: 1px solid var(--line);
+  border-radius: 50%; color: var(--muted); cursor: pointer;
+}
+.notify-close:hover { border-color: var(--line-strong); color: var(--ivory); }
+.notify-panel .section-title { font-size: 1.25rem; margin-bottom: 10px; }
+@media (max-width: 480px) {
+  .notify-panel { top: 64px; right: 8px; }
+}

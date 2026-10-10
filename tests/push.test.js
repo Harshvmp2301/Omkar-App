@@ -141,9 +141,12 @@ describe("the pieces are wired where the browser looks for them", () => {
     expect(push).toContain("userVisibleOnly: true");
   });
 
-  it("stores subscriptions insert-only, upserted by endpoint", () => {
+  it("stores subscriptions insert-only, updated by endpoint on re-enable", () => {
     expect(supabase).toContain("push_subscriptions");
-    expect(supabase).toContain("resolution=merge-duplicates,return=minimal");
+    // Round 34: the upsert-on-conflict Prefer header is gone for good — on
+    // this project its ON CONFLICT DO UPDATE tripped RLS for anon.
+    expect(supabase).not.toContain("resolution=merge-duplicates");
+    expect(supabase).toContain('method: "PATCH"');
     expect(supabase).toContain("deletePushSubscription");
   });
 

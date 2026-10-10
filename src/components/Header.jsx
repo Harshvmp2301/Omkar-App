@@ -1,5 +1,5 @@
 import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
-import { Globe, BellRing, BellOff, Menu, X, Sun, Moon } from "lucide-react";
+import { Globe, Bell, Menu, X, Sun, Moon } from "lucide-react";
 import useFocusTrap from "../hooks/useFocusTrap.js";
 
 const Header = forwardRef(function Header(
@@ -9,8 +9,8 @@ const Header = forwardRef(function Header(
     tab,
     onTab,
     onToggleLang,
-    notificationsEnabled,
-    onRequestNotify,
+    bellOpen,
+    onBell,
     slotRef,
     progressRef,
   },
@@ -22,7 +22,6 @@ const Header = forwardRef(function Header(
     { id: "gallery", label: t.galleryTab },
     { id: "seva", label: t.sevaTab },
     { id: "about", label: t.aboutTab },
-    { id: "alerts", label: t.alertsTab },
   ];
 
   // Round-10 / audit A1: below 768px the tabs collapse into a focus-
@@ -139,19 +138,18 @@ const Header = forwardRef(function Header(
         >
           <Globe size={14} aria-hidden="true" /> {lang === "en" ? "ಕನ್ನಡ" : "English"}
         </button>
+        {/* Round 34: the bell IS the notifications door — one tap, one
+            meaning. It opens the panel; nothing local fires any more. */}
         <button
           type="button"
-          className={`notif-btn ${notificationsEnabled ? "active" : ""}`}
-          onClick={onRequestNotify}
-          title={t.enableNotifications}
-          aria-label={t.enableNotifications}
-          aria-pressed={notificationsEnabled}
+          className={`notif-btn ${bellOpen ? "active" : ""}`}
+          onClick={onBell}
+          title={t.alertsTitle}
+          aria-label={t.alertsTitle}
+          aria-expanded={bellOpen}
+          aria-haspopup="dialog"
         >
-          {notificationsEnabled ? (
-            <BellRing size={14} aria-hidden="true" />
-          ) : (
-            <BellOff size={14} aria-hidden="true" />
-          )}
+          <Bell size={14} aria-hidden="true" />
         </button>
         <button
           ref={menuBtnRef}

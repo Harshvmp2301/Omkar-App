@@ -7,7 +7,7 @@ import EventsView from "./components/EventsView.jsx";
 import GalleryView from "./components/GalleryView.jsx";
 import AboutView from "./components/AboutView.jsx";
 import SevaView from "./components/SevaView.jsx";
-import AlertsView from "./components/AlertsView.jsx";
+import NotifyPanel from "./components/NotifyPanel.jsx";
 import ContactView from "./components/ContactView.jsx";
 import Contact from "./components/Contact.jsx";
 import ReminderStrip from "./components/ReminderStrip.jsx";
@@ -40,11 +40,8 @@ export default function OmkarSamithiApp() {
   const [notify, setNotify] = useLocalStorage("omkar:notify", {});
   const [lang, setLang] = useLocalStorage("omkar:lang", "en");
   const [toast, setToast] = useState("");
-  // Permission granted on a previous visit → reminders are on at first
-  // paint (lazy init instead of a mount-effect setState).
-  const [notificationsEnabled, setNotificationsEnabled] = useState(
-    () => "Notification" in window && Notification.permission === "granted"
-  );
+  // Round 34: the bell owns notifications now — one state, one panel.
+  const [bellOpen, setBellOpen] = useState(false);
   const toastTimer = useRef(null);
   const mainRef = useRef(null);
   const firstViewFocus = useRef(true);
@@ -531,48 +528,14 @@ export default function OmkarSamithiApp() {
     if (toastTimer.current) clearTimeout(toastTimer.current);
   }, []);
 
-  const sendNotification = useCallback(
-    (eventTitle) => {
-      if (notificationsEnabled && "Notification" in window && Notification.permission === "granted") {
-        new Notification(t.notificationTitle, {
-          body: `${t.notificationBody} ${eventTitle}`,
-          icon: "🪔",
-          tag: "omkar-reminder",
-          requireInteraction: true,
-        });
-      }
-    },
-    [notificationsEnabled, t]
-  );
-
-  const requestNotificationPermission = useCallback(async () => {
-    if (!("Notification" in window)) {
-      flash("This browser doesn't support notifications");
-      return;
-    }
-    const permission = await Notification.requestPermission();
-    if (permission === "granted") {
-      setNotificationsEnabled(true);
-      flash(t.notificationsEnabled);
-      new Notification(t.notificationTitle, {
-        body: "Browser alerts are on — notifications sound while this site is open in a tab.",
-        icon: "🔔",
-      });
-    } else {
-      setNotificationsEnabled(false);
-      flash(t.permissionDenied);
-    }
-  }, [flash, t]);
-
   // --- reminders -------------------------------------------------------------
   const toggleNotify = useCallback(
     (id, title) => {
       const next = { ...notify, [id]: !notify[id] };
       setNotify(next);
       flash(`${next[id] ? t.remindersOn : t.remindersOff} — ${title}`);
-      if (next[id]) sendNotification(title);
     },
-    [notify, setNotify, flash, sendNotification, t]
+    [notify, setNotify, flash, t]
   );
 
   const toggleLanguage = useCallback(() => {
@@ -611,9 +574,12 @@ export default function OmkarSamithiApp() {
         tab={tab}
         onTab={setTab}
         onToggleLang={toggleLanguage}
-        notificationsEnabled={notificationsEnabled}
-        onRequestNotify={requestNotificationPermission}
+        bellOpen={bellOpen}
+        onBell={() => setBellOpen((v) => !v)}
       />
+
+      {/* Round 34: the bell's panel — the single door to notifications. */}
+      <NotifyPanel t={t} open={bellOpen} onClose={() => setBellOpen(false)} />
 
       {/* The ONE logo for the entire app — fixed at page level (a filtered
           ancestor such as the blurred header would trap a fixed child),
@@ -702,7 +668,6 @@ export default function OmkarSamithiApp() {
         {tab === "seva" && (
           <SevaView t={t} lang={lang} flash={flash} events={yearList} />
         )}
-        {tab === "alerts" && <AlertsView t={t} lang={lang} />}
       </main>
 
       <footer className="footer">

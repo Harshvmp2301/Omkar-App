@@ -48,11 +48,14 @@ export function urlBase64ToUint8Array(base64String) {
  * navigator.standalone (iOS Safari).
  */
 export function isInstalled() {
-  if (typeof window === "undefined" || !window.matchMedia) return false;
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return false;
+  }
+  const nav = window.navigator || {};
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
     window.matchMedia("(display-mode: fullscreen)").matches ||
-    window.navigator.standalone === true
+    nav.standalone === true
   );
 }
 
