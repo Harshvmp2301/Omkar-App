@@ -45,8 +45,17 @@ const authClient = createClient(URL_BASE, ANON);
 
 const CORS = {
   "access-control-allow-origin": "*",
-  "access-control-allow-headers": "authorization, content-type, x-cron-token",
+  /* Round 36: supabase-js decorates every invoke() with `apikey` and
+     `x-client-info` on top of `authorization`. A preflight whose allow-list
+     does not name those headers is answered by the browser itself, killing
+     the POST before it leaves the machine — which is exactly what
+     "Failed to send a request to the Edge Function" said while a plain
+     tab GET to the same URL worked perfectly. Name every header the
+     client libraries actually send, and let the answer be cached a day. */
+  "access-control-allow-headers":
+    "authorization, content-type, x-cron-token, apikey, x-client-info, x-supabase-api-version",
   "access-control-allow-methods": "POST, OPTIONS",
+  "access-control-max-age": "86400",
 };
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), {

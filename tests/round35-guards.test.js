@@ -86,7 +86,9 @@ describe("round 35: the bell wears its state", () => {
 describe("round 35: the send line is the sender's answer, not a courtesy", () => {
   it("never claims success before reading the reply", () => {
     expect(pushAdmin).not.toContain("Sent — every subscribed device has it now.");
-    expect(pushAdmin).toContain("const { data, error: fnErr } = await supabase.functions.invoke");
+    // Round 36 split invoke() into invoke + a plain-fetch fallback; the ask
+    // itself must still be there, exactly once, under either spelling.
+    expect(pushAdmin).toContain('supabase.functions.invoke("push-send")');
     expect(pushAdmin).toContain("d.failed");
     expect(pushAdmin).toContain("!d.subscriptions");
   });

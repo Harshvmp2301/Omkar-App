@@ -151,9 +151,38 @@ export default function PushAdmin({ getSupabase }) {
        and a fingerprint of the key the sender signed with, compared with
        the key this site subscribed with — two different pairs is the one
        failure no phone can ever report. */
-    const { data, error: fnErr } = await supabase.functions.invoke("push-send");
-    if (fnErr) throw new Error(`Queued, but the sender answered: ${fnErr.message}`);
-    const d = data || {};
+    /* Round 36: two ways to reach the sender. supabase-js's invoke()
+       decorates the request with extra headers (apikey, x-client-info);
+       if a browser or a proxy ever chokes on that preflight again — the
+       "Failed to send a request to the Edge Function" family — the plain
+       fetch below retries with only the two headers any CORS allow-list
+       on this function already names. The queue row exists either way;
+       this is only about the delivery ask. */
+    let d = null;
+    let fnErr = null;
+    try {
+      const res = await supabase.functions.invoke("push-send");
+      fnErr = res.error || null;
+      d = res.data || null;
+    } catch (err) {
+      fnErr = err;
+    }
+    if (fnErr || !d) {
+      const { data: sess } = await supabase.auth.getSession();
+      const tok = sess && sess.session ? sess.session.access_token : "";
+      const base = String(import.meta.env.VITE_SUPABASE_URL || "").replace(/\/+$/, "");
+      const r = await fetch(`${base}/functions/v1/push-send`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${tok}`, "content-type": "application/json" },
+        body: "{}",
+      });
+      if (!r.ok) {
+        throw new Error(
+          `Queued, but the sender answered HTTP ${r.status}: ${(await r.text()).slice(0, 140)}`
+        );
+      }
+      d = await r.json();
+    }
     const siteKey = String(import.meta.env.VITE_PUSH_VAPID_PUBLIC_KEY || "").trim();
     const senderKey = String(d.senderKey || "");
     const mismatch = Boolean(senderKey && siteKey && !siteKey.startsWith(senderKey));
