@@ -1,6 +1,7 @@
 import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
-import { Globe, Bell, Menu, X, Sun, Moon } from "lucide-react";
+import { Globe, Bell, BellRing, Menu, X, Sun, Moon } from "lucide-react";
 import useFocusTrap from "../hooks/useFocusTrap.js";
+import { getPushSubscription, pushSupported } from "../utils/push.js";
 
 const Header = forwardRef(function Header(
   {
@@ -88,6 +89,36 @@ const Header = forwardRef(function Header(
     onTab(id);
   };
 
+  /* Round 35: the bell wears its state. A device that already enabled
+     notifications gets the ringing bell (BellRing — the bell with the two
+     sound waves); everyone else gets the plain bell. The panel and the
+     admin panel dispatch "omkar:pushchange" whenever a subscription is
+     created or deleted in this window, so the icon flips the moment the
+     tap happens — no reload, no second source of truth. */
+  const [pushOn, setPushOn] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    const read = () => {
+      if (!pushSupported()) {
+        if (alive) setPushOn(false);
+        return;
+      }
+      getPushSubscription()
+        .then((sub) => {
+          if (alive) setPushOn(Boolean(sub));
+        })
+        .catch(() => {
+          if (alive) setPushOn(false);
+        });
+    };
+    read();
+    window.addEventListener("omkar:pushchange", read);
+    return () => {
+      alive = false;
+      window.removeEventListener("omkar:pushchange", read);
+    };
+  }, []);
+
   const tabButtons = () =>
     tabs.map((tb) => (
       <button
@@ -142,14 +173,15 @@ const Header = forwardRef(function Header(
             meaning. It opens the panel; nothing local fires any more. */}
         <button
           type="button"
-          className={`notif-btn ${bellOpen ? "active" : ""}`}
+          className={`notif-btn ${bellOpen ? "active" : ""} ${pushOn ? "on" : ""}`}
           onClick={onBell}
-          title={t.alertsTitle}
-          aria-label={t.alertsTitle}
+          title={pushOn ? t.alertsStatusOn : t.alertsTitle}
+          aria-label={pushOn ? t.alertsStatusOn : t.alertsTitle}
           aria-expanded={bellOpen}
           aria-haspopup="dialog"
         >
-          <Bell size={14} aria-hidden="true" />
+          {/* Round 35: enabled = the ringing bell, plain = not yet. */}
+          {pushOn ? <BellRing size={14} aria-hidden="true" /> : <Bell size={14} aria-hidden="true" />}
         </button>
         <button
           ref={menuBtnRef}

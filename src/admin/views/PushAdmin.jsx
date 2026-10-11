@@ -143,11 +143,43 @@ export default function PushAdmin({ getSupabase }) {
         `Queueing failed: ${rpcErr.message}. Run the round-33 SQL in TRANSFER-NOTES if the outbox is missing.`
       );
     }
-    const { error: fnErr } = await supabase.functions.invoke("push-send");
+    /* Round 35: the sender's answer is the truth, not a courtesy. The old
+       line said "Sent — every subscribed device has it now" before reading
+       the reply at all, so a phone that refused (or a key pair mismatch
+       between Vercel's public key and the function's private key) looked
+       exactly like success. Now the note carries the sender's own counts,
+       and a fingerprint of the key the sender signed with, compared with
+       the key this site subscribed with — two different pairs is the one
+       failure no phone can ever report. */
+    const { data, error: fnErr } = await supabase.functions.invoke("push-send");
     if (fnErr) throw new Error(`Queued, but the sender answered: ${fnErr.message}`);
+    const d = data || {};
+    const siteKey = String(import.meta.env.VITE_PUSH_VAPID_PUBLIC_KEY || "").trim();
+    const senderKey = String(d.senderKey || "");
+    const mismatch = Boolean(senderKey && siteKey && !siteKey.startsWith(senderKey));
     setCustomEn("");
     setCustomKn("");
-    setNote("Sent — every subscribed device has it now.");
+    if (!d.subscriptions) {
+      setNote(
+        "Queued. No device is subscribed yet — enable notifications on the phone first, then send again."
+      );
+    } else if (mismatch) {
+      setNote(
+        `The sender signed with a key (${senderKey}…) that is NOT the pair of the public key this site subscribes with (${siteKey.slice(0, 12)}…). ` +
+        "Every delivery fails while those disagree. Redo the key steps: one fresh pair, public into Vercel, private into the function secrets, redeploy both."
+      );
+    } else if (d.failed) {
+      setNote(
+        `Attempted ${d.subscriptions} device(s): ${d.delivered} accepted, ${d.failed} refused (${(d.errors || []).join(", ") || "no detail"}). ` +
+        "A refused device usually holds an expired subscription — disable and enable notifications there once. " +
+        "Devices with the site open right now read it in the tab instead of ringing."
+      );
+    } else {
+      setNote(
+        `Sent — ${d.delivered} of ${d.subscriptions} subscribed device(s) accepted it. ` +
+        "A device with the site open in front of it was told in the tab, not rung; close the app there to hear the ring."
+      );
+    }
   });
 
   if (!state) return <AdminLoading label="Reading this device's push state…" />;

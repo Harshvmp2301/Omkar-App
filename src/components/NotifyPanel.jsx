@@ -79,6 +79,8 @@ export default function NotifyPanel({ t, open, onClose }) {
       auth: json.keys ? json.keys.auth : "",
     });
     await readDevice().then(setDevice);
+    // Round 35: tell the header's bell to re-read its state (ringing bell).
+    window.dispatchEvent(new Event("omkar:pushchange"));
     setBusy("");
     setNote(
       saved.ok

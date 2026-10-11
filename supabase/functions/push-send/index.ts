@@ -216,6 +216,12 @@ Deno.serve(async (req: Request) => {
   const list = subs || [];
   let delivered = 0;
   let failed = 0;
+  let gone = 0;
+  /* Round 35: the refusal codes, capped, so the dashboard can show WHY a
+     device did not ring instead of a polite lie. "http-403" from a push
+     endpoint almost always means the VAPID pair disagrees with the key the
+     subscription was created with. */
+  const errors: string[] = [];
 
   for (const row of pending || []) {
     const bodies = row.body_en
@@ -244,10 +250,14 @@ Deno.serve(async (req: Request) => {
       })
     );
     for (const r of results) {
-      if (r === "ok" || r === "gone") delivered += 1;
-      else {
+      if (r === "ok") delivered += 1;
+      else if (r === "gone") {
+        delivered += 1;
+        gone += 1;
+      } else {
         rowFailed += 1;
         failed += 1;
+        if (errors.length < 6) errors.push(String(r).slice(0, 60));
       }
     }
     await db
@@ -266,5 +276,14 @@ Deno.serve(async (req: Request) => {
     subscriptions: list.length,
     delivered,
     failed,
+    gone,
+    errors,
+    /* Round 35: the first 12 characters of the public key this sender signs
+       with. The dashboard compares them with the first 12 characters of the
+       key the site subscribed with; if they differ, the two halves of the
+       VAPID pair come from different generations and no delivery can ever
+       succeed — a failure that is invisible from the phone. Public key
+       material is public by definition, so this leaks nothing. */
+    senderKey: VAPID_PUBLIC.slice(0, 12),
   });
 });

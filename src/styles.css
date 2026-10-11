@@ -2319,6 +2319,35 @@ select.admin-input::-ms-expand { display: none; }
   outline-offset: 1px;
 }
 
+/* Round 35: a push that arrives while the site is open is never shown as an
+   OS notification (round 33's rule) — the service worker hands it to the open
+   window instead. Until now nothing listened, so the message vanished and an
+   owner staring at his open app saw silence and called it a broken sender.
+   This strip is the listening half: the same quiet line under the header,
+   carrying the push's own title and body, fading by itself. Parked one rank
+   above .remind-strip so it wins the slot while it lives. */
+.push-inline {
+  position: absolute;
+  top: var(--header-h, 80px);
+  left: 0;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ivory);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  animation: viewIn 0.3s var(--ease) backwards;
+}
+.push-inline .remind-text strong {
+  color: var(--gold-text-bright);
+  font-weight: 600;
+}
+
 /* Buttons that sit in a row rather than filling a form */
 .btn-inline { display: inline-flex; width: auto; align-items: center; justify-content: center; gap: 6px; }
 .btn-quiet {
@@ -2731,11 +2760,16 @@ textarea.admin-input { resize: vertical; min-height: 74px; font: inherit; color:
 
 /* ---- Round 34: the bell's panel — one door, no tab ------------------- */
 .notify-scrim {
-  position: fixed; inset: 0; z-index: 70;
+  /* Round 35: above the flying logo (z 1200) and the header (z 1100), below
+     the lightbox (z 2000). At z 70 the scrim and the panel painted UNDER the
+     fixed hero mark, so the big centred Omkar seal floated on top of the open
+     panel and made its text unreadable — the panel is a modal door, nothing
+     decorative may outrank it. */
+  position: fixed; inset: 0; z-index: 1300;
   background: rgba(10, 4, 7, 0.55);
 }
 .notify-panel {
-  position: fixed; z-index: 71; top: 76px; right: 12px;
+  position: fixed; z-index: 1301; top: 76px; right: 12px;
   width: min(430px, calc(100vw - 24px));
   max-height: calc(100svh - 100px); overflow: auto;
   background: var(--panel); border: 1px solid var(--line-strong);

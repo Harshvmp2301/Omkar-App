@@ -42,6 +42,11 @@ export default function OmkarSamithiApp() {
   const [toast, setToast] = useState("");
   // Round 34: the bell owns notifications now — one state, one panel.
   const [bellOpen, setBellOpen] = useState(false);
+  // Round 35: a push that arrives while this window is open. The service
+  // worker suppresses the OS notification in that case and postMessage()s the
+  // text instead; this state is what finally listens, so an open app shows
+  // the message in the quiet line under the header instead of silence.
+  const [pushInline, setPushInline] = useState(null);
   const toastTimer = useRef(null);
   const mainRef = useRef(null);
   const firstViewFocus = useRef(true);
@@ -528,6 +533,29 @@ export default function OmkarSamithiApp() {
     if (toastTimer.current) clearTimeout(toastTimer.current);
   }, []);
 
+  /* Round 35: the listening half of round 33's suppression rule. The service
+     worker never rings a phone that is looking at the site — it hands the
+     push to the open window as a message. Nobody read that message until
+     now, so a send made while the owner's app was open looked like a dead
+     sender. Here it becomes the quiet line under the header for nine
+     seconds, then fades; role="status" announces it to screen readers. */
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return undefined;
+    let timer = 0;
+    const onMessage = (event) => {
+      const d = event.data;
+      if (!d || d.type !== "omkar:push") return;
+      setPushInline({ title: String(d.title || ""), body: String(d.body || "") });
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => setPushInline(null), 9000);
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () => {
+      if (timer) clearTimeout(timer);
+      navigator.serviceWorker.removeEventListener("message", onMessage);
+    };
+  }, []);
+
   // --- reminders -------------------------------------------------------------
   const toggleNotify = useCallback(
     (id, title) => {
@@ -629,6 +657,17 @@ export default function OmkarSamithiApp() {
       )}
 
       <ReminderStrip t={t} lang={lang} programs={programs} />
+
+      {/* Round 35: a push received while this window is open — told in the
+          tab, never as a pop-up (the owner's standing rule). */}
+      {pushInline ? (
+        <div className="push-inline" role="status">
+          <span className="remind-dot" aria-hidden="true" />
+          <span className="remind-text">
+            <strong>{pushInline.title}</strong> {pushInline.body}
+          </span>
+        </div>
+      ) : null}
 
       <main
           key={tab}
