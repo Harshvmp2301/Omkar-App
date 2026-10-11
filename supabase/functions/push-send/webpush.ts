@@ -151,9 +151,12 @@ export async function encryptPushPayload(
     )
   );
 
-  // RFC 8188 with the roles swapped, as RFC 8291 section 3 requires: the
-  // header salt is the input keying material, ikm is the salt.
-  const prk = await hmac(await hmacKey(ikm), salt);
+  // RFC 8188: PRK = HKDF-Extract(salt, ikm) = HMAC(salt, ikm) — the header
+  // salt is the HMAC key and the RFC 8291 ikm the message. RFC 8291
+  // appendix A pins this order; the reversed order encrypts to a key no
+  // browser ever derives, and the push is dropped silently before any
+  // service worker sees it (round 39).
+  const prk = await hmac(await hmacKey(salt), ikm);
   const cek = await hkdfExpand(prk, "Content-Encoding: aes128gcm\0", 16);
   const nonce = await hkdfExpand(prk, "Content-Encoding: nonce\0", 12);
 

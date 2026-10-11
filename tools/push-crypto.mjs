@@ -132,9 +132,11 @@ export function encryptPushPayload(plaintext, { p256dh, auth }, { salt, localKey
   const info = Buffer.concat([Buffer.from("WebPush: info\0"), ua, localPoint]);
   const ikm = hkdf(authSecret, ecdhSecret, info, 32);
 
-  // RFC 8188 with the roles swapped, as RFC 8291 section 3 requires:
-  // the header salt is the input keying material, ikm is the salt.
-  const prk = hkdfExtract(ikm, saltBuf);
+  // RFC 8188: PRK = HKDF-Extract(salt, ikm) = HMAC(salt, ikm) — the header
+  // salt is the HMAC key and the RFC 8291 ikm the message. RFC 8291
+  // appendix A pins this order; the reversed order encrypts to a key no
+  // browser ever derives (round 39).
+  const prk = hkdfExtract(saltBuf, ikm);
   const cek = hkdfExpand(prk, "Content-Encoding: aes128gcm\0", 16);
   const nonce = hkdfExpand(prk, "Content-Encoding: nonce\0", 12);
 

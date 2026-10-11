@@ -99,7 +99,9 @@ describe("the encrypted payload is RFC 8188 aes128gcm, and decrypts back", () =>
     };
     const info = Buffer.concat([Buffer.from("WebPush: info\0"), fromB64url(p256dh), localPoint]);
     const ikm = expand(hmac(fromB64url(auth), ecdhSecret), info, 32);
-    const prk = hmac(ikm, salt);
+    // RFC 8188: HKDF-Extract(salt, ikm) — the header salt is the HMAC key
+    // (round 39; the reversed order here masked the sender's bug for rounds).
+    const prk = hmac(salt, ikm);
     const cek = expand(prk, "Content-Encoding: aes128gcm\0", 16);
     const nonce = expand(prk, "Content-Encoding: nonce\0", 12);
 
