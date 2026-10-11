@@ -32,6 +32,11 @@ export default function NotifyPanel({ t, open, onClose }) {
   const [installed] = useState(() => isInstalled());
   const [busy, setBusy] = useState("");
   const [note, setNote] = useState("");
+  // Round 38: the service worker stamps every push it receives into the
+  // "omkar-diag" cache ({at, mode}). Reading it back here turns the panel
+  // into the witness the owner asked for during testing: did a push reach
+  // THIS device at all, and did it ring or go to an open tab?
+  const [diag, setDiag] = useState(null);
 
   const readDevice = useCallback(async () => {
     const supported = pushSupported();
@@ -43,16 +48,32 @@ export default function NotifyPanel({ t, open, onClose }) {
     };
   }, []);
 
+  const readDiag = useCallback(async () => {
+    try {
+      if (typeof caches === "undefined") return null;
+      const cache = await caches.open("omkar-diag");
+      const res = await cache.match("/last-push");
+      if (!res) return null;
+      const j = await res.json();
+      return j && j.at ? j : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
     if (!open) return undefined;
     let alive = true;
     readDevice().then((snap) => {
       if (alive) setDevice(snap);
     });
+    readDiag().then((stamp) => {
+      if (alive) setDiag(stamp);
+    });
     return () => {
       alive = false;
     };
-  }, [open, readDevice]);
+  }, [open, readDevice, readDiag]);
 
   if (!open) return null;
 
@@ -158,6 +179,21 @@ export default function NotifyPanel({ t, open, onClose }) {
               {note}
             </p>
           ) : null}
+          {/* Round 38, testing phase: the push receipt. "No push has reached
+              this device yet" points above the device (sender, FCM, keys);
+              "reached … told in the tab" means the site was open in front of
+              it; "reached … rang it" with no sound heard points at the OS
+              (battery sleep, DND, channel). One line, three worlds. */}
+          {diag ? (
+            <p className="alerts-note">
+              {(diag.mode === "tab" ? t.pushDiagTab : t.pushDiagRing).replaceAll(
+                "{time}",
+                new Date(diag.at).toLocaleTimeString()
+              )}
+            </p>
+          ) : (
+            <p className="alerts-note">{t.pushDiagNone}</p>
+          )}
         </div>
       </section>
     </div>

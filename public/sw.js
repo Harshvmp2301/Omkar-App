@@ -31,7 +31,9 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      // "omkar-diag" survives updates on purpose: it holds the round-38
+      // push receipt the bell panel reads while testing.
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== "omkar-diag").map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -63,11 +65,24 @@ self.addEventListener("fetch", (event) => {
    gracefully, and a push with no parseable JSON still shows the site's name
    rather than nothing. Clicking opens (or reuses) a window at the url. */
 self.addEventListener("push", (event) => {
+  /* Round 38: this handler may no longer die quietly. The old fallback read
+     event.data.text() INSIDE the catch for a failed .json() — and .text() on
+     an undecryptable payload throws too, so the whole async body rejected:
+     no notification, no in-tab line, no trace, while the sender honestly
+     reported "accepted". Every step below is now guarded, and whatever
+     happens, a decision is stamped into the "omkar-diag" cache so the bell
+     panel can read afterwards whether the push arrived, and which way it
+     went. A push that reaches a device can never again vanish without
+     leaving its fingerprint. */
   let data = {};
   try {
     data = event.data ? event.data.json() : {};
   } catch {
-    data = { body: event.data ? event.data.text() : "" };
+    try {
+      data = { body: event.data ? event.data.text() : "" };
+    } catch {
+      data = {};
+    }
   }
   const title = data.title || "Omkar Samithi";
   const body = data.body || "";
@@ -80,24 +95,52 @@ self.addEventListener("push", (event) => {
          push is handed to those windows instead of shown, and they refresh
          the strip. Same rule as anyClientOpen in src/utils/push-text.js; the
          tests read both copies and fail if they drift. */
-      const clients = await self.clients.matchAll({
-        type: "window",
-        includeUncontrolled: true,
-      });
-      const open = clients.some((c) => c.focused || c.visibilityState === "visible");
-      if (open) {
-        await Promise.all(
-          clients.map((c) => c.postMessage({ type: "omkar:push", title, body }))
+      let clients = [];
+      let open = false;
+      try {
+        clients = await self.clients.matchAll({
+          type: "window",
+          includeUncontrolled: true,
+        });
+        open = clients.some((c) => c.focused || c.visibilityState === "visible");
+      } catch {
+        open = false;
+      }
+
+      try {
+        const cache = await caches.open("omkar-diag");
+        await cache.put(
+          "/last-push",
+          new Response(JSON.stringify({ at: Date.now(), mode: open ? "tab" : "ring" }), {
+            headers: { "content-type": "application/json" },
+          })
         );
+      } catch {
+        /* diagnostics must never break delivery */
+      }
+
+      if (open) {
+        try {
+          await Promise.all(
+            clients.map((c) => c.postMessage({ type: "omkar:push", title, body }))
+          );
+        } catch {
+          /* a window that went away mid-hand-off; nothing to do */
+        }
         return;
       }
-      await self.registration.showNotification(title, {
-        body,
-        icon: "/icon-192.png",
-        badge: "/icon-192.png",
-        tag: data.tag || "omkar",
-        data: { url: data.url || "/" },
-      });
+      try {
+        await self.registration.showNotification(title, {
+          body,
+          icon: "/icon-192.png",
+          badge: "/icon-192.png",
+          tag: data.tag || "omkar",
+          data: { url: data.url || "/" },
+        });
+      } catch {
+        /* permission revoked or OS refusal: the diag stamp above is the
+           only witness, and the panel will show it */
+      }
     })()
   );
 });
