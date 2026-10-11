@@ -82,9 +82,12 @@ export default function NotifyPanel({ t, open, onClose }) {
     // Round 35: tell the header's bell to re-read its state (ringing bell).
     window.dispatchEvent(new Event("omkar:pushchange"));
     setBusy("");
+    // Round 37: success needs no sentence — the state line flipping to
+    // "Notifications are on for this device" is the done. Failures keep
+    // the database's own words (testing phase and forever after).
     setNote(
       saved.ok
-        ? t.alertsOn
+        ? ""
         : `${t.alertsStoreFail} (${saved.reason}${saved.detail ? `: ${saved.detail}` : ""})`
     );
   };
@@ -96,8 +99,9 @@ export default function NotifyPanel({ t, open, onClose }) {
     await unsubscribePush();
     if (endpoint) await deletePushSubscription(endpoint);
     await readDevice().then(setDevice);
+    // Round 37: the button flipping back to Enable is the whole sentence.
     setBusy("");
-    setNote(t.alertsOff);
+    setNote("");
   };
 
   return (
@@ -116,14 +120,16 @@ export default function NotifyPanel({ t, open, onClose }) {
         <h2 id="notify-title" className="section-title display">
           {t.alertsTitle}
         </h2>
-        <p className="alerts-intro">{t.alertsIntro}</p>
-        <ul className="alerts-list">
-          <li>{t.alertsItemProgram}</li>
-          <li>{t.alertsItemBlog}</li>
-          <li>{t.alertsItemVideo}</li>
-          <li>{t.alertsItemCustom}</li>
-        </ul>
 
+        {/* Round 37, the owner's surgery: the panel is now the state line and
+            the button — nothing else. The intro paragraph, the four-bullet
+            promise list and the quiet-rule footnote are gone; "Done — this
+            device will hear from the app itself" is gone too, because the
+            state line flipping to "Notifications are on for this device"
+            IS the done. What remains beside them is diagnostic, for the
+            testing phase: a failure carries the database's own words, and
+            a plain browser tab is told once that rings live in the
+            installed app. */}
         <div className="alerts-box">
           {device === null ? null : !device.supported || !pushConfigured ? (
             <p className="alerts-note">{t.alertsUnsupported}</p>
@@ -153,8 +159,6 @@ export default function NotifyPanel({ t, open, onClose }) {
             </p>
           ) : null}
         </div>
-
-        <p className="alerts-quiet">{t.alertsQuiet}</p>
       </section>
     </div>
   );

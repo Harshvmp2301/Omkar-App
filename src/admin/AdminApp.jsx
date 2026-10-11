@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, LogOut, Inbox, CalendarDays, Images, HandHeart, Bell } from "lucide-react";
 import useAdminSession from "./useAdminSession.js";
 import { adminMissing, getSupabase, signInWithGoogle, signOut } from "./client.js";
@@ -22,6 +22,44 @@ const ALLOWED_HINT = String(import.meta.env.VITE_ADMIN_EMAILS || "")
   .map((e) => e.trim())
   .filter(Boolean);
 
+/**
+ * Round 37: the dashboard is an open window too. A push that arrives while
+ * the admin is looking at it is suppressed as an OS notification (the
+ * owner's standing rule — an open site is told in the tab) and handed to the
+ * window instead. The public site learned to listen in round 35; the admin
+ * tree never did, so a send made from this very laptop vanished here and
+ * looked like a dead sender. Same quiet line, same nine seconds, parked
+ * under the sticky admin bar.
+ */
+function PushInlineStrip() {
+  const [msg, setMsg] = useState(null);
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return undefined;
+    let timer = 0;
+    const onMessage = (event) => {
+      const d = event.data;
+      if (!d || d.type !== "omkar:push") return;
+      setMsg({ title: String(d.title || ""), body: String(d.body || "") });
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => setMsg(null), 9000);
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () => {
+      if (timer) clearTimeout(timer);
+      navigator.serviceWorker.removeEventListener("message", onMessage);
+    };
+  }, []);
+  if (!msg) return null;
+  return (
+    <div className="push-inline" role="status">
+      <span className="remind-dot" aria-hidden="true" />
+      <span className="remind-text">
+        <strong>{msg.title}</strong> {msg.body}
+      </span>
+    </div>
+  );
+}
+
 function Shell({ children }) {
   return (
     <div className="admin">
@@ -31,6 +69,7 @@ function Shell({ children }) {
         </a>
         <span className="admin-bar-title">Omkar Samithi · Admin</span>
         {children}
+        <PushInlineStrip />
       </header>
     </div>
   );

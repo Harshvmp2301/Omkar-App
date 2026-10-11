@@ -2347,6 +2347,11 @@ select.admin-input::-ms-expand { display: none; }
   color: var(--gold-text-bright);
   font-weight: 600;
 }
+/* Round 37: inside the sticky admin bar (a positioned ancestor), the strip
+   hangs off the bar's own bottom edge instead of the public header's. */
+.admin-bar .push-inline {
+  top: 100%;
+}
 
 /* Buttons that sit in a row rather than filling a form */
 .btn-inline { display: inline-flex; width: auto; align-items: center; justify-content: center; gap: 6px; }
@@ -2745,9 +2750,6 @@ select.admin-input::-ms-expand { display: none; }
 }
 
 /* ---- Round 33: the public notifications page ------------------------- */
-.alerts-intro { margin: 0 0 10px; color: var(--ivory); }
-.alerts-list { margin: 0 0 18px; padding-left: 20px; color: var(--muted); }
-.alerts-list li { margin: 4px 0; }
 .alerts-box {
   border: 1px solid var(--line); border-radius: 12px;
   padding: 16px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start;
