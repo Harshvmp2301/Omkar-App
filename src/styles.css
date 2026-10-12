@@ -1179,7 +1179,9 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
   right: 14px;
   width: 18px;
   height: 18px;
-  border-radius: 50%;
+  /* Round 40: the seva cards are a multi-select now, so the mark reads as
+     a checkbox (rounded square) rather than a radio dot. */
+  border-radius: 5px;
   border: 2px solid var(--ivory);
   background: transparent;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -1573,8 +1575,10 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
    on first visit, persisted user choice afterwards. */
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg: #FAF7F2;
-  --bg-rgb: 250, 247, 242;
+  /* Round 40: the owner's silk ivory — the light ground warms from paper
+     white to #F6EBDD; panels and fields keep their own creams on top. */
+  --bg: #F6EBDD;
+  --bg-rgb: 246, 235, 221;
   --panel: #FFFBF0;
   --panel-light: #FFF9EE;
   --panel-light-rgb: 255, 249, 238;

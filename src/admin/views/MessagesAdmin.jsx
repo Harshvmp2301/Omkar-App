@@ -59,6 +59,21 @@ export default function MessagesAdmin({ getSupabase }) {
     });
   }
 
+  async function removeRow(row) {
+    const sure = window.confirm(
+      `Delete the message from ${row.name || "this visitor"}? This cannot be undone.`
+    );
+    if (!sure) return;
+    const supabase = await getSupabase();
+    if (!supabase) return;
+    setRows((prev) => prev.filter((r) => r.id !== row.id));
+    const { error: err } = await supabase.from("messages").delete().eq("id", row.id);
+    if (err) {
+      setError(err.message);
+      reload();
+    }
+  }
+
   if (error) return <AdminError>Could not load messages: {error}</AdminError>;
   if (!rows) return <AdminLoading />;
 
@@ -139,6 +154,14 @@ export default function MessagesAdmin({ getSupabase }) {
                         Mark replied
                       </button>
                     )}
+                    {/* Round 40: junk and duplicates can be removed outright;
+                        the …_admin_delete policy already covers this. */}
+                    <button
+                      className="admin-btn admin-btn--quiet"
+                      onClick={() => removeRow(m)}
+                    >
+                      Delete
+                    </button>
                   </span>
                 </div>
                 {m.subject && <p className="admin-message-subject">{m.subject}</p>}

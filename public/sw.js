@@ -31,9 +31,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      // "omkar-diag" survives updates on purpose: it holds the round-38
-      // push receipt the bell panel reads while testing.
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== "omkar-diag").map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -69,11 +67,9 @@ self.addEventListener("push", (event) => {
      event.data.text() INSIDE the catch for a failed .json() — and .text() on
      an undecryptable payload throws too, so the whole async body rejected:
      no notification, no in-tab line, no trace, while the sender honestly
-     reported "accepted". Every step below is now guarded, and whatever
-     happens, a decision is stamped into the "omkar-diag" cache so the bell
-     panel can read afterwards whether the push arrived, and which way it
-     went. A push that reaches a device can never again vanish without
-     leaving its fingerprint. */
+     reported "accepted". Every step below is now guarded. Round 40, at full
+     launch, the testing-phase receipt stamp left with the bell panel's
+     diagnostic line: the push works, and the guards stay. */
   let data = {};
   try {
     data = event.data ? event.data.json() : {};
@@ -105,18 +101,6 @@ self.addEventListener("push", (event) => {
         open = clients.some((c) => c.focused || c.visibilityState === "visible");
       } catch {
         open = false;
-      }
-
-      try {
-        const cache = await caches.open("omkar-diag");
-        await cache.put(
-          "/last-push",
-          new Response(JSON.stringify({ at: Date.now(), mode: open ? "tab" : "ring" }), {
-            headers: { "content-type": "application/json" },
-          })
-        );
-      } catch {
-        /* diagnostics must never break delivery */
       }
 
       if (open) {

@@ -61,6 +61,24 @@ export default function SevaAdmin({ getSupabase }) {
     }
   }
 
+  async function removeRow(row) {
+    const sure = window.confirm(
+      `Delete the seva signup from ${row.name || "this visitor"}? This cannot be undone.`
+    );
+    if (!sure) return;
+    const supabase = await getSupabase();
+    if (!supabase) return;
+    setRows((prev) => prev.filter((r) => r.id !== row.id));
+    const { error: err } = await supabase
+      .from("seva_signups")
+      .delete()
+      .eq("id", row.id);
+    if (err) {
+      setError(err.message);
+      reload();
+    }
+  }
+
   if (error) return <AdminError>Could not load seva signups: {error}</AdminError>;
   if (!rows) return <AdminLoading />;
 
@@ -108,6 +126,7 @@ export default function SevaAdmin({ getSupabase }) {
                 <th>Seva</th>
                 <th>Details</th>
                 <th>Status</th>
+                <th>Delete</th>
               </tr>
             </thead>
             <tbody>
@@ -123,20 +142,31 @@ export default function SevaAdmin({ getSupabase }) {
                     ) : null}
                   </td>
                   <td className="admin-wrap">{r.details || "—"}</td>
-                  <td>
-                    <select
-                      className="admin-select"
-                      value={r.status || "new"}
-                      aria-label={`Status for ${r.name}`}
-                      onChange={(e) => setStatus(r.id, e.target.value)}
-                    >
-                      {STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
+                <td>
+                  <select
+                    className="admin-select"
+                    value={r.status || "new"}
+                    aria-label={`Status for ${r.name}`}
+                    onChange={(e) => setStatus(r.id, e.target.value)}
+                  >
+                    {STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td>
+                  {/* Round 40: false or duplicate signups happen; the owner
+                      can remove a row outright. The database policy for
+                      this delete already exists (…_admin_delete). */}
+                  <button
+                    className="admin-btn admin-btn--quiet"
+                    onClick={() => removeRow(r)}
+                  >
+                    Delete
+                  </button>
+                </td>
                 </tr>
               ))}
             </tbody>

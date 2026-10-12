@@ -32,11 +32,6 @@ export default function NotifyPanel({ t, open, onClose }) {
   const [installed] = useState(() => isInstalled());
   const [busy, setBusy] = useState("");
   const [note, setNote] = useState("");
-  // Round 38: the service worker stamps every push it receives into the
-  // "omkar-diag" cache ({at, mode}). Reading it back here turns the panel
-  // into the witness the owner asked for during testing: did a push reach
-  // THIS device at all, and did it ring or go to an open tab?
-  const [diag, setDiag] = useState(null);
 
   const readDevice = useCallback(async () => {
     const supported = pushSupported();
@@ -48,32 +43,16 @@ export default function NotifyPanel({ t, open, onClose }) {
     };
   }, []);
 
-  const readDiag = useCallback(async () => {
-    try {
-      if (typeof caches === "undefined") return null;
-      const cache = await caches.open("omkar-diag");
-      const res = await cache.match("/last-push");
-      if (!res) return null;
-      const j = await res.json();
-      return j && j.at ? j : null;
-    } catch {
-      return null;
-    }
-  }, []);
-
   useEffect(() => {
     if (!open) return undefined;
     let alive = true;
     readDevice().then((snap) => {
       if (alive) setDevice(snap);
     });
-    readDiag().then((stamp) => {
-      if (alive) setDiag(stamp);
-    });
     return () => {
       alive = false;
     };
-  }, [open, readDevice, readDiag]);
+  }, [open, readDevice]);
 
   if (!open) return null;
 
@@ -143,23 +122,25 @@ export default function NotifyPanel({ t, open, onClose }) {
         </h2>
 
         {/* Round 37, the owner's surgery: the panel is now the state line and
-            the button — nothing else. The intro paragraph, the four-bullet
-            promise list and the quiet-rule footnote are gone; "Done — this
-            device will hear from the app itself" is gone too, because the
-            state line flipping to "Notifications are on for this device"
-            IS the done. What remains beside them is diagnostic, for the
-            testing phase: a failure carries the database's own words, and
-            a plain browser tab is told once that rings live in the
-            installed app. */}
+            the button — nothing else. Round 40, at full launch, the last
+            testing-phase furniture leaves too: the push-receipt line and
+            its cache read are gone. What remains beside title, state line
+            and button is only the failure note, which carries the
+            database's own words — that one stays forever, because a
+            failure must never be silent again. */}
         <div className="alerts-box">
           {device === null ? null : !device.supported || !pushConfigured ? (
             <p className="alerts-note">{t.alertsUnsupported}</p>
           ) : on ? (
             <>
               <p className="alerts-note">{t.alertsStatusOn}</p>
+              {/* Round 40: Enable and Disable wear the very same button —
+                  same size, same shape, same weight — at the owner's
+                  request; the smaller quiet pill made Disable look like a
+                  lesser citizen of the panel. */}
               <button
                 type="button"
-                className="btn-quiet"
+                className="btn-primary"
                 onClick={disable}
                 disabled={busy !== ""}
               >
@@ -179,21 +160,10 @@ export default function NotifyPanel({ t, open, onClose }) {
               {note}
             </p>
           ) : null}
-          {/* Round 38, testing phase: the push receipt. "No push has reached
-              this device yet" points above the device (sender, FCM, keys);
-              "reached … told in the tab" means the site was open in front of
-              it; "reached … rang it" with no sound heard points at the OS
-              (battery sleep, DND, channel). One line, three worlds. */}
-          {diag ? (
-            <p className="alerts-note">
-              {(diag.mode === "tab" ? t.pushDiagTab : t.pushDiagRing).replaceAll(
-                "{time}",
-                new Date(diag.at).toLocaleTimeString()
-              )}
-            </p>
-          ) : (
-            <p className="alerts-note">{t.pushDiagNone}</p>
-          )}
+          {/* Round 40, full launch: the testing-phase receipt line is gone
+              from the panel, exactly as promised when it was added — the
+              push works, so the witness stands down. What remains is the
+              title, the state line, and one uniform button. */}
         </div>
       </section>
     </div>

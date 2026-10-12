@@ -5,14 +5,22 @@ import { submitForm } from "../utils/submitForm.js";
 export default function SevaView({ t, lang, flash, events }) {
   const programs =
     Array.isArray(events) && events.length ? events : t.eventsList;
-  const [selected, setSelected] = useState(null);
+  // Round 40: a volunteer often offers more than one seva at once — flowers
+  // AND lamps, prasada AND cleaning — so the cards are a multi-select now.
+  // `selected` holds the indexes of every chosen card.
+  const [selected, setSelected] = useState([]);
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [details, setDetails] = useState("");
 
+  const toggle = (i) =>
+    setSelected((prev) =>
+      prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]
+    );
+
   const submit = async (e) => {
     e.preventDefault();
-    if (selected === null) {
+    if (selected.length === 0) {
       flash(t.chooseSeva);
       return;
     }
@@ -20,10 +28,17 @@ export default function SevaView({ t, lang, flash, events }) {
       flash(t.requiredFields);
       return;
     }
-    const seva = t.sevaCards[selected];
-    const subject = `Omkar Samithi Seva — ${seva.title}`;
+    // Round 40, the owner's rule: an Oman phone number is eight digits —
+    // not less, not more. The input itself refuses anything but digits and
+    // stops at eight; this check is the belt to those braces.
+    if (!/^\d{8}$/.test(contact.trim())) {
+      flash(t.contactDigits);
+      return;
+    }
+    const chosen = selected.map((i) => t.sevaCards[i]);
+    const subject = `Omkar Samithi Seva — ${chosen.map((c) => c.title).join(", ")}`;
     const body = [
-      `Seva: ${seva.title} (${seva.sub})`,
+      ...chosen.map((c) => `Seva: ${c.title} (${c.sub})`),
       `Function: ${t.sevaFunction}`,
       `Name: ${name}`,
       `Contact: ${contact}`,
@@ -40,8 +55,8 @@ export default function SevaView({ t, lang, flash, events }) {
         name,
         contact,
         details,
-        seva: seva.title,
-        sevaSub: seva.sub,
+        seva: chosen.map((c) => c.title).join(" + "),
+        sevaSub: chosen.map((c) => c.sub).join(" + "),
         subject,
         body,
       },
@@ -50,6 +65,7 @@ export default function SevaView({ t, lang, flash, events }) {
       setName("");
       setContact("");
       setDetails("");
+      setSelected([]);
       flash(t.formSent);
       return;
     }
@@ -85,15 +101,14 @@ export default function SevaView({ t, lang, flash, events }) {
         </div>
       </div>
 
-      <div className="seva-grid" role="radiogroup" aria-label={t.sevaTitle}>
+      <div className="seva-grid" role="group" aria-label={t.sevaTitle}>
         {t.sevaCards.map((card, i) => (
           <button
             key={card.id}
             type="button"
-            role="radio"
-            aria-checked={selected === i}
-            className={`seva-card ${selected === i ? "selected" : ""}`}
-            onClick={() => setSelected(i)}
+            aria-pressed={selected.includes(i)}
+            className={`seva-card ${selected.includes(i) ? "selected" : ""}`}
+            onClick={() => toggle(i)}
           >
             <span className="seva-radio" aria-hidden="true" />
             <span className="seva-card-title display">{card.title}</span>
@@ -132,10 +147,12 @@ export default function SevaView({ t, lang, flash, events }) {
           <input
             id="seva-contact"
             type="text"
+            inputMode="numeric"
+            maxLength={8}
             value={contact}
-            onChange={(e) => setContact(e.target.value)}
+            onChange={(e) => setContact(e.target.value.replace(/\D/g, "").slice(0, 8))}
             placeholder={t.contactPh}
-            autoComplete="email"
+            autoComplete="tel"
             required
             aria-required="true"
           />
