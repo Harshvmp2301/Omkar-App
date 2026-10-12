@@ -1,0 +1,743 @@
+From 8e714ad8eeb17b1bf2f68f3fc3f46a43789eff14 Mon Sep 17 00:00:00 2001
+From: packager <a@b.c>
+Date: Mon, 12 Oct 2026 07:33:03 +0000
+Subject: [PATCH] The launch cuts and the new rulings: many sevas, eight
+ digits, silk ivory, one uniform bell button, and rows the dashboard can
+ delete (round 40)
+
+At full launch the testing-phase furniture leaves, exactly as promised
+when it was added: the omkar-diag receipt stamp goes out of the service
+worker, the bell panel's diagnostic line and its three content keys go
+out of the panel and both languages, and the round-38 guard test keeps
+only the handler guards that stay forever. Enable and Disable now wear
+the very same button - same size, same shape - at the owner's ruling.
+
+The owner's new rulings, all bilingual where text moves:
+  - seva cards are a multi-select (aria-pressed, checkbox mark); the
+    submission lists every chosen seva, joined with + in the row;
+  - the seva contact field is an Oman number: digits only, max length
+    eight, and submit refuses anything that is not exactly eight
+    (contactDigits flash in EN and KN);
+  - the first seva is Prasada/Naivedya, and Incense/Dhoop becomes
+    Abhisheka - pouring of sacred liquids over Hanuman's idol,
+    mirrored in Kannada;
+  - the caption under the name ends '...through devotion, music and
+    knowledge' in English, mirrored in Kannada with jnanada moola;
+  - the light ground is the owner's silk ivory, #F6EBDD;
+  - the dashboard gains a per-row Delete on seva signups and on
+    messages, behind a confirm; the admin_delete RLS policies and
+    grants for both tables already exist since migration 0001, so no
+    SQL change is needed.
+
+tests/round40-launch-cuts.test.js pins every cut and ruling; all of its
+guards fail on the bare round-39 tree.
+---
+ public/sw.js                      |  24 ++-----
+ src/admin/views/MessagesAdmin.jsx |  23 ++++++
+ src/admin/views/SevaAdmin.jsx     |  58 +++++++++++----
+ src/components/NotifyPanel.jsx    |  62 +++++-----------
+ src/components/SevaView.jsx       |  45 ++++++++----
+ src/data/content.js               |  32 ++++-----
+ src/styles.css                    |  10 ++-
+ tests/round38-guards.test.js      |  37 ++--------
+ tests/round40-launch-cuts.test.js | 115 ++++++++++++++++++++++++++++++
+ 9 files changed, 259 insertions(+), 147 deletions(-)
+ create mode 100644 tests/round40-launch-cuts.test.js
+
+diff --git a/public/sw.js b/public/sw.js
+index 1bdda44..947d8f2 100644
+--- a/public/sw.js
++++ b/public/sw.js
+@@ -31,9 +31,7 @@ self.addEventListener("activate", (event) => {
+   event.waitUntil(
+     caches
+       .keys()
+-      // "omkar-diag" survives updates on purpose: it holds the round-38
+-      // push receipt the bell panel reads while testing.
+-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== "omkar-diag").map((k) => caches.delete(k))))
++      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+       .then(() => self.clients.claim())
+   );
+ });
+@@ -69,11 +67,9 @@ self.addEventListener("push", (event) => {
+      event.data.text() INSIDE the catch for a failed .json() — and .text() on
+      an undecryptable payload throws too, so the whole async body rejected:
+      no notification, no in-tab line, no trace, while the sender honestly
+-     reported "accepted". Every step below is now guarded, and whatever
+-     happens, a decision is stamped into the "omkar-diag" cache so the bell
+-     panel can read afterwards whether the push arrived, and which way it
+-     went. A push that reaches a device can never again vanish without
+-     leaving its fingerprint. */
++     reported "accepted". Every step below is now guarded. Round 40, at full
++     launch, the testing-phase receipt stamp left with the bell panel's
++     diagnostic line: the push works, and the guards stay. */
+   let data = {};
+   try {
+     data = event.data ? event.data.json() : {};
+@@ -107,18 +103,6 @@ self.addEventListener("push", (event) => {
+         open = false;
+       }
+ 
+-      try {
+-        const cache = await caches.open("omkar-diag");
+-        await cache.put(
+-          "/last-push",
+-          new Response(JSON.stringify({ at: Date.now(), mode: open ? "tab" : "ring" }), {
+-            headers: { "content-type": "application/json" },
+-          })
+-        );
+-      } catch {
+-        /* diagnostics must never break delivery */
+-      }
+-
+       if (open) {
+         try {
+           await Promise.all(
+diff --git a/src/admin/views/MessagesAdmin.jsx b/src/admin/views/MessagesAdmin.jsx
+index 56ca4de..8b8251a 100644
+--- a/src/admin/views/MessagesAdmin.jsx
++++ b/src/admin/views/MessagesAdmin.jsx
+@@ -59,6 +59,21 @@ export default function MessagesAdmin({ getSupabase }) {
+     });
+   }
+ 
++  async function removeRow(row) {
++    const sure = window.confirm(
++      `Delete the message from ${row.name || "this visitor"}? This cannot be undone.`
++    );
++    if (!sure) return;
++    const supabase = await getSupabase();
++    if (!supabase) return;
++    setRows((prev) => prev.filter((r) => r.id !== row.id));
++    const { error: err } = await supabase.from("messages").delete().eq("id", row.id);
++    if (err) {
++      setError(err.message);
++      reload();
++    }
++  }
++
+   if (error) return <AdminError>Could not load messages: {error}</AdminError>;
+   if (!rows) return <AdminLoading />;
+ 
+@@ -139,6 +154,14 @@ export default function MessagesAdmin({ getSupabase }) {
+                         Mark replied
+                       </button>
+                     )}
++                    {/* Round 40: junk and duplicates can be removed outright;
++                        the …_admin_delete policy already covers this. */}
++                    <button
++                      className="admin-btn admin-btn--quiet"
++                      onClick={() => removeRow(m)}
++                    >
++                      Delete
++                    </button>
+                   </span>
+                 </div>
+                 {m.subject && <p className="admin-message-subject">{m.subject}</p>}
+diff --git a/src/admin/views/SevaAdmin.jsx b/src/admin/views/SevaAdmin.jsx
+index e3312dd..9b2be68 100644
+--- a/src/admin/views/SevaAdmin.jsx
++++ b/src/admin/views/SevaAdmin.jsx
+@@ -61,6 +61,24 @@ export default function SevaAdmin({ getSupabase }) {
+     }
+   }
+ 
++  async function removeRow(row) {
++    const sure = window.confirm(
++      `Delete the seva signup from ${row.name || "this visitor"}? This cannot be undone.`
++    );
++    if (!sure) return;
++    const supabase = await getSupabase();
++    if (!supabase) return;
++    setRows((prev) => prev.filter((r) => r.id !== row.id));
++    const { error: err } = await supabase
++      .from("seva_signups")
++      .delete()
++      .eq("id", row.id);
++    if (err) {
++      setError(err.message);
++      reload();
++    }
++  }
++
+   if (error) return <AdminError>Could not load seva signups: {error}</AdminError>;
+   if (!rows) return <AdminLoading />;
+ 
+@@ -108,6 +126,7 @@ export default function SevaAdmin({ getSupabase }) {
+                 <th>Seva</th>
+                 <th>Details</th>
+                 <th>Status</th>
++                <th>Delete</th>
+               </tr>
+             </thead>
+             <tbody>
+@@ -123,20 +142,31 @@ export default function SevaAdmin({ getSupabase }) {
+                     ) : null}
+                   </td>
+                   <td className="admin-wrap">{r.details || "—"}</td>
+-                  <td>
+-                    <select
+-                      className="admin-select"
+-                      value={r.status || "new"}
+-                      aria-label={`Status for ${r.name}`}
+-                      onChange={(e) => setStatus(r.id, e.target.value)}
+-                    >
+-                      {STATUSES.map((s) => (
+-                        <option key={s} value={s}>
+-                          {s}
+-                        </option>
+-                      ))}
+-                    </select>
+-                  </td>
++                <td>
++                  <select
++                    className="admin-select"
++                    value={r.status || "new"}
++                    aria-label={`Status for ${r.name}`}
++                    onChange={(e) => setStatus(r.id, e.target.value)}
++                  >
++                    {STATUSES.map((s) => (
++                      <option key={s} value={s}>
++                        {s}
++                      </option>
++                    ))}
++                  </select>
++                </td>
++                <td>
++                  {/* Round 40: false or duplicate signups happen; the owner
++                      can remove a row outright. The database policy for
++                      this delete already exists (…_admin_delete). */}
++                  <button
++                    className="admin-btn admin-btn--quiet"
++                    onClick={() => removeRow(r)}
++                  >
++                    Delete
++                  </button>
++                </td>
+                 </tr>
+               ))}
+             </tbody>
+diff --git a/src/components/NotifyPanel.jsx b/src/components/NotifyPanel.jsx
+index db32887..b8dfff0 100644
+--- a/src/components/NotifyPanel.jsx
++++ b/src/components/NotifyPanel.jsx
+@@ -32,11 +32,6 @@ export default function NotifyPanel({ t, open, onClose }) {
+   const [installed] = useState(() => isInstalled());
+   const [busy, setBusy] = useState("");
+   const [note, setNote] = useState("");
+-  // Round 38: the service worker stamps every push it receives into the
+-  // "omkar-diag" cache ({at, mode}). Reading it back here turns the panel
+-  // into the witness the owner asked for during testing: did a push reach
+-  // THIS device at all, and did it ring or go to an open tab?
+-  const [diag, setDiag] = useState(null);
+ 
+   const readDevice = useCallback(async () => {
+     const supported = pushSupported();
+@@ -48,32 +43,16 @@ export default function NotifyPanel({ t, open, onClose }) {
+     };
+   }, []);
+ 
+-  const readDiag = useCallback(async () => {
+-    try {
+-      if (typeof caches === "undefined") return null;
+-      const cache = await caches.open("omkar-diag");
+-      const res = await cache.match("/last-push");
+-      if (!res) return null;
+-      const j = await res.json();
+-      return j && j.at ? j : null;
+-    } catch {
+-      return null;
+-    }
+-  }, []);
+-
+   useEffect(() => {
+     if (!open) return undefined;
+     let alive = true;
+     readDevice().then((snap) => {
+       if (alive) setDevice(snap);
+     });
+-    readDiag().then((stamp) => {
+-      if (alive) setDiag(stamp);
+-    });
+     return () => {
+       alive = false;
+     };
+-  }, [open, readDevice, readDiag]);
++  }, [open, readDevice]);
+ 
+   if (!open) return null;
+ 
+@@ -143,23 +122,25 @@ export default function NotifyPanel({ t, open, onClose }) {
+         </h2>
+ 
+         {/* Round 37, the owner's surgery: the panel is now the state line and
+-            the button — nothing else. The intro paragraph, the four-bullet
+-            promise list and the quiet-rule footnote are gone; "Done — this
+-            device will hear from the app itself" is gone too, because the
+-            state line flipping to "Notifications are on for this device"
+-            IS the done. What remains beside them is diagnostic, for the
+-            testing phase: a failure carries the database's own words, and
+-            a plain browser tab is told once that rings live in the
+-            installed app. */}
++            the button — nothing else. Round 40, at full launch, the last
++            testing-phase furniture leaves too: the push-receipt line and
++            its cache read are gone. What remains beside title, state line
++            and button is only the failure note, which carries the
++            database's own words — that one stays forever, because a
++            failure must never be silent again. */}
+         <div className="alerts-box">
+           {device === null ? null : !device.supported || !pushConfigured ? (
+             <p className="alerts-note">{t.alertsUnsupported}</p>
+           ) : on ? (
+             <>
+               <p className="alerts-note">{t.alertsStatusOn}</p>
++              {/* Round 40: Enable and Disable wear the very same button —
++                  same size, same shape, same weight — at the owner's
++                  request; the smaller quiet pill made Disable look like a
++                  lesser citizen of the panel. */}
+               <button
+                 type="button"
+-                className="btn-quiet"
++                className="btn-primary"
+                 onClick={disable}
+                 disabled={busy !== ""}
+               >
+@@ -179,21 +160,10 @@ export default function NotifyPanel({ t, open, onClose }) {
+               {note}
+             </p>
+           ) : null}
+-          {/* Round 38, testing phase: the push receipt. "No push has reached
+-              this device yet" points above the device (sender, FCM, keys);
+-              "reached … told in the tab" means the site was open in front of
+-              it; "reached … rang it" with no sound heard points at the OS
+-              (battery sleep, DND, channel). One line, three worlds. */}
+-          {diag ? (
+-            <p className="alerts-note">
+-              {(diag.mode === "tab" ? t.pushDiagTab : t.pushDiagRing).replaceAll(
+-                "{time}",
+-                new Date(diag.at).toLocaleTimeString()
+-              )}
+-            </p>
+-          ) : (
+-            <p className="alerts-note">{t.pushDiagNone}</p>
+-          )}
++          {/* Round 40, full launch: the testing-phase receipt line is gone
++              from the panel, exactly as promised when it was added — the
++              push works, so the witness stands down. What remains is the
++              title, the state line, and one uniform button. */}
+         </div>
+       </section>
+     </div>
+diff --git a/src/components/SevaView.jsx b/src/components/SevaView.jsx
+index fbf9580..21bbfae 100644
+--- a/src/components/SevaView.jsx
++++ b/src/components/SevaView.jsx
+@@ -5,14 +5,22 @@ import { submitForm } from "../utils/submitForm.js";
+ export default function SevaView({ t, lang, flash, events }) {
+   const programs =
+     Array.isArray(events) && events.length ? events : t.eventsList;
+-  const [selected, setSelected] = useState(null);
++  // Round 40: a volunteer often offers more than one seva at once — flowers
++  // AND lamps, prasada AND cleaning — so the cards are a multi-select now.
++  // `selected` holds the indexes of every chosen card.
++  const [selected, setSelected] = useState([]);
+   const [name, setName] = useState("");
+   const [contact, setContact] = useState("");
+   const [details, setDetails] = useState("");
+ 
++  const toggle = (i) =>
++    setSelected((prev) =>
++      prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]
++    );
++
+   const submit = async (e) => {
+     e.preventDefault();
+-    if (selected === null) {
++    if (selected.length === 0) {
+       flash(t.chooseSeva);
+       return;
+     }
+@@ -20,10 +28,17 @@ export default function SevaView({ t, lang, flash, events }) {
+       flash(t.requiredFields);
+       return;
+     }
+-    const seva = t.sevaCards[selected];
+-    const subject = `Omkar Samithi Seva — ${seva.title}`;
++    // Round 40, the owner's rule: an Oman phone number is eight digits —
++    // not less, not more. The input itself refuses anything but digits and
++    // stops at eight; this check is the belt to those braces.
++    if (!/^\d{8}$/.test(contact.trim())) {
++      flash(t.contactDigits);
++      return;
++    }
++    const chosen = selected.map((i) => t.sevaCards[i]);
++    const subject = `Omkar Samithi Seva — ${chosen.map((c) => c.title).join(", ")}`;
+     const body = [
+-      `Seva: ${seva.title} (${seva.sub})`,
++      ...chosen.map((c) => `Seva: ${c.title} (${c.sub})`),
+       `Function: ${t.sevaFunction}`,
+       `Name: ${name}`,
+       `Contact: ${contact}`,
+@@ -40,8 +55,8 @@ export default function SevaView({ t, lang, flash, events }) {
+         name,
+         contact,
+         details,
+-        seva: seva.title,
+-        sevaSub: seva.sub,
++        seva: chosen.map((c) => c.title).join(" + "),
++        sevaSub: chosen.map((c) => c.sub).join(" + "),
+         subject,
+         body,
+       },
+@@ -50,6 +65,7 @@ export default function SevaView({ t, lang, flash, events }) {
+       setName("");
+       setContact("");
+       setDetails("");
++      setSelected([]);
+       flash(t.formSent);
+       return;
+     }
+@@ -85,15 +101,14 @@ export default function SevaView({ t, lang, flash, events }) {
+         </div>
+       </div>
+ 
+-      <div className="seva-grid" role="radiogroup" aria-label={t.sevaTitle}>
++      <div className="seva-grid" role="group" aria-label={t.sevaTitle}>
+         {t.sevaCards.map((card, i) => (
+           <button
+             key={card.id}
+             type="button"
+-            role="radio"
+-            aria-checked={selected === i}
+-            className={`seva-card ${selected === i ? "selected" : ""}`}
+-            onClick={() => setSelected(i)}
++            aria-pressed={selected.includes(i)}
++            className={`seva-card ${selected.includes(i) ? "selected" : ""}`}
++            onClick={() => toggle(i)}
+           >
+             <span className="seva-radio" aria-hidden="true" />
+             <span className="seva-card-title display">{card.title}</span>
+@@ -132,10 +147,12 @@ export default function SevaView({ t, lang, flash, events }) {
+           <input
+             id="seva-contact"
+             type="text"
++            inputMode="numeric"
++            maxLength={8}
+             value={contact}
+-            onChange={(e) => setContact(e.target.value)}
++            onChange={(e) => setContact(e.target.value.replace(/\D/g, "").slice(0, 8))}
+             placeholder={t.contactPh}
+-            autoComplete="email"
++            autoComplete="tel"
+             required
+             aria-required="true"
+           />
+diff --git a/src/data/content.js b/src/data/content.js
+index af4b747..4798fac 100644
+--- a/src/data/content.js
++++ b/src/data/content.js
+@@ -7,7 +7,7 @@ export const translations = {
+     appNamePlain: "Omkar Samithi",
+     tagline: "Muscat, Oman · Programs & Community",
+     heroLine:
+-      "Preserving Karnataka’s culture, traditions and community in Muscat — through devotion, music and the arts.",
++      "Preserving Karnataka’s culture, traditions and community in Muscat — through devotion, music and knowledge",
+     heroCtaPrograms: "Explore Programs",
+     heroCtaAbout: "About the Samithi",
+     contentHub: "Home",
+@@ -114,9 +114,10 @@ export const translations = {
+     sevaTab: "Seva",
+     fullName: "Full Name",
+     fullNamePh: "Your name",
+-    contactField: "Contact (Email/Phone)",
++    contactField: "Contact (Oman number, 8 digits)",
+     emailLabel: "Email",
+-    contactPh: "email@example.com or +968-XXXX-XXXX",
++    contactPh: "e.g. 9XXXXXXX",
++    contactDigits: "The contact number must be exactly 8 digits — no more, no less.",
+     requiredFields: "Please fill in your name and contact first",
+     emailPrepared: "Email prepared with your details — we'll be in touch soon",
+     skipToContent: "Skip to content",
+@@ -130,9 +131,6 @@ export const translations = {
+     alertsEnable: "Enable notifications",
+     alertsDisable: "Disable notifications",
+     alertsStatusOn: "Notifications are on for this device.",
+-    pushDiagNone: "No push has reached this device yet.",
+-    pushDiagTab: "A push reached this device at {time}; the site was open in front of it, so it was told in the tab, not rung.",
+-    pushDiagRing: "A push reached this device at {time} and rang it. If no sound was heard, the phone's own battery sleep or Do-Not-Disturb swallowed it.",
+     alertsInstallHint: "First install the app: browser menu, then Add to Home Screen or Install app. This button appears once it is installed.",
+     alertsUnsupported: "This browser cannot receive push notifications.",
+     alertsBusy: "One moment…",
+@@ -154,12 +152,12 @@ export const translations = {
+     formSent: "Thank you! Your details were sent — we'll be in touch soon.",
+     formFailed: "Couldn't send — opening your email app instead so nothing is lost.",
+     sevaTitle: "Seva Opportunities",
+-    sevaSub: "Participate in temple service. Choose a Seva and confirm your availability.",
++    sevaSub: "Participate in temple service. Choose one or more Sevas and confirm your availability.",
+     sevaCards: [
+-      { id: "s1", title: "Food/Langar", sub: "Sponsor a meal" },
++      { id: "s1", title: "Prasada/Naivedya", sub: "Sponsor a meal" },
+       { id: "s2", title: "Flowers", sub: "Flower decorations" },
+       { id: "s3", title: "Oil Lamps", sub: "Light the lamps" },
+-      { id: "s4", title: "Incense/Dhoop", sub: "Incense supplies" },
++      { id: "s4", title: "Abhisheka", sub: "Pouring of sacred liquids over Hanuman’s idol" },
+       { id: "s5", title: "Temple Bells", sub: "Help ring the bells" },
+       { id: "s6", title: "Temple Cleaning", sub: "Help keep the temple clean" },
+     ],
+@@ -306,7 +304,7 @@ export const translations = {
+     appNamePlain: "ಓಂಕಾರ ಸಮಿತಿ",
+     tagline: "ಮಸ್ಕತ್, ಓಮನ್ · ಕಾರ್ಯಕ್ರಮಗಳು ಮತ್ತು ಸಮುದಾಯ",
+     heroLine:
+-      "ಮಸ್ಕತ್‌ನಲ್ಲಿ ಕರ್ನಾಟಕದ ಸಂಸ್ಕೃತಿ, ಪರಂಪರೆ ಮತ್ತು ಸಮುದಾಯವನ್ನು ಭಕ್ತಿ, ಸಂಗೀತ ಮತ್ತು ಕಲೆಯ ಮೂಲಕ ಜೀವಂತವಾಗಿರಿಸುತ್ತೇವೆ.",
++      "ಮಸ್ಕತ್‌ನಲ್ಲಿ ಕರ್ನಾಟಕದ ಸಂಸ್ಕೃತಿ, ಪರಂಪರೆ ಮತ್ತು ಸಮುದಾಯವನ್ನು ಭಕ್ತಿ, ಸಂಗೀತ ಮತ್ತು ಜ್ಞಾನದ ಮೂಲಕ ಜೀವಂತವಾಗಿರಿಸುತ್ತೇವೆ.",
+     heroCtaPrograms: "ಕಾರ್ಯಕ್ರಮಗಳನ್ನು ನೋಡಿ",
+     heroCtaAbout: "ಸಮಿತಿಯ ಪರಿಚಯ",
+     contentHub: "ಮುಖಪುಟ",
+@@ -371,9 +369,6 @@ export const translations = {
+     alertsEnable: "ಸೂಚನೆಗಳನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ",
+     alertsDisable: "ಸೂಚನೆಗಳನ್ನು ನಿಲ್ಲಿಸಿ",
+     alertsStatusOn: "ಈ ಸಾಧನದಲ್ಲಿ ಸೂಚನೆಗಳು ಚಾಲೂ ಇವೆ.",
+-    pushDiagNone: "ಇನ್ನೂ ಯಾವುದೇ ಪುಶ್ ಈ ಸಾಧನವನ್ನು ತಲುಪಿಲ್ಲ.",
+-    pushDiagTab: "ಪುಶ್ {time} ಗೆ ಈ ಸಾಧನವನ್ನು ತಲುಪಿತು; ಸೈಟ್ ಮುಂದೆ ತೆರೆದಿದ್ದರಿಂದ ಟ್ಯಾಬ್‌ನಲ್ಲೇ ತಿಳಿಸಲಾಯಿತು, ಸದ್ದಾಗಲಿಲ್ಲ.",
+-    pushDiagRing: "ಪುಶ್ {time} ಗೆ ಈ ಸಾಧನವನ್ನು ತಲುಪಿ ಸದ್ದು ಮಾಡಿತು. ಸದ್ದು ಕೇಳಿಸದಿದ್ದರೆ, ಫೋನ್‌ನ ಬ್ಯಾಟರಿ ನಿದ್ರೆ ಅಥವಾ DND ಅಡ್ಡಗಟ್ಟಿದೆ.",
+     alertsInstallHint: "ಮೊದಲು ಆ್ಯಪ್ ಸ್ಥಾಪಿಸಿ: ಬ್ರೌಸರ್ ಮೆನು → Add to Home Screen / Install app. ನಂತರ ಈ ಗುಂಡಿ ಕಾಣುತ್ತದೆ.",
+     alertsUnsupported: "ಈ ಬ್ರೌಸರ್ ಪುಶ್ ಸೂಚನೆಗಳನ್ನು ಪಡೆಯಲಾರದು.",
+     alertsBusy: "ಒಂದು ಕ್ಷಣ…",
+@@ -445,18 +440,19 @@ export const translations = {
+     sevaTab: "ಸೇವೆ",
+     fullName: "ಪೂರ್ಣ ಹೆಸರು",
+     fullNamePh: "ನಿಮ್ಮ ಹೆಸರು",
+-    contactField: "ಸಂಪರ್ಕ (ಇಮೇಲ್/ಫೋನ್)",
++    contactField: "ಸಂಪರ್ಕ (ಓಮನ್ ಸಂಖ್ಯೆ, 8 ಅಂಕಿ)",
+     emailLabel: "ಇಮೇಲ್",
+-    contactPh: "email@example.com ಅಥವಾ +968-XXXX-XXXX",
++    contactPh: "ಉದಾ: 9XXXXXXX",
++    contactDigits: "ಸಂಪರ್ಕ ಸಂಖ್ಯೆ ನಿಖರವಾಗಿ 8 ಅಂಕಿಗಳಾಗಿರಬೇಕು — ಹೆಚ್ಚೂ ಕಡಿಮೆಯೂ ಬೇಡ.",
+     requiredFields: "ಮೊದಲು ಹೆಸರು ಮತ್ತು ಸಂಪರ್ಕ ಭರ್ತಿ ಮಾಡಿ",
+     emailPrepared: "ನಿಮ್ಮ ವಿವರಗಳೊಂದಿಗೆ ಇಮೇಲ್ ಸಿದ್ಧವಾಗಿದೆ — ಶೀಘ್ರದಲ್ಲಿ ನಿಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸುತ್ತೇವೆ",
+     sevaTitle: "ಸೇವಾ ಅವಕಾಶಗಳು",
+-    sevaSub: "ದೇವಸ್ಥಾನದ ಸೇವೆಯಲ್ಲಿ ಭಾಗವಹಿಸಿ. ಸೇವೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಿ, ನಿಮ್ಮ ಲಭ್ಯತೆಯನ್ನು ತಿಳಿಸಿ.",
++    sevaSub: "ದೇವಸ್ಥಾನದ ಸೇವೆಯಲ್ಲಿ ಭಾಗವಹಿಸಿ. ಒಂದು ಅಥವಾ ಹೆಚ್ಚಿನ ಸೇವೆಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ, ನಿಮ್ಮ ಲಭ್ಯತೆಯನ್ನು ತಿಳಿಸಿ.",
+     sevaCards: [
+-      { id: "s1", title: "ಊಟ/ಲಂಗರ್", sub: "ಊಟಕ್ಕೆ ಪ್ರಾಯೋಜಿಸಿ" },
++      { id: "s1", title: "ಪ್ರಸಾದ/ನೈವೇದ್ಯ", sub: "ಊಟಕ್ಕೆ ಪ್ರಾಯೋಜಿಸಿ" },
+       { id: "s2", title: "ಹೂಗಳು", sub: "ಹೂವಿನ ಅಲಂಕಾರ" },
+       { id: "s3", title: "ದೀಪಗಳು", sub: "ದೀಪ ಹಚ್ಚಿ" },
+-      { id: "s4", title: "ಧೂಪ/ಅಗರಬತ್ತಿ", sub: "ಧೂಪ ಸಾಮಗ್ರಿ" },
++      { id: "s4", title: "ಅಭಿಷೇಕ", sub: "ಹನುಮಂತನ ಮೂರ್ತಿಗೆ ಪವಿತ್ರ ದ್ರವಗಳ ಅಭಿಷೇಕ" },
+       { id: "s5", title: "ದೇವಸ್ಥಾನದ ಗಂಟೆ ಸೇವೆ", sub: "ಗಂಟೆ ಸೇವೆಯಲ್ಲಿ ಸಹಕರಿಸಿ" },
+       { id: "s6", title: "ದೇವಸ್ಥಾನ ಸ್ವಚ್ಛತೆ", sub: "ಸ್ವಚ್ಛತಾ ಕಾರ್ಯದಲ್ಲಿ ಸಹಕರಿಸಿ" },
+     ],
+diff --git a/src/styles.css b/src/styles.css
+index 6500d0c..64f55c8 100644
+--- a/src/styles.css
++++ b/src/styles.css
+@@ -1179,7 +1179,9 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
+   right: 14px;
+   width: 18px;
+   height: 18px;
+-  border-radius: 50%;
++  /* Round 40: the seva cards are a multi-select now, so the mark reads as
++     a checkbox (rounded square) rather than a radio dot. */
++  border-radius: 5px;
+   border: 2px solid var(--ivory);
+   background: transparent;
+   transition: border-color 0.15s, box-shadow 0.15s;
+@@ -1573,8 +1575,10 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
+    on first visit, persisted user choice afterwards. */
+ :root[data-theme="light"] {
+   color-scheme: light;
+-  --bg: #FAF7F2;
+-  --bg-rgb: 250, 247, 242;
++  /* Round 40: the owner's silk ivory — the light ground warms from paper
++     white to #F6EBDD; panels and fields keep their own creams on top. */
++  --bg: #F6EBDD;
++  --bg-rgb: 246, 235, 221;
+   --panel: #FFFBF0;
+   --panel-light: #FFF9EE;
+   --panel-light-rgb: 255, 249, 238;
+diff --git a/tests/round38-guards.test.js b/tests/round38-guards.test.js
+index e3a35ff..4d7efd0 100644
+--- a/tests/round38-guards.test.js
++++ b/tests/round38-guards.test.js
+@@ -3,23 +3,19 @@ import { describe, expect, it } from "vitest";
+ 
+ /**
+  * Round-38 guards — a push that reaches a device may never again vanish
+- * without leaving its fingerprint.
++ * without a trace in the handler itself.
+  *
+  * The old handler read event.data.text() INSIDE the catch for a failed
+  * .json(); on an undecryptable payload .text() throws as well, the async
+  * body rejected, and the device stayed silent while the sender honestly
+- * reported "accepted" — exactly the symptom three subscribed devices
+- * showed at once. Now every step is guarded, showNotification itself is
+- * wrapped, and whichever way the push goes (ring or in-tab hand-off) a
+- * receipt {at, mode} is stamped into the "omkar-diag" cache, which the
+- * bell panel reads and shows as one testing-phase line: no push yet /
+- * reached and told in the tab / reached and rang.
++ * reported "accepted". Every step is now guarded and showNotification is
++ * wrapped. The testing-phase receipt (the "omkar-diag" stamp and the bell
++ * panel's diagnostic line) was removed at full launch in round 40 — the
++ * guards below are the part that stays forever.
+  */
+ 
+ const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
+ const sw = read("../public/sw.js");
+-const panel = read("../src/components/NotifyPanel.jsx");
+-const content = read("../src/data/content.js");
+ 
+ describe("round 38: the push handler cannot die quietly", () => {
+   it("guards the payload fallback inside its own try", () => {
+@@ -32,27 +28,4 @@ describe("round 38: the push handler cannot die quietly", () => {
+     expect(sw).toMatch(/clients\.map\(\(c\) => c\.postMessage[\s\S]{0,220}\} catch \{/);
+     expect(sw).toMatch(/showNotification\(title, \{[\s\S]{0,400}\} catch \{/);
+   });
+-
+-  it("stamps a receipt into omkar-diag, and keeps that cache across updates", () => {
+-    expect(sw).toContain('caches.open("omkar-diag")');
+-    expect(sw).toContain('mode: open ? "tab" : "ring"');
+-    expect(sw).toContain('k !== CACHE && k !== "omkar-diag"');
+-  });
+-});
+-
+-describe("round 38: the panel reads the receipt back", () => {
+-  it("shows exactly one diagnostic line with three possible worlds", () => {
+-    expect(panel).toContain('caches.open("omkar-diag")');
+-    expect(panel).toContain("t.pushDiagNone");
+-    expect(panel).toContain("t.pushDiagTab");
+-    expect(panel).toContain("t.pushDiagRing");
+-    expect(panel).toContain('diag.mode === "tab"');
+-  });
+-
+-  it("carries the line in both languages", () => {
+-    for (const key of ["pushDiagNone:", "pushDiagTab:", "pushDiagRing:"]) {
+-      expect((content.match(new RegExp(key, "g")) || []).length).toBe(2);
+-    }
+-    expect(content).toContain("{time}");
+-  });
+ });
+diff --git a/tests/round40-launch-cuts.test.js b/tests/round40-launch-cuts.test.js
+new file mode 100644
+index 0000000..915ceb4
+--- /dev/null
++++ b/tests/round40-launch-cuts.test.js
+@@ -0,0 +1,115 @@
++import { readFileSync } from "node:fs";
++import { describe, expect, it } from "vitest";
++
++/**
++ * Round-40 guards — the launch cuts and the owner's new rulings, pinned.
++ *
++ *   1. The testing-phase push receipt is gone everywhere: no "omkar-diag"
++ *      in the worker, no readDiag or pushDiag keys in the panel or content.
++ *   2. Enable and Disable wear the same button (one uniform shape).
++ *   3. Seva cards are a multi-select (aria-pressed, checkbox mark).
++ *   4. The contact field is an Oman number: exactly eight digits.
++ *   5. The first seva is Prasada/Naivedya in both languages.
++ *   6. The caption under the name ends "…through devotion, music and
++ *      knowledge" in English, with the Kannada mirror ಜ್ಞಾನದ ಮೂಲಕ
++ *      (the owner's later correction of the round-40 motto ruling).
++ *   7. The light ground is the owner's silk ivory, #F6EBDD.
++ *   8. The dashboard can delete seva signups and messages outright.
++ */
++
++const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
++const sw = read("../public/sw.js");
++const panel = read("../src/components/NotifyPanel.jsx");
++const content = read("../src/data/content.js");
++const styles = read("../src/styles.css");
++const sevaView = read("../src/components/SevaView.jsx");
++const sevaAdmin = read("../src/admin/views/SevaAdmin.jsx");
++const messagesAdmin = read("../src/admin/views/MessagesAdmin.jsx");
++
++describe("round 40: the testing-phase scaffolding is gone", () => {
++  it("leaves no omkar-diag receipt in the worker", () => {
++    expect(sw).not.toContain("omkar-diag");
++  });
++
++  it("leaves no diagnostic line in the panel or the content", () => {
++    expect(panel).not.toContain("readDiag");
++    expect(panel).not.toContain("pushDiag");
++    expect(content).not.toContain("pushDiag");
++  });
++
++  it("keeps Enable and Disable in one uniform button shape", () => {
++    expect(panel).not.toContain("btn-quiet");
++    // both the enable and the disable button wear btn-primary
++    expect((panel.match(/className="btn-primary"/g) || []).length).toBe(2);
++  });
++});
++
++describe("round 40: the seva form takes many sevas and an 8-digit number", () => {
++  it("selects cards with aria-pressed, not a single radio", () => {
++    expect(sevaView).toContain("aria-pressed={selected.includes(i)}");
++    expect(sevaView).not.toContain('role="radio"');
++    expect(sevaView).toContain("const toggle = (i) =>");
++  });
++
++  it("refuses any contact that is not exactly eight digits", () => {
++    expect(sevaView).toContain("maxLength={8}");
++    expect(sevaView).toContain('replace(/\\D/g, "")');
++    expect(sevaView).toContain("/^\\d{8}$/.test(contact.trim())");
++    expect(sevaView).toContain("t.contactDigits");
++    expect((content.match(/contactDigits:/g) || []).length).toBe(2);
++  });
++
++  it("names the first seva Prasada/Naivedya in both languages", () => {
++    expect(content).toContain('title: "Prasada/Naivedya"');
++    expect(content).toContain('title: "ಪ್ರಸಾದ/ನೈವೇದ್ಯ"');
++    expect(content).not.toContain("Food/Langar");
++    expect(content).not.toContain("ಊಟ/ಲಂಗರ್");
++    expect(content).toContain('title: "Abhisheka"');
++    expect(content).toContain("Pouring of sacred liquids over Hanuman’s idol");
++    expect(content).toContain("ಹನುಮಂತನ ಮೂರ್ತಿಗೆ ಪವಿತ್ರ ದ್ರವಗಳ ಅಭಿಷೇಕ");
++    expect(content).toContain('title: "ಅಭಿಷೇಕ"');
++    expect(content).not.toContain("Incense/Dhoop");
++    expect(content).not.toContain("ಧೂಪ/ಅಗರಬತ್ತಿ");
++  });
++
++  it("invites one or more sevas, in both languages", () => {
++    expect(content).toContain("Choose one or more Sevas and confirm your availability.");
++    expect(content).toContain("ಒಂದು ಅಥವಾ ಹೆಚ್ಚಿನ ಸೇವೆಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ");
++  });
++});
++
++describe("round 40: the owner's visual rulings", () => {
++  it("ends the caption with knowledge, not the arts, in both languages", () => {
++    expect(content).toContain(
++      "through devotion, music and knowledge"
++    );
++    expect(content).toContain("ಭಕ್ತಿ, ಸಂಗೀತ ಮತ್ತು ಜ್ಞಾನದ ಮೂಲಕ");
++    expect(content).not.toContain("music and the arts");
++    expect(content).not.toContain("ಕಲೆಯ ಮೂಲಕ");
++  });
++
++  it("warms the light ground to silk ivory #F6EBDD", () => {
++    const light = styles.slice(styles.indexOf(':root[data-theme="light"]'));
++    expect(light.slice(0, 400)).toContain("--bg: #F6EBDD");
++    expect(light.slice(0, 400)).toContain("--bg-rgb: 246, 235, 221");
++  });
++
++  it("draws the seva mark as a checkbox, not a radio dot", () => {
++    const mark = styles.slice(styles.indexOf(".seva-radio {"));
++    expect(mark.slice(0, 400)).toContain("border-radius: 5px");
++  });
++});
++
++describe("round 40: the dashboard can clear what should not stay", () => {
++  it("deletes seva signups row by row", () => {
++    expect(sevaAdmin).toContain('.from("seva_signups")');
++    expect(sevaAdmin).toContain(".delete()");
++    expect(sevaAdmin).toContain("window.confirm");
++  });
++
++  it("deletes messages row by row", () => {
++    expect(messagesAdmin).toContain('.from("messages")');
++    expect(messagesAdmin).toContain(".delete()");
++    expect(messagesAdmin).toContain("window.confirm");
++  });
++});
+-- 
+2.39.5
+
