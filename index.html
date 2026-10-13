@@ -42,14 +42,21 @@
     <script>
       (function () {
         if (!/^(www\.)?omkarsamithi\.com$/.test(window.location.hostname)) return;
-        var s = document.createElement("script");
-        s.async = true;
-        s.src = "https://www.googletagmanager.com/gtag/js?id=G-NKV9DZ5W9B";
-        document.head.appendChild(s);
-        window.dataLayer = window.dataLayer || [];
-        window.gtag = function () { window.dataLayer.push(arguments); };
-        window.gtag("js", new Date());
-        window.gtag("config", "G-NKV9DZ5W9B");
+        function start() {
+          var s = document.createElement("script");
+          s.async = true;
+          s.src = "https://www.googletagmanager.com/gtag/js?id=G-NKV9DZ5W9B";
+          document.head.appendChild(s);
+          window.dataLayer = window.dataLayer || [];
+          window.gtag = function () { window.dataLayer.push(arguments); };
+          window.gtag("js", new Date());
+          window.gtag("config", "G-NKV9DZ5W9B");
+        }
+        /* Round 44: the tag waits for the load event and an idle moment,
+           so its 176 KiB never competes with the mark, the fonts or the
+           first paint. Realtime still fills within a minute. */
+        var idle = window.requestIdleCallback || function (f) { setTimeout(f, 800); };
+        window.addEventListener("load", function () { idle(start); }, { once: true });
       })();
     </script>
     <meta
@@ -92,7 +99,23 @@
         href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Karla:wght@400;500;700&family=Noto+Sans+Kannada:wght@400;600&display=swap"
       />
     </noscript>
-    <link rel="icon" type="image/png" href="/omkar-logo.png" />
+    <!-- The Kannada face (89 KiB of woff2) is fetched only when Kannada is
+         the chosen language: before paint if the stored choice says so, and
+         by an effect in App.jsx the moment the visitor flips the pill. -->
+    <script>
+      (function () {
+        try {
+          if (window.localStorage.getItem("omkar:lang") !== '"kn"') return;
+          var l = document.createElement("link");
+          l.rel = "stylesheet";
+          l.id = "kn-fonts";
+          l.href =
+            "https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;600&display=swap";
+          document.head.appendChild(l);
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="apple-touch-icon" href="/icon-180.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
@@ -104,7 +127,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Karla:wght@400;500;700&family=Noto+Sans+Kannada:wght@400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Karla:wght@400;500;700&display=swap"
       media="print"
       onload="this.media='all'"
     />

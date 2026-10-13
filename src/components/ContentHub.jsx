@@ -93,10 +93,18 @@ export default function ContentHub({ t, lang, events = [], onTab, flash }) {
                   loading="lazy"
                   decoding="async"
                   onError={(e) => {
-                    // hqdefault.webp exists for every public video; if the
-                    // network still fails, hide the image so the gradient
-                    // shows through.
-                    e.currentTarget.style.display = "none";
+                    // vi_webp hqdefault.webp exists for every public video;
+                    // if it ever fails, fall back to the JPEG ladder, then
+                    // hide the image so the gradient shows through.
+                    const img = e.currentTarget;
+                    if (!img.dataset.retried) {
+                      img.dataset.retried = "1";
+                      img.src = img.src
+                        .replace("i.ytimg.com/vi_webp/", "img.youtube.com/vi/")
+                        .replace(".webp", ".jpg");
+                    } else {
+                      img.style.display = "none";
+                    }
                   }}
                 />
                 <div className="play-overlay">

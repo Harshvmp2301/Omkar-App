@@ -461,7 +461,8 @@ describe("the logo is served at the resolution it is drawn at", () => {
     const sw = readFileSync(new URL("../public/sw.js", import.meta.url), "utf8");
     expect(sw).toContain('"/omkar-logo-220.webp"');
     expect(sw).toContain('"/omkar-logo-512.webp"');
-    expect(sw).toContain('"/omkar-logo.png"'); // the fallback stays too
+    // round 44: the 70 KiB png left the precache; the favicon is tiny and
+    // the webp pair is what any modern device actually paints
   });
 });
 

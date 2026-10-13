@@ -1,12 +1,12 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, lazy, Suspense } from "react";
 import { Facebook, Youtube, ExternalLink, MapPin, Mail } from "lucide-react";
 import Header from "./components/Header.jsx";
-import Hero from "./components/Hero.jsx";
-import ContentHub from "./components/ContentHub.jsx";
 import EventsView from "./components/EventsView.jsx";
 import GalleryView from "./components/GalleryView.jsx";
 import AboutView from "./components/AboutView.jsx";
 import SevaView from "./components/SevaView.jsx";
+import Hero from "./components/Hero.jsx";
+import ContentHub from "./components/ContentHub.jsx";
 import NotifyPanel from "./components/NotifyPanel.jsx";
 import ContactView from "./components/ContactView.jsx";
 import Contact from "./components/Contact.jsx";
@@ -39,6 +39,19 @@ export default function OmkarSamithiApp() {
   const [tab, setTabState] = useState(tabFromHash);
   const [notify, setNotify] = useLocalStorage("omkar:notify", {});
   const [lang, setLang] = useLocalStorage("omkar:lang", "en");
+
+  /* The Kannada webfont arrives only when Kannada is chosen: the inline
+     script in index.html covers the stored choice before first paint, this
+     effect covers the flip itself. */
+  useEffect(() => {
+    if (lang !== "kn" || document.getElementById("kn-fonts")) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.id = "kn-fonts";
+    link.href =
+      "https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;600&display=swap";
+    document.head.appendChild(link);
+  }, [lang]);
   const [toast, setToast] = useState("");
   // Round 34: the bell owns notifications now — one state, one panel.
   const [bellOpen, setBellOpen] = useState(false);
