@@ -35,6 +35,23 @@
       })();
     </script>
     <meta name="color-scheme" content="light dark" />
+
+    <!-- Google Analytics (round 42) — the owner's property G-NKV9DZ5W9B.
+         Fires only on the canonical host, so preview URLs and the retired
+         omkar-app.vercel.app origin never report into the property. -->
+    <script>
+      (function () {
+        if (!/^(www\.)?omkarsamithi\.com$/.test(window.location.hostname)) return;
+        var s = document.createElement("script");
+        s.async = true;
+        s.src = "https://www.googletagmanager.com/gtag/js?id=G-NKV9DZ5W9B";
+        document.head.appendChild(s);
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function () { window.dataLayer.push(arguments); };
+        window.gtag("js", new Date());
+        window.gtag("config", "G-NKV9DZ5W9B");
+      })();
+    </script>
     <meta
       name="description"
       content="Omkar Samithi — bilingual (English/Kannada) community platform for the Oman Karnataka Aradhana Samithi, Muscat. Programs, events, recordings and festival notes."
