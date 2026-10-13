@@ -191,7 +191,7 @@ export const translations = {
         date: "2025",
         tag: "Recording",
         url: "https://www.youtube.com/watch?v=l86Aq8Pskog",
-        thumbnail: "https://img.youtube.com/vi/l86Aq8Pskog/maxresdefault.jpg",
+        thumbnail: "https://img.youtube.com/vi/l86Aq8Pskog/hqdefault.webp",
       },
       {
         id: "v2",
@@ -199,7 +199,7 @@ export const translations = {
         date: "Sep 2025",
         tag: "Recording",
         url: "https://www.youtube.com/watch?v=e9OnjNAprrs",
-        thumbnail: "https://img.youtube.com/vi/e9OnjNAprrs/maxresdefault.jpg",
+        thumbnail: "https://img.youtube.com/vi/e9OnjNAprrs/hqdefault.webp",
       },
       {
         id: "v3",
@@ -207,7 +207,7 @@ export const translations = {
         date: "2026",
         tag: "Recording",
         url: "https://www.youtube.com/watch?v=6PzfWS11L1E",
-        thumbnail: "https://img.youtube.com/vi/6PzfWS11L1E/maxresdefault.jpg",
+        thumbnail: "https://img.youtube.com/vi/6PzfWS11L1E/hqdefault.webp",
       },
     ],
     blogPosts: [
@@ -486,7 +486,7 @@ export const translations = {
         date: "೨೦೨೫",
         tag: "ದಾಖಲೆ",
         url: "https://www.youtube.com/watch?v=l86Aq8Pskog",
-        thumbnail: "https://img.youtube.com/vi/l86Aq8Pskog/maxresdefault.jpg",
+        thumbnail: "https://img.youtube.com/vi/l86Aq8Pskog/hqdefault.webp",
       },
       {
         id: "v2",
@@ -494,7 +494,7 @@ export const translations = {
         date: "ಸೆಪ್ಟೆಂ ೨೦೨೫",
         tag: "ದಾಖಲೆ",
         url: "https://www.youtube.com/watch?v=e9OnjNAprrs",
-        thumbnail: "https://img.youtube.com/vi/e9OnjNAprrs/maxresdefault.jpg",
+        thumbnail: "https://img.youtube.com/vi/e9OnjNAprrs/hqdefault.webp",
       },
       {
         id: "v3",
@@ -502,7 +502,7 @@ export const translations = {
         date: "೨೦೨೬",
         tag: "ದಾಖಲೆ",
         url: "https://www.youtube.com/watch?v=6PzfWS11L1E",
-        thumbnail: "https://img.youtube.com/vi/6PzfWS11L1E/maxresdefault.jpg",
+        thumbnail: "https://img.youtube.com/vi/6PzfWS11L1E/hqdefault.webp",
       },
     ],
     blogPosts: [

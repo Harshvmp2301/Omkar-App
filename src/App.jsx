@@ -638,6 +638,9 @@ export default function OmkarSamithiApp() {
           srcSet="/omkar-logo.png 220w, /icon-512.png 512w"
           sizes="220px"
           alt="Omkar Samithi"
+          width={220}
+          height={220}
+          fetchPriority="high"
           decoding="async"
           className="app-logo"
         />

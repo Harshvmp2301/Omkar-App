@@ -11,7 +11,8 @@ import {
 /**
  * The gallery's responsive sources, checked against the files themselves.
  *
- * The bundled photographs were 1600x1067 originals painted into tiles around
+ * The bundled photographs were 1400px fulls (1600px before round 43)
+ * painted into tiles around
  * 270px wide, and 1.28 MB of image for eight pictures. The fix is a width
  * ladder per photograph (see GALLERY_SOURCES), and a ladder that drifts out of
  * step with the files on disk is worse than no ladder at all: a missing
@@ -103,7 +104,7 @@ describe("the srcset a tile is given", () => {
     expect(new Set(widths).size).toBe(widths.length);
   });
 
-  it("keeps a tile off the 1600px original", () => {
+  it("keeps a tile off the full-size original", () => {
     // The whole point: no tile candidate may be the full-size file, or a 3x
     // phone asks for it again.
     for (const [src, entry] of Object.entries(GALLERY_SOURCES)) {

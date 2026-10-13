@@ -100,14 +100,14 @@ export async function loadGalleryPhotos(curated = [], lang = "en") {
  * renders the plain src exactly as before.
  */
 export const GALLERY_SOURCES = {
-  "/gallery/OJ2026_DSC06494.webp": { full: 1600, tiles: [480, 900] },
+  "/gallery/OJ2026_DSC06494.webp": { full: 1400, tiles: [480, 900] },
   "/gallery/imga-sEgru_e_BFHf-5SY.webp": { full: 800, tiles: [480, 800] },
   "/gallery/imga-sEhySs0wHN7Rj2P-.webp": { full: 640, tiles: [480, 640] },
-  "/gallery/LIR09963.webp": { full: 1600, tiles: [480, 900] },
+  "/gallery/LIR09963.webp": { full: 1400, tiles: [480, 900] },
   "/gallery/Blog-6.webp": { full: 800, tiles: [480, 800] },
   "/gallery/Blog-10.webp": { full: 800, tiles: [480, 800] },
-  "/gallery/F28A5437.webp": { full: 1600, tiles: [480, 900] },
-  "/gallery/F28A4999.webp": { full: 1600, tiles: [480, 900] },
+  "/gallery/F28A5437.webp": { full: 1400, tiles: [480, 900] },
+  "/gallery/F28A4999.webp": { full: 1400, tiles: [480, 900] },
 };
 
 /** Where a resized copy of `src` lives: `Photo.webp` → `Photo-480.webp`. */

@@ -73,7 +73,7 @@ export async function fetchLatestVideos(lang = "en") {
         const thumbs = s.thumbnails || {};
         const thumb =
           (thumbs.maxres || thumbs.high || thumbs.medium || thumbs.default || {}).url ||
-          `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+          `https://img.youtube.com/vi/${videoId}/hqdefault.webp`;
         let date = "";
         if (s.publishedAt) {
           try {

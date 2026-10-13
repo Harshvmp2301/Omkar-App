@@ -88,18 +88,15 @@ export default function ContentHub({ t, lang, events = [], onTab, flash }) {
                 <img
                   src={v.thumbnail}
                   alt=""
+                  width={480}
+                  height={360}
                   loading="lazy"
                   decoding="async"
                   onError={(e) => {
-                    // maxresdefault is occasionally missing — fall back to hq,
-                    // then hide the image so the gradient shows through.
-                    const img = e.currentTarget;
-                    if (!img.dataset.retried) {
-                      img.dataset.retried = "1";
-                      img.src = v.thumbnail.replace("maxresdefault", "hqdefault");
-                    } else {
-                      img.style.display = "none";
-                    }
+                    // hqdefault.webp exists for every public video; if the
+                    // network still fails, hide the image so the gradient
+                    // shows through.
+                    e.currentTarget.style.display = "none";
                   }}
                 />
                 <div className="play-overlay">
