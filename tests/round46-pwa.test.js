@@ -31,8 +31,37 @@ describe("round 46 — the PWA installs from whichever host serves it", () => {
     expect(manifest.icons.some((i) => i.purpose === "maskable")).toBe(true);
   });
 
-  it("308s www to the apex so one origin owns the install", () => {
-    expect(vercel).toContain('"value": "www.omkarsamithi.com"');
-    expect(vercel).toContain('"destination": "https://omkarsamithi.com/:path*"');
+  it("never adds a hop between www and the apex: an external one already exists", () => {
+    // Round 48 shipped a host-conditional 308 from www.omkarsamithi.com to
+    // the apex here. An external hop (registrar forwarding / the Vercel
+    // domain setup) already sends the apex to www, so the return hop closed
+    // a circle — apex -> www -> apex -> www — and every visit died with
+    // ERR_TOO_MANY_REDIRECTS. The www/apex relationship is owned by that
+    // external layer alone; vercel.json must never add a second, opposing
+    // hop. What makes installs work on whichever host ends up serving is
+    // the relative manifest above, not a redirect.
+    const config = JSON.parse(vercel);
+    const hosts = config.redirects.flatMap((rule) =>
+      (rule.has ?? [])
+        .filter((has) => has.type === "host")
+        .map((has) => has.value)
+    );
+    expect(hosts).not.toContain("www.omkarsamithi.com");
+    expect(hosts).not.toContain("omkarsamithi.com");
+  });
+
+  it("gives every catch-all redirect a host condition, so no host forwards to itself", () => {
+    // An unconditional catch-all redirect is how a self-loop is born: the
+    // destination's own host would be forwarded straight back to itself.
+    const config = JSON.parse(vercel);
+    for (const rule of config.redirects) {
+      if (rule.source === "/:path*") {
+        expect(rule.has, rule.destination).toEqual(
+          expect.arrayContaining([expect.objectContaining({ type: "host" })])
+        );
+      }
+    }
+    // the round-41 hop off the Vercel preview host stays
+    expect(vercel).toContain('"value": "omkar-app.vercel.app"');
   });
 });

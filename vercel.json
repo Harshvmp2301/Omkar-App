@@ -79,17 +79,6 @@
       "has": [
         {
           "type": "host",
-          "value": "www.omkarsamithi.com"
-        }
-      ],
-      "destination": "https://omkarsamithi.com/:path*",
-      "permanent": true
-    },
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
           "value": "omkar-app.vercel.app"
         }
       ],
