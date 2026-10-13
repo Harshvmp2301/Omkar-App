@@ -542,11 +542,14 @@ describe("the sitemap advertises only what exists", () => {
     expect(xml).not.toContain("donate");
   });
 
-  it("lists the root and the four real tabs", () => {
-    expect(xml).toContain("https://omkar-app.vercel.app/</loc>");
-    for (const tab of ["events", "gallery", "seva", "about"]) {
-      expect(xml, tab).toContain(`#/${tab}`);
-    }
+  it("names the canonical domain once, with no fragments", () => {
+    // Round 41: omkarsamithi.com became the canonical host. Hash
+    // fragments are forbidden by the sitemap protocol, and the hash
+    // router's tabs are one crawlable document, so the honest sitemap
+    // is the single root URL on the canonical domain.
+    expect(xml).toContain("https://omkarsamithi.com/</loc>");
+    expect(xml).not.toContain("#/");
+    expect(xml).not.toContain("omkar-app.vercel.app");
   });
 });
 

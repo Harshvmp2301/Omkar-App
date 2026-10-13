@@ -1,7 +1,7 @@
 // Minimal offline-first service worker for Omkar Samithi.
 // Strategy: network-first (always try the network), cache successful same-origin
 // GET responses as a fallback so the app opens offline after the first visit.
-const CACHE = "omkar-cache-v1";
+const CACHE = "omkar-cache-v2";
 
 // Pre-cache the app shell so the FIRST offline visit works (audit E17),
 // not only after a second visit.
