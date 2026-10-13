@@ -2,33 +2,33 @@
   "name": "Omkar Samithi",
   "short_name": "Omkar",
   "description": "Bilingual community platform for Oman Karnataka Aradhana Samithi, Muscat",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "https://omkarsamithi.com/",
+  "scope": "https://omkarsamithi.com/",
   "display": "standalone",
   "background_color": "#170B10",
   "theme_color": "#170B10",
   "lang": "en",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "https://omkarsamithi.com/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "https://omkarsamithi.com/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-maskable-512.png",
+      "src": "https://omkarsamithi.com/icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "omkar-logo.png",
+      "src": "https://omkarsamithi.com/omkar-logo.png",
       "sizes": "any",
       "type": "image/png",
       "purpose": "any"
