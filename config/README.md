@@ -74,7 +74,9 @@ Setup, about five minutes:
 
 1. Go to [script.google.com](https://script.google.com) → **New project**.
 2. Delete the sample code and paste the whole of `config/apps-script.gs`.
-3. Change `ADMIN_EMAIL` at the top to the Samithi's email address.
+3. `ADMIN_EMAIL` at the top is already the Samithi's address
+   (`omkarsamithi@gmail.com`, set in round 53); change it only if form
+   notifications should go somewhere else.
 4. **Deploy → New deployment → Web app.**
    - *Execute as:* **Me**
    - *Who has access:* **Anyone**

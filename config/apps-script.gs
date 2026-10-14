@@ -29,8 +29,9 @@
  * donations.)
  */
 
-// ⬇️ CHANGE THIS to the Samithi's email address
-var ADMIN_EMAIL = 'REPLACE-WITH-ADMIN-EMAIL@gmail.com';
+// The Samithi's own address (round 53): form notifications land here.
+// This line was a fill-me-in placeholder since day one; now it is real.
+var ADMIN_EMAIL = 'omkarsamithi@gmail.com';
 
 // The Sheet is created automatically on first use; leave this name alone or
 // rename it to whatever you like.
