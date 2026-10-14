@@ -94,11 +94,13 @@ describe("the mobile menu behaves like a menu", () => {
   const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 
   it("stops the page scrolling behind the open drawer", () => {
-    expect(css).toMatch(/body:has\(\.nav-drawer\) \{ overflow: hidden; \}/);
+    // Round 51: the lock moved from a :has() selector (Safari restyles the
+    // whole document on every per-frame style write) to one class on <html>.
+    expect(css).toMatch(/html\.drawer-open body \{ overflow: hidden; \}/);
   });
 
   it("lets the drawer itself scroll on a short viewport", () => {
-    const block = css.slice(css.indexOf(".nav-drawer {", css.indexOf("body:has(.nav-drawer)")));
+    const block = css.slice(css.indexOf(".nav-drawer {", css.indexOf("html.drawer-open body")));
     expect(block).toContain("max-height: calc(100dvh");
     expect(block).toContain("overflow-y: auto");
     expect(block).toContain("overscroll-behavior: contain");

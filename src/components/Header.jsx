@@ -28,6 +28,17 @@ const Header = forwardRef(function Header(
   // Round-10 / audit A1: below 768px the tabs collapse into a focus-
   // trapped drawer. Lang + bell stay visible — they're used every visit.
   const [menuOpen, setMenuOpen] = useState(false);
+
+  /* Round 51: the open drawer used to be announced to the stylesheet through
+     :has(.nav-drawer), which on Safari restyles the WHOLE document whenever
+     anything inside it changes style — including the scroll loop's per-frame
+     transform writes, which is exactly when the logo is flying. One class on
+     <html> says the same thing for free; the cleanup covers unmount. */
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("drawer-open", menuOpen);
+    return () => root.classList.remove("drawer-open");
+  }, [menuOpen]);
   const menuBtnRef = useRef(null);
   const drawerRef = useRef(null);
   const closeMenu = useCallback(() => setMenuOpen(false), []);

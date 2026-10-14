@@ -59,6 +59,23 @@ export function isInstalled() {
   );
 }
 
+/**
+ * Round 50: is this iOS? Safari exposes Web Push only inside an installed
+ * home-screen app on iOS 16.4+, and in a plain tab the Notification object is
+ * simply absent — so the bell's state line has to say something useful
+ * instead of the generic "this browser cannot receive push". iPadOS 13+
+ * reports itself as Macintosh, hence the touch-point test.
+ */
+export function isIos() {
+  if (typeof navigator === "undefined" || typeof navigator.userAgent !== "string") {
+    return false;
+  }
+  return (
+    /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+    (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1)
+  );
+}
+
 export async function getPushSubscription() {
   const reg = await navigator.serviceWorker.ready;
   return reg.pushManager.getSubscription();

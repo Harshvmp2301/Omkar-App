@@ -4,6 +4,7 @@ import useFocusTrap from "../hooks/useFocusTrap.js";
 import {
   getPushSubscription,
   isInstalled,
+  isIos,
   pushConfigured,
   pushSupported,
   subscribePush,
@@ -130,7 +131,19 @@ export default function NotifyPanel({ t, open, onClose }) {
             failure must never be silent again. */}
         <div className="alerts-box">
           {device === null ? null : !device.supported || !pushConfigured ? (
-            <p className="alerts-note">{t.alertsUnsupported}</p>
+            <p className="alerts-note">
+              {/* Round 50: on iOS the generic "cannot receive push" line is
+                  true but useless. In a tab, the iPhone owner needs the
+                  home-screen route (Share → Add to Home Screen, then the bell
+                  again); installed but still unsupported means the iOS itself
+                  is older than 16.4. Same panel surgery as round 37: this is
+                  the state line, nothing new is added to the panel. */}
+              {isIos()
+                ? installed
+                  ? t.alertsIosOld
+                  : t.alertsIosInstallHint
+                : t.alertsUnsupported}
+            </p>
           ) : on ? (
             <>
               <p className="alerts-note">{t.alertsStatusOn}</p>

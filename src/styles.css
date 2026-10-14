@@ -66,7 +66,10 @@
   --text-h3: clamp(1rem, 0.9rem + 0.4vw, 1.15rem);
 }
 
-html { scroll-behavior: smooth; }
+/* round 50: the rubber-band overscroll on iOS shows the html ground, so it
+   wears the same themed background as the body — no white flash above or
+   below the page on an iPhone. */
+html { scroll-behavior: smooth; background: var(--bg); }
 
 body {
   margin: 0;
@@ -177,7 +180,12 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 22px;
+  /* round 50: on notched iPhones the installed app runs edge-to-edge
+     (viewport-fit=cover), so the sticky header grows by the top inset and
+     never sits under the notch or the Dynamic Island. App.jsx measures
+     offsetHeight into --header-h, so the drawer and the bell panel, which
+     hang off that variable, follow for free. Desktop insets are 0. */
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 22px 14px;
   flex-wrap: wrap;
   gap: 10px;
 }
@@ -868,8 +876,10 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
 .lightbox-hint { color: var(--muted); font-size: 0.65rem; }
 .lightbox-close {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  /* round 50: keep the close button out of the notch / status-row corner on
+     installed iOS, where the lightbox spans the whole screen */
+  top: calc(16px + env(safe-area-inset-top, 0px));
+  right: calc(16px + env(safe-area-inset-right, 0px));
   background: var(--panel-light);
   border: 1px solid var(--line);
   color: var(--ivory);
@@ -1020,11 +1030,12 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
 .contact-emails { display: flex; flex-direction: column; gap: 4px; }
 
 /* ---------------------------------------------------------------- footer */
-.footer { text-align: center; padding: 20px; border-top: 1px solid var(--line); }
+.footer { text-align: center; padding: 20px; border-top: 1px solid var(--line); padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
 .footer p { color: var(--muted); font-size: 0.7rem; margin: 0; }/* ----------------------------------------------------------------- toast */
 .toast {
   position: fixed;
-  bottom: 20px;
+  /* round 50: clear the iPhone home-indicator swipe zone */
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   background: var(--gold);
@@ -1041,7 +1052,7 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
 /* --------------------------------------------------------------- responsive */
 @media (max-width: 600px) {
   /* Round-10: header stays ONE row on phones — tabs live in the drawer. */
-  .header { flex-wrap: nowrap; gap: 8px; padding: 10px 12px; }
+  .header { flex-wrap: nowrap; gap: 8px; padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 10px; }
   .header-left { justify-content: flex-start; gap: 6px; min-width: 0; }
   .header-left .wordmark { font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .header-actions { flex-wrap: nowrap; margin-left: auto; gap: 5px; }
@@ -2775,9 +2786,13 @@ textarea.admin-input { resize: vertical; min-height: 74px; font: inherit; color:
   background: rgba(10, 4, 7, 0.55);
 }
 .notify-panel {
-  position: fixed; z-index: 1301; top: 76px; right: 12px;
+  /* round 50: hang off the measured header height, not a frozen 76px, so on
+     notched iPhones the panel lands under the (now taller) header instead of
+     under its bottom edge; the max-height leaves room for the home indicator
+     so the Enable button is never in the swipe-up zone. */
+  position: fixed; z-index: 1301; top: calc(var(--header-h, 80px) + 8px); right: 12px;
   width: min(430px, calc(100vw - 24px));
-  max-height: calc(100svh - 100px); overflow: auto;
+  max-height: calc(100svh - var(--header-h, 80px) - 32px); overflow: auto;
   background: var(--panel); border: 1px solid var(--line-strong);
   border-radius: 14px; padding: 18px 18px 20px;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);

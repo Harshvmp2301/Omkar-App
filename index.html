@@ -11,7 +11,11 @@
   gtag('config', 'G-NKV9DZ5W9B');
 </script>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover (round 52): on notched iPhones the installed app
+         otherwise letterboxes inside the safe area, and WITH cover the fixed
+         header clears the notch through env(safe-area-inset-top) in
+         styles.css. Harmless everywhere else: the insets are 0. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#170B10" />
     <!-- Pre-paint theme: OS preference on first visit (user asked for
          system-default), persisted toggle choice afterwards. Runs before
@@ -121,6 +125,8 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- round 52: the label under the home-screen icon on iOS -->
+    <meta name="apple-mobile-web-app-title" content="Omkar" />
 
     <!-- Fonts: preconnected + render-blocking link (was a late @import inside CSS) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

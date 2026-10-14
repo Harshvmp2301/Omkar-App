@@ -133,6 +133,10 @@ export const translations = {
     alertsStatusOn: "Notifications are on for this device.",
     alertsInstallHint: "First install the app: browser menu, then Add to Home Screen or Install app. This button appears once it is installed.",
     alertsUnsupported: "This browser cannot receive push notifications.",
+    alertsIosInstallHint:
+      "iPhone and iPad: tap Share, then Add to Home Screen. Open the app from that new icon and tap the bell again — iOS delivers notifications only inside the installed app, on iOS 16.4 or newer.",
+    alertsIosOld:
+      "This iPhone's iOS is too old for web notifications — iOS 16.4 or newer is needed.",
     alertsBusy: "One moment…",
     alertsStoreFail: "The browser allowed it but storing the device failed — try once more.",
     closeNotify: "Close",
@@ -371,6 +375,10 @@ export const translations = {
     alertsStatusOn: "ಈ ಸಾಧನದಲ್ಲಿ ಸೂಚನೆಗಳು ಚಾಲೂ ಇವೆ.",
     alertsInstallHint: "ಮೊದಲು ಆ್ಯಪ್ ಸ್ಥಾಪಿಸಿ: ಬ್ರೌಸರ್ ಮೆನು → Add to Home Screen / Install app. ನಂತರ ಈ ಗುಂಡಿ ಕಾಣುತ್ತದೆ.",
     alertsUnsupported: "ಈ ಬ್ರೌಸರ್ ಪುಶ್ ಸೂಚನೆಗಳನ್ನು ಪಡೆಯಲಾರದು.",
+    alertsIosInstallHint:
+      "ಐಫೋನ್ ಮತ್ತು ಐಪ್ಯಾಡ್: Share ಒತ್ತಿ, ನಂತರ Add to Home Screen ಒತ್ತಿ. ಆ ಹೊಸ ಐಕಾನ್‌ನಿಂದ ಆ್ಯಪ್ ತೆರೆದು ಮತ್ತೆ ಗಂಟೆ ಒತ್ತಿ — ಸ್ಥಾಪಿತ ಆ್ಯಪ್‌ನೊಳಗೆ ಮಾತ್ರ, iOS 16.4 ಅಥವಾ ಹೊಸದರಲ್ಲಿ ಸೂಚನೆಗಳು ಸಿಗುತ್ತವೆ.",
+    alertsIosOld:
+      "ಈ ಐಫೋನ್‌ನ iOS ವೆಬ್ ಸೂಚನೆಗಳಿಗೆ ತುಂಬಾ ಹಳೆಯದು — iOS 16.4 ಅಥವಾ ಹೊಸದು ಬೇಕು.",
     alertsBusy: "ಒಂದು ಕ್ಷಣ…",
     alertsStoreFail: "ಬ್ರೌಸರ್ ಒಪ್ಪಿದೆ ಆದರೆ ಸಾಧನ ದಾಖಲಾಗಲಿಲ್ಲ — ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
     closeNotify: "ಮುಚ್ಚಿ",
