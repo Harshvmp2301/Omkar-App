@@ -47,7 +47,6 @@ describe("round 54 — the gallery reads the blogs, fortnightly, by itself", () 
     expect(sync).toContain("process.env.CRON_SECRET");
     expect(sync).toContain("401");
     expect(sync).toContain("process.env.SUPABASE_SERVICE_ROLE_KEY");
-    expect(sync).toContain("omkarsamithi.blogspot.com,omkarsandesh.blogspot.com");
     expect(sync).toContain("const PAGE_SIZE = 500");
     expect(sync).toContain("max-results=${PAGE_SIZE}");
     expect(sync).toContain("on_conflict=url");
@@ -69,18 +68,20 @@ describe("round 54 — the gallery reads the blogs, fortnightly, by itself", () 
     ]);
   });
 
-  it("stores every picture twice: tile size and lightbox size", () => {
-    const rows = postsToImageRows(
+  it("stores every picture twice: tile size and lightbox size", async () => {
+    const rows = await postsToImageRows(
       [
         {
           title: "Naadamrutha 2024",
           url: "https://omkarsamithi.blogspot.com/2024/09/x.html",
           published: "2024-09-30T10:00:00Z",
           html: '<img src="https://blogger.googleusercontent.com/img/aaa/s200/one.jpg">',
+          thumb: "",
         },
       ],
       "omkarsamithi.blogspot.com",
-      "2026-10-14T00:00:00.000Z"
+      "2026-10-14T00:00:00.000Z",
+      async () => "" // no page fetch in this test: the feed body suffices
     );
     expect(rows).toHaveLength(1);
     expect(rows[0].thumb_url).toContain("s480");

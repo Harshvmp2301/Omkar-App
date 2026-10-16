@@ -23,12 +23,22 @@
  *   GALLERY_BLOG_HOSTS          optional comma list; defaults to the two
  *                               Omkar blogs
  *
- * SHAPE OF THE PULL: the legacy GData feed serves full post HTML with no key
- * (proven live since round 29's blog work). Pages of 500 posts, two pages per
- * blog — a thousand posts of headroom, far beyond either blog today. Images
- * are kept only from Blogger's own image hosts, de-duplicated by URL, and
- * stored twice: tile size (s480) and full size (s1600), the same ladder the
+ * SHAPE OF THE PULL: the legacy GData feed lists every post, but modern
+ * Blogger entries carry NO post body — round 54 learned that the hard way
+ * when the Samithi's own blog synced zero images while a 2014-era blog
+ * synced fine (old entries still embed their HTML). So the feed is used
+ * for the post LIST (title, URL, date, thumbnail), and every image is
+ * then read from the post's own PAGE, six pages at a time — the page is
+ * what a visitor sees, so it is what the gallery shows. Feed bodies and
+ * the entry thumbnail are kept as fall-back sources. Images are kept
+ * only from Blogger's own image hosts, de-duplicated by URL, and stored
+ * twice: tile size (s480) and full size (s1600), the same ladder the
  * bundled gallery photographs use.
+ *
+ * ONE BLOG BY DEFAULT: omkarsamithi.blogspot.com, the blog the Samithi
+ * still writes (round 55, owner's ruling: chuck omkarsandesh). A host
+ * that leaves the list leaves the table on the next run — the prune at
+ * the end deletes every row whose blog_host is no longer configured.
  *
  * SAFE RE-SYNC: rows are upserted first with a fresh synced_at, THEN the rows
  * of that blog whose stamp is older than this run are deleted — so a visitor
@@ -38,6 +48,8 @@
 
 const PAGE_SIZE = 500;
 const MAX_PAGES = 2;
+/** Post pages fetched at once: polite to Blogger, quick for the cron. */
+const PAGE_CONCURRENCY = 6;
 const IMAGE_HOSTS =
   /(^|\.)((blogger|lh3|lh4|lh5|lh6)\.googleusercontent\.com|bp\.blogspot\.com|blogspot\.com)$/i;
 
@@ -99,6 +111,7 @@ async function fetchAllPosts(host) {
         url: alt ? alt.href : "",
         published: (entry.published && entry.published.$t) || "",
         html: (entry.content && entry.content.$t) || "",
+        thumb: (entry.media$thumbnail && entry.media$thumbnail.url) || "",
       });
     }
     if (entries.length < PAGE_SIZE) break;
@@ -106,18 +119,72 @@ async function fetchAllPosts(host) {
   return posts;
 }
 
-/** Posts → the rows the table stores, newest post first, order kept. */
-export function postsToImageRows(posts, host, syncedAt) {
+/** The HTML of one post page; "" when the page cannot be fetched. The page
+ *  is the primary image source: modern feed entries carry no post body. */
+export async function fetchPostPageHtml(url) {
+  try {
+    const res = await fetch(url, { headers: { accept: "text/html" } });
+    if (!res.ok) return "";
+    return await res.text();
+  } catch {
+    return "";
+  }
+}
+
+/** Run an async fn over items, at most `size` at a time, keeping order. */
+async function inChunks(items, size, fn) {
+  const out = [];
+  for (let i = 0; i < items.length; i += size) {
+    const wave = await Promise.all(items.slice(i, i + size).map(fn));
+    out.push(...wave);
+  }
+  return out;
+}
+
+/**
+ * Posts → the rows the table stores, newest post first, order kept.
+ * Round 55: images come from each post's PAGE first (the feed body is
+ * empty on modern Blogger), then the feed body, then the entry
+ * thumbnail — de-duplicated across the whole blog by full-size URL.
+ * `fetchPage` is injectable so tests never touch the network.
+ */
+export async function postsToImageRows(
+  posts,
+  host,
+  syncedAt,
+  fetchPage = fetchPostPageHtml
+) {
+  const perPost = await inChunks(posts, PAGE_CONCURRENCY, async (post) => {
+    // A post page that refuses to load must cost one post its page
+    // images, never the whole sync.
+    let pageHtml = "";
+    try {
+      pageHtml = post.url ? await fetchPage(post.url) : "";
+    } catch {
+      pageHtml = "";
+    }
+    const urls = [];
+    for (const src of [
+      ...extractImageUrls(pageHtml),
+      ...extractImageUrls(post.html),
+      ...(post.thumb ? [post.thumb] : []),
+    ]) {
+      const full = atSize(src, 1600);
+      if (!urls.some((u) => u.full === full)) urls.push({ src, full });
+    }
+    return urls;
+  });
+
   const rows = [];
   const seen = new Set();
-  posts.forEach((post) => {
-    extractImageUrls(post.html).forEach((src, pos) => {
-      const full = atSize(src, 1600);
-      if (seen.has(full)) return;
-      seen.add(full);
+  perPost.forEach((urls, p) => {
+    const post = posts[p];
+    urls.forEach((u, pos) => {
+      if (seen.has(u.full)) return;
+      seen.add(u.full);
       rows.push({
-        url: full,
-        thumb_url: atSize(src, 480),
+        url: u.full,
+        thumb_url: atSize(u.src, 480),
         blog_host: host,
         post_title: post.title,
         post_url: post.url,
@@ -179,9 +246,11 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false, error: "supabase-not-configured" });
   }
 
+  // Round 55, the owner's ruling: the Samithi's own blog only. The 2014-era
+  // omkarsandesh blog is chucked; its rows leave the table on this run's
+  // final prune, because a host absent from this list loses every row.
   const hosts = String(
-    process.env.GALLERY_BLOG_HOSTS ||
-      "omkarsamithi.blogspot.com,omkarsandesh.blogspot.com"
+    process.env.GALLERY_BLOG_HOSTS || "omkarsamithi.blogspot.com"
   )
     .split(",")
     .map((h) => h.trim())
@@ -192,9 +261,19 @@ export default async function handler(req, res) {
   try {
     for (const host of hosts) {
       const posts = await fetchAllPosts(host);
-      const rows = postsToImageRows(posts, host, runStartIso);
+      const rows = await postsToImageRows(posts, host, runStartIso);
       const count = await syncHost(baseUrl, serviceKey, host, rows, runStartIso);
       report.push({ host, posts: posts.length, images: count });
+    }
+    // A blog that left the list leaves the gallery: drop every row whose
+    // host is no longer configured (this is how omkarsandesh departed).
+    const goneHosts = await fetch(
+      `${baseUrl}/rest/v1/gallery_blog_images` +
+        `?blog_host=not.in.(${hosts.map((h) => `"${h}"`).join(",")})`,
+      { method: "DELETE", headers: supabaseHeaders(serviceKey) }
+    );
+    if (!goneHosts.ok) {
+      throw new Error(`prune-hosts ${goneHosts.status}: ${await goneHosts.text()}`);
     }
   } catch (err) {
     return res.status(502).json({ ok: false, error: String(err.message || err), done: report });
