@@ -11,7 +11,12 @@
  * new picture.
  */
 
-import { listPublishedPhotos, photoUrl, supabaseEnabled } from "./supabase.js";
+import {
+  listBlogImages,
+  listPublishedPhotos,
+  photoUrl,
+  supabaseEnabled,
+} from "./supabase.js";
 
 /** Published photo rows. [] when Supabase is off, unreachable, or empty. */
 export async function fetchPhotoRows() {
@@ -20,6 +25,37 @@ export async function fetchPhotoRows() {
   const { ok, rows } = await listPublishedPhotos();
   if (!ok || !Array.isArray(rows)) return [];
   return rows.filter((r) => r && r.storage_path);
+}
+
+/**
+ * The blog photograph stream (round 54). The fortnightly sync function
+ * fills public.gallery_blog_images from every post of the Samithi's
+ * blogs, so the gallery shows the whole photographic life of the
+ * community without anyone uploading a file again. [] before the first
+ * sync, with Supabase off, or if the table is unreachable — the gallery
+ * then simply stays the curated list, never broken.
+ */
+export async function fetchBlogImageRows() {
+  if (!supabaseEnabled) return [];
+
+  const { ok, rows } = await listBlogImages();
+  if (!ok || !Array.isArray(rows)) return [];
+  return rows.filter((r) => r && r.thumb_url);
+}
+
+/**
+ * A sync row → the shape the gallery renders. The caption is the post's
+ * title, because a photograph from a blog post belongs to its story;
+ * `postUrl` lets the caption link home to that story.
+ */
+export function mapBlogImageRow(row = {}) {
+  return {
+    id: `blog-${row.url}`,
+    src: row.thumb_url,
+    full: row.url,
+    caption: String(row.post_title || "").trim(),
+    postUrl: row.post_url || "",
+  };
 }
 
 /**
@@ -56,21 +92,36 @@ export function mapPhotoRow(row = {}, lang = "en", urlFor = photoUrl) {
  * this is the bundled list untouched, the same contract the video, blog and
  * event feeds use.
  */
-export function mergeGallery(curated = [], rows = [], lang = "en", urlFor = photoUrl) {
-  if (!Array.isArray(rows) || rows.length === 0) return curated;
-
+export function mergeGallery(
+  curated = [],
+  rows = [],
+  lang = "en",
+  urlFor = photoUrl,
+  blogRows = []
+) {
   // A row with no usable URL would render as a broken card, so drop it rather
   // than show a visitor an image that cannot load.
-  const live = rows.map((row) => mapPhotoRow(row, lang, urlFor)).filter((p) => p.src);
-  if (live.length === 0) return curated;
+  const blog = (Array.isArray(blogRows) ? blogRows : [])
+    .map((row) => mapBlogImageRow(row))
+    .filter((p) => p.src);
+  const live = (Array.isArray(rows) ? rows : [])
+    .map((row) => mapPhotoRow(row, lang, urlFor))
+    .filter((p) => p.src);
 
-  return [...live, ...curated];
+  // With nothing from the blog and nothing uploaded the curated list is
+  // returned as-is — the same array, not a copy: the oldest test in this
+  // file holds mergeGallery to that contract, and it is a good one.
+  if (blog.length === 0 && live.length === 0) return curated;
+
+  // The blog stream leads: it is the living record, newest post first.
+  // Uploads (while any rows still exist) follow, then the bundled set.
+  return [...blog, ...live, ...curated];
 }
 
 /** The list the public Gallery page shows. */
 export async function loadGalleryPhotos(curated = [], lang = "en") {
-  const rows = await fetchPhotoRows();
-  return mergeGallery(curated, rows, lang);
+  const [rows, blogRows] = await Promise.all([fetchPhotoRows(), fetchBlogImageRows()]);
+  return mergeGallery(curated, rows, lang, photoUrl, blogRows);
 }
 
 /* ── the bundled photographs, at the sizes they are actually painted ─────── */

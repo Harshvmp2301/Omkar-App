@@ -106,6 +106,15 @@ Then [supabase.com](https://supabase.com) → your project → **Settings → AP
 | `VITE_SUPABASE_ANON_KEY` | The **anon / publishable** key |
 | `VITE_ADMIN_EMAILS` | The Gmail addresses allowed into the dashboard, comma-separated |
 
+**Server-only variables (round 54) — Vercel project settings, NEVER the repo,
+NEVER a chat, NEVER a screenshot:**
+
+| Variable | What it is |
+|---|---|
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → `service_role`. The fortnightly blog-photo sync writes with it. It bypasses every row-level rule, so it lives only in Vercel's server-side environment |
+| `CRON_SECRET` | Any long random string (PowerShell: `[guid]::NewGuid().Guid`). Vercel Cron sends it automatically; a manual first fill uses `?secret=` with the same value |
+| `GALLERY_BLOG_HOSTS` | Optional. Comma-separated blog hosts to pull photographs from; defaults to `omkarsamithi.blogspot.com,omkarsandesh.blogspot.com` |
+
 > ⛔ **Never paste the `service_role` key into this folder, this app, or any
 > chat.** It bypasses every security rule, so anyone who viewed the page
 > source would get full access to every signup and message. If a job ever

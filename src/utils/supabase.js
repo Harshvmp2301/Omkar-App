@@ -198,6 +198,20 @@ export const listPublishedEvents = (opts) =>
     ...opts,
   });
 
+/**
+ * The blog photograph stream (round 54): every image the fortnightly
+ * /api/gallery-sync pull found in every post of the Samithi's blogs,
+ * newest post first. Public read, like the events and photos tables;
+ * the writes happen server-side with the service role, never here.
+ * The limit rides high on purpose — the whole point is ALL of them.
+ */
+export const listBlogImages = (opts) =>
+  selectRows("gallery_blog_images", {
+    query: "select=*&order=published_at.desc,pos.asc",
+    limit: 2000,
+    ...opts,
+  });
+
 /** Build the public URL for a file stored in the photos bucket. */
 export function photoUrl(storagePath) {
   if (!supabaseEnabled || !storagePath) return "";

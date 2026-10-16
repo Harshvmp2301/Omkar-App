@@ -208,7 +208,23 @@ export default function GalleryView({ t, lang }) {
                 />
               )}
               <figcaption>
-                {open.caption || labelFor(open)}
+                {/* Round 54: a photograph that came from a blog post links
+                    home to its story. Inline styles on purpose: this patch
+                    must apply on trees with and without round 52, so it
+                    touches no stylesheet. The tile caption stays plain
+                    text — a link inside the tile's button is invalid. */}
+                {open.postUrl ? (
+                  <a
+                    href={open.postUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "var(--gold-text)", textDecoration: "underline" }}
+                  >
+                    {open.caption || labelFor(open)}
+                  </a>
+                ) : (
+                  (open.caption || labelFor(open))
+                )}
                 <span className="lightbox-hint">{t.lightboxHint}</span>
               </figcaption>
             </figure>
