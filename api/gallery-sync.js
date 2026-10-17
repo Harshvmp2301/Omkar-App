@@ -103,11 +103,60 @@ export function isLogoFile(src) {
   }
 }
 
+/**
+ * The two pasted graphics the owner right-clicked out of the gallery
+ * (round 59): the circular Samithi emblem and the red Hanuman clipart.
+ * New-editor Blogger URLs (`/img/a/AV…=s480`) carry a hash instead of a
+ * filename, and 480px walks past the size floor — so these two are named
+ * outright. A blocklist cannot guess, but it never misses.
+ */
+const KNOWN_GRAPHIC_HASHES = [
+  "AVvXsEhGWvUTc87Lk6vByLYNHAjqGQKfxG6v8yKy4_F8jaZypvC_WSf55Xrtv7BcAVB1Ge9AnsPRygklTfO9ZVDtAecQD2FdB-8qrLigzUUnVUE5do6LP1VmoA11TmtN3yTVEeQaVPej9fYVZo0RsrtuQ-Ku9_RTtKB7Unv-fDsepzE7xa57-lY8p-c37C4NEXMA",
+  "AVvXsEiCM4efEpKw5L18T3xe3wuRMQ35zhdGOt304cRf6obKr5lO12rbaS9SRbwqT6zwprbiXSvlTI4reTOny6conin95gXKbvLJtM2eulc8lL3s-XVcNw_8r8R8l1StchL6DoZDCx_nTbrTCGYdmMxOHp8BEU1MH_7Xpj-01m5TPs4GY0x4JvsVpt-SkwmhNi8L",
+];
+
+/** True for the two graphics the owner identified by address. */
+export function isKnownGraphic(src) {
+  const s = String(src);
+  return KNOWN_GRAPHIC_HASHES.some((h) => s.includes(h));
+}
+
+/**
+ * A graphic in the new-editor URL shape (`/img/a/AV…=sNNN` — a hash, no
+ * filename): the bytes are the only honest witness. Camera photographs are
+ * JPEG; pasted clipart, emblems and logos are PNG/GIF/WebP. Probed at s72
+ * (~3KB per check, and only for this URL shape). On ANY doubt — fetch
+ * error, missing content-type, non-image — the URL is KEPT, because losing
+ * a real photograph is worse than a junk tile the owner can report.
+ */
+export async function isPastedGraphic(src, fetchImage = fetch) {
+  const s = String(src);
+  if (!/\/img\/a\/[^/=]+=s\d+([/?#]|$)/i.test(s)) return false;
+  try {
+    const res = await fetchImage(atSize(s, 72));
+    const type = String(
+      (res && res.headers && res.headers.get && res.headers.get("content-type")) || ""
+    );
+    if (!res.ok || !type.startsWith("image/")) return false;
+    return !type.startsWith("image/jpeg");
+  } catch {
+    return false;
+  }
+}
+
 /** s1600 / w400-h300-c / =s640 → the same picture at `size` pixels. */
 function atSize(src, size) {
   const out = String(src);
   if (/[?&]s\d+/.test(out) || /=s\d+/.test(out)) {
     return out.replace(/([?&=])s\d+(-c)?/, `$1s${size}`);
+  }
+  // Blogger's compound feed thumbnails (`/s72-w640-h426-c/`) declare two
+  // sizes at once; left alone, the stored tile kept the 72px crumb and
+  // painted as mud (round 59). Rewrite the whole token so the row stores
+  // the real size — which also dedupes the crumb against the same
+  // photograph's body URL.
+  if (/\/s\d+-w\d+-h\d+(-c)?\//.test(out)) {
+    return out.replace(/\/s\d+-w\d+-h\d+(-c)?\//, `/s${size}/`);
   }
   if (/\/(s\d+|w\d+-h\d+)(-c)?\//.test(out)) {
     return out.replace(/\/(s\d+|w\d+-h\d+)(-c)?\//, `/s${size}/`);
@@ -228,7 +277,8 @@ export async function postsToImageRows(
   posts,
   host,
   syncedAt,
-  fetchPage = fetchPostPageHtml
+  fetchPage = fetchPostPageHtml,
+  fetchImage = fetch
 ) {
   const perPost = await inChunks(posts, PAGE_CONCURRENCY, async (post) => {
     // A post page that refuses to load must cost one post its page
@@ -251,8 +301,11 @@ export async function postsToImageRows(
       // inside the post body.
       if (JUNK_URL.test(src)) continue;
       if (isLogoFile(src)) continue;
+      if (isKnownGraphic(src)) continue;
       const size = declaredSize(src);
       if (size !== null && size < MIN_SOURCE_PX) continue;
+      // The nameless new-editor shape (/img/a/AV…=sNNN): ask the bytes.
+      if (await isPastedGraphic(src, fetchImage)) continue;
       const full = atSize(src, 1600);
       if (!urls.some((u) => u.full === full)) urls.push({ src, full });
     }

@@ -17,8 +17,8 @@ const LOGO_IN_BODY =
   "https://blogger.googleusercontent.com/img/b/R29vZ2xl/EMB/s1600/Omkar%20Logo%20Final%20Transparent.png";
 const MUD_IN_BODY =
   "https://blogger.googleusercontent.com/img/b/R29vZ2xl/SMALL/w200-h150/thumb-old.jpg";
-const THUMB =
-  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/TH/s72-w640-h426-c/DSC02368.JPG";
+// Blogger's feed thumbnail of a body photograph shares its path
+const THUMB = REAL_1.replace("/w640-h426/", "/s72-w640-h426-c/");
 
 describe("round 58 — the quality gates", () => {
   it("reads the pixels a Blogger URL declares", () => {
@@ -66,9 +66,10 @@ describe("round 58 — the quality gates", () => {
     const urls = rows.map((r) => r.url);
     expect(urls[0]).toContain("/s1600/DSC02368.JPG");
     expect(urls[1]).toContain("/s1600/DSC02369.JPG");
-    // the feed thumbnail is a real picture at thumbnail size — it stays
-    expect(urls).toContain(THUMB);
-    expect(rows).toHaveLength(3);
+    // since round 59 the compound feed thumbnail (s72-w640-h426-c of
+    // DSC02368.JPG) normalizes to /s1600/DSC02368.JPG and DEDUPES against
+    // the same photograph's body row — no second, blurry tile
+    expect(rows).toHaveLength(2);
     for (const u of urls) {
       expect(u).not.toContain("Logo");
       expect(u).not.toContain("w200-h150");

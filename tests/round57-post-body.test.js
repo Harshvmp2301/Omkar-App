@@ -59,8 +59,9 @@ describe("round 57 — only the post body's photographs are gallery material", (
   });
 
   it("stores the body's photographs and nothing else", async () => {
-    const thumb =
-      "https://blogger.googleusercontent.com/img/b/R29vZ2xl/TH/s72-w640-h426-c/DSC02368.JPG";
+    // Blogger's feed thumbnail for a body photograph shares its path and
+    // only differs in the size token
+    const thumb = REAL_1.replace("/w640-h426/", "/s72-w640-h426-c/");
     const rows = await postsToImageRows(
       [
         {
@@ -79,10 +80,10 @@ describe("round 57 — only the post body's photographs are gallery material", (
     // the two real photographs, normalized to full size…
     expect(urls[0]).toContain("/s1600/DSC02368.JPG");
     expect(urls[1]).toContain("/s1600/DSC02369.JPG");
-    // …and the feed thumbnail (its s72-w640-h426-c form is a real picture,
-    // so the junk sieve must let it through)
-    expect(urls).toContain(thumb);
-    expect(rows).toHaveLength(3);
+    // the feed thumbnail of the SAME photograph passes the sieve, then
+    // (round 59) normalizes to /s1600/DSC02368.JPG and dedupes against the
+    // body row — no second, blurry tile
+    expect(rows).toHaveLength(2);
     // no logo, no widget, no profile, no avatar — by any of their signatures
     for (const u of urls) {
       expect(u).not.toContain("header=s60");
