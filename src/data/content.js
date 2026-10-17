@@ -151,6 +151,8 @@ export const translations = {
     photoFailed: "Photo unavailable",
     tryAgain: "Try again",
     photoLabel: "Photo",
+    loadMore: "Load more photos",
+    photoPosition: "Photo {index} of {total}",
     emailOpensNote:
       "Your details go to the Samithi team and are kept private. No payment is taken on this site.",
     formSent: "Thank you! Your details were sent — we'll be in touch soon.",
@@ -393,6 +395,8 @@ export const translations = {
     photoFailed: "ಛಾಯಾಚಿತ್ರ ಲಭ್ಯವಿಲ್ಲ",
     tryAgain: "ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ",
     photoLabel: "ಛಾಯಾಚಿತ್ರ",
+    loadMore: "ಇನ್ನಷ್ಟು ಫೋಟೋಗಳು",
+    photoPosition: "ಚಿತ್ರ {index} / {total}",
     emailOpensNote:
       "ನಿಮ್ಮ ಮಾಹಿತಿ ಸಮಿತಿಯ ತಂಡಕ್ಕೆ ತಲುಪುತ್ತದೆ; ಅದನ್ನು ಗೌಪ್ಯವಾಗಿ ಇಡಲಾಗುತ್ತದೆ. ಈ ಸೈಟ್‌ನಲ್ಲಿ ಯಾವುದೇ ಪಾವತಿ ಸ್ವೀಕರಿಸುವುದಿಲ್ಲ.",
     formSent: "ಧನ್ಯವಾದಗಳು! ನಿಮ್ಮ ಮಾಹಿತಿ ಕಳುಹಿಸಲಾಗಿದೆ — ಶೀಘ್ರದಲ್ಲಿ ನಿಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸುತ್ತೇವೆ.",

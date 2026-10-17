@@ -1,5 +1,6 @@
+import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { GALLERY_SIZES, gallerySrcSet } from "../utils/gallery.js";
+import { GALLERY_SIZES, gallerySrcSet, loadStripPhotos } from "../utils/gallery.js";
 
 /**
  * Photography, given room to be the point.
@@ -9,9 +10,26 @@ import { GALLERY_SIZES, gallerySrcSet } from "../utils/gallery.js";
  * composition rather than a grid of equals — with one way through to the whole
  * gallery. Every tile opens that tab rather than duplicating the lightbox, so
  * there is a single place where photos are viewed.
+ *
+ * Round 56, the owner's ruling: the tiles are the NEWEST blog post's
+ * photographs — the most recent event is the highlight, never a random mix.
+ * With an empty blog stream (before the first sync, no database) the strip
+ * stays the curated six, in the language being read.
  */
 export default function GalleryStrip({ t, onOpenGallery }) {
-  const items = (t.galleryItems || []).slice(0, 6);
+  const [strip, setStrip] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    loadStripPhotos().then((items) => {
+      if (alive) setStrip(items);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const items = (strip || t.galleryItems).slice(0, 6);
   if (items.length === 0) return null;
 
   const [lead, ...rest] = items;
@@ -29,7 +47,10 @@ export default function GalleryStrip({ t, onOpenGallery }) {
           each tile offers the width ladder it can actually use — see
           GALLERY_SIZES in utils/gallery.js. `src` stays the original for
           browsers without srcset; the box is sized by CSS (aspect-ratio), so
-          the smaller candidates cannot shift the layout. */}
+          the smaller candidates cannot shift the layout. A blog photograph
+          has no generated ladder — gallerySrcSet returns undefined for it
+          and the tile paints its stored 480px thumbnail, which is exactly
+          the size these boxes need. */}
       <img
         src={item.src}
         srcSet={gallerySrcSet(item.src)}

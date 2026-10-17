@@ -34,6 +34,14 @@ export default function GalleryView({ t, lang }) {
   // "image failed" text. A caption is the best one; where there is none, a
   // plain label still beats an unlabelled button.
   const labelFor = (item) => item.caption || t.photoLabel;
+  /* Round 56: a blog-fed gallery can hold hundreds of photographs. The grid
+     shows them a batch at a time (the DOM stays small whatever the table
+     grows to), and the lightbox swaps its row of dots for a plain counter
+     past DOTS_MAX photos — a dot row hundreds wide is not a control. The
+     curated eight keep arrows + dots, the round-21 device contract. */
+  const PAGE = 24;
+  const DOTS_MAX = 12;
+  const [limit, setLimit] = useState(PAGE);
   const [openIndex, setOpenIndex] = useState(null);
   const [retry, setRetry] = useState(0);
   const [loaded, setLoaded] = useState({}); // src → decoded
@@ -89,7 +97,7 @@ export default function GalleryView({ t, lang }) {
       </div>
 
       <div className="gallery-grid reveal">
-        {items.map((item, i) => (
+        {items.slice(0, limit).map((item, i) => (
           <button
             key={item.id}
             type="button"
@@ -127,6 +135,18 @@ export default function GalleryView({ t, lang }) {
           </button>
         ))}
       </div>
+
+      {items.length > limit ? (
+        <div className="gallery-more">
+          <button
+            type="button"
+            className="btn-quiet"
+            onClick={() => setLimit((l) => l + PAGE)}
+          >
+            {t.loadMore}
+          </button>
+        </div>
+      ) : null}
 
       {/* Rendered into <body>, not into this view. The view is wrapped in an entrance
           animation, and anything that leaves a transform behind on an ancestor makes
@@ -231,18 +251,30 @@ export default function GalleryView({ t, lang }) {
             <button type="button" className="lightbox-nav right" onClick={next} aria-label={t.nextPhoto}>
               <ChevronRight size={28} aria-hidden="true" />
             </button>
-            <div className="lightbox-dots">
-              {items.map((item, i) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`dot ${i === openIndex ? "on" : ""}`}
-                  onClick={() => setOpenIndex(i)}
-                  aria-label={`${i + 1} / ${items.length}`}
-                  aria-current={i === openIndex}
-                />
-              ))}
-            </div>
+            {items.length <= DOTS_MAX ? (
+              <div className="lightbox-dots">
+                {items.map((item, i) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`dot ${i === openIndex ? "on" : ""}`}
+                    onClick={() => setOpenIndex(i)}
+                    aria-label={`${i + 1} / ${items.length}`}
+                    aria-current={i === openIndex}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p
+                className="lightbox-count"
+                role="status"
+                aria-label={t.photoPosition
+                  .replaceAll("{index}", String(openIndex + 1))
+                  .replaceAll("{total}", String(items.length))}
+              >
+                {openIndex + 1} / {items.length}
+              </p>
+            )}
           </div>,
           document.body
         )}

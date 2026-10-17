@@ -118,6 +118,43 @@ export function mergeGallery(
   return [...blog, ...live, ...curated];
 }
 
+/* ── the homepage strip: the newest post leads ──────────────────────────── */
+
+/** How many photographs the homepage composition shows (1 lead + 2 + a row of 3). */
+export const STRIP_SIZE = 6;
+
+/**
+ * The homepage strip's tiles — the owner's ruling (round 56): the NEWEST
+ * blog post is the most recent event, so the strip leads with THAT post's
+ * photographs, in the post's own order — never a random mix. Blog rows
+ * arrive newest-post-first (published_at desc, pos asc), so the first
+ * photographs are the newest post's; a very short post tops up from the
+ * next-newest one. The lead tile keeps the post's title as its caption;
+ * the rest stay quiet, so the strip names the event once, not six times.
+ *
+ * Returns `null` when the blog stream is empty (before the first sync, no
+ * database) — the strip then falls back to the curated set in the language
+ * being read, the same contract every other feed on the site uses.
+ */
+export function stripItems(blogRows = [], size = STRIP_SIZE) {
+  const photos = (Array.isArray(blogRows) ? blogRows : [])
+    .map((row) => mapBlogImageRow(row))
+    .filter((p) => p.src);
+  if (photos.length === 0) return null;
+  const out = [];
+  for (const photo of photos) {
+    if (out.length >= size) break;
+    out.push(out.length === 0 ? photo : { ...photo, caption: "" });
+  }
+  return out;
+}
+
+/** The strip's photographs from the database; `null` when the stream is empty. */
+export async function loadStripPhotos() {
+  const rows = await fetchBlogImageRows();
+  return stripItems(rows);
+}
+
 /** The list the public Gallery page shows. */
 export async function loadGalleryPhotos(curated = [], lang = "en") {
   const [rows, blogRows] = await Promise.all([fetchPhotoRows(), fetchBlogImageRows()]);

@@ -923,6 +923,24 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
 }
 .lightbox-dots .dot.on { background: var(--gold-bright); }
 
+/* Round 56: the blog-fed gallery — the grid pages in batches, and past the
+   dot limit the lightbox wears a counter instead of a row of hundreds of
+   dots. The counter sits exactly where the dot row sat; it is not a
+   control, so it takes no pointer events. */
+.gallery-more { display: flex; justify-content: center; margin-top: 18px; }
+.lightbox-count {
+  position: absolute;
+  bottom: 18px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+}
+
 /* ----------------------------------------------------------------- about */
 .about-prose { color: var(--muted); font-size: 0.9rem; line-height: 1.7; }
 .about-prose p { margin: 0 0 14px; }
