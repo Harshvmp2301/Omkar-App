@@ -35,8 +35,10 @@ describe("round 55 — one blog, and the images come from the post pages", () =>
           title: "Post",
           url: "https://omkarsamithi.blogspot.com/2026/10/x.html",
           published: "2026-10-02T00:00:00Z",
-          html: '<img src="https://blogger.googleusercontent.com/img/aaa/w200-h100/feed.jpg">',
-          thumb: "https://blogger.googleusercontent.com/img/aaa/s72-c/thumb.jpg",
+          // real photograph sizes: round 58's quality floor drops mud-sized
+          // sources, and these fixtures test the preference chain, not mud
+          html: '<img src="https://blogger.googleusercontent.com/img/aaa/w640-h426/feed.jpg">',
+          thumb: "https://blogger.googleusercontent.com/img/aaa/s640/thumb.jpg",
         },
       ],
       "omkarsamithi.blogspot.com",
@@ -60,7 +62,7 @@ describe("round 55 — one blog, and the images come from the post pages", () =>
           title: "Post",
           url: "https://omkarsamithi.blogspot.com/2026/10/x.html",
           published: "2026-10-02T00:00:00Z",
-          html: '<img src="https://blogger.googleusercontent.com/img/aaa/w200-h100/feed.jpg">',
+          html: '<img src="https://blogger.googleusercontent.com/img/aaa/w640-h426/feed.jpg">',
           thumb: "",
         },
       ],

@@ -75,7 +75,9 @@ describe("round 54 — the gallery reads the blogs, fortnightly, by itself", () 
           title: "Naadamrutha 2024",
           url: "https://omkarsamithi.blogspot.com/2024/09/x.html",
           published: "2024-09-30T10:00:00Z",
-          html: '<img src="https://blogger.googleusercontent.com/img/aaa/s200/one.jpg">',
+          // s640, not s200: since round 58 the sync has a quality floor
+          // (MIN_SOURCE_PX) and small sources are mud, not photographs
+          html: '<img src="https://blogger.googleusercontent.com/img/aaa/s640/one.jpg">',
           thumb: "",
         },
       ],

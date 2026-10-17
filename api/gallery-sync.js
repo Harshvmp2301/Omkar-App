@@ -64,6 +64,45 @@ const IMAGE_HOSTS =
  */
 const JUNK_URL = /\/w\d+-h\d+-p-k-no-nu\/|[=/]s\d{1,2}([/?#]|$)/i;
 
+/** The smallest source a gallery photograph may come from, in pixels. */
+export const MIN_SOURCE_PX = 400;
+
+/**
+ * The pixels a Blogger URL declares for its image: `/w640-h426/` (the
+ * smaller side), `/s1600/`, `=s640`, `?s=640`. `null` when the URL carries
+ * no size token at all — those are trusted, because guessing would drop
+ * real photographs.
+ *
+ * Why this exists (round 58): a 72px avatar or a 200px embedded thumbnail,
+ * normalized to s1600, paints as mud — the owner's "very low quality" tiles.
+ * The blog's real event photographs carry w640-h426 or better, so a 400px
+ * floor removes the mud and keeps every genuine picture.
+ */
+export function declaredSize(src) {
+  const s = String(src);
+  // `[-/]` also catches Blogger's compound tokens like `s72-w640-h426-c`,
+  // where the real dimensions follow the 72px thumbnail marker.
+  const wh = s.match(/[-/]w(\d+)-h(\d+)/i);
+  if (wh) return Math.min(Number(wh[1]), Number(wh[2]));
+  const bare = s.match(/[?&=/]s(\d+)(?:-c)?([/?#]|$)/i);
+  if (bare) return Number(bare[1]);
+  return null;
+}
+
+/**
+ * The Samithi's own mark, by whatever name it travels under — the profile
+ * photo and any copy of it pasted into a post body are files whose name
+ * says logo (Omkar%20Logo%20Final%20Transparent.png). A photograph of the
+ * printed emblem at an event keeps a photograph's name and stays.
+ */
+export function isLogoFile(src) {
+  try {
+    return /logo/i.test(decodeURIComponent(new URL(src).pathname));
+  } catch {
+    return /logo/i.test(src);
+  }
+}
+
 /** s1600 / w400-h300-c / =s640 → the same picture at `size` pixels. */
 function atSize(src, size) {
   const out = String(src);
@@ -206,9 +245,14 @@ export async function postsToImageRows(
       ...extractImageUrls(post.html),
       ...(post.thumb ? [post.thumb] : []),
     ]) {
-      // Second sieve: an avatar or a widget thumbnail must not become a
-      // gallery photograph even if a template ever hides one in the body.
+      // Second sieve: an avatar, a widget thumbnail, the Samithi's own
+      // logo file or any mud-sized source must not become a gallery
+      // photograph, even if a template or the blogger's editor hides one
+      // inside the post body.
       if (JUNK_URL.test(src)) continue;
+      if (isLogoFile(src)) continue;
+      const size = declaredSize(src);
+      if (size !== null && size < MIN_SOURCE_PX) continue;
       const full = atSize(src, 1600);
       if (!urls.some((u) => u.full === full)) urls.push({ src, full });
     }
