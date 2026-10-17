@@ -17,7 +17,9 @@ describe("round 55 — one blog, and the images come from the post pages", () =>
   it("reads each post page, because modern feed entries carry no body", () => {
     expect(sync).toContain("export async function fetchPostPageHtml(url)");
     expect(sync).toContain("const PAGE_CONCURRENCY = 6");
-    expect(sync).toContain("extractImageUrls(pageHtml)");
+    // since round 57 the page's images are read from the POST BODY only —
+    // never from the header, sidebar, profile or comments furniture
+    expect(sync).toContain("extractImageUrls(postBodyHtml(pageHtml))");
     // the entry thumbnail stays as a last-resort source
     expect(sync).toContain("entry.media$thumbnail");
   });
@@ -40,7 +42,9 @@ describe("round 55 — one blog, and the images come from the post pages", () =>
       "omkarsamithi.blogspot.com",
       "2026-10-15T00:00:00.000Z",
       async () =>
-        '<img src="https://blogger.googleusercontent.com/img/aaa/w640-h426/page.jpg">'
+        '<div class="post-body entry-content">' +
+        '<img src="https://blogger.googleusercontent.com/img/aaa/w640-h426/page.jpg">' +
+        "</div>"
     );
     expect(rows.map((r) => r.pos)).toEqual([0, 1, 2]);
     expect(rows[0].url).toContain("/s1600/page.jpg");

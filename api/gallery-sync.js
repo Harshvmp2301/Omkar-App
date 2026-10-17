@@ -53,6 +53,17 @@ const PAGE_CONCURRENCY = 6;
 const IMAGE_HOSTS =
   /(^|\.)((blogger|lh3|lh4|lh5|lh6)\.googleusercontent\.com|bp\.blogspot\.com|blogspot\.com)$/i;
 
+/**
+ * Blogger furniture that must never become a gallery photograph, even if a
+ * template ever hides one inside the post body: comment avatars
+ * (`/w72-h72-p-k-no-nu/`) and tiny bare header/widget sizes (`=s60` at the
+ * end of a URL, `/s60/` as a path segment — two digits, nothing after).
+ * The feed entry thumbnails deliberately do NOT match: `/s72-c/` and
+ * `/s72-w640-h426-c/` carry a suffix after the size, and those are real
+ * content pictures at thumbnail size.
+ */
+const JUNK_URL = /\/w\d+-h\d+-p-k-no-nu\/|[=/]s\d{1,2}([/?#]|$)/i;
+
 /** s1600 / w400-h300-c / =s640 → the same picture at `size` pixels. */
 function atSize(src, size) {
   const out = String(src);
@@ -85,6 +96,30 @@ export function extractImageUrls(html) {
     if (!found.includes(src)) found.push(src);
   }
   return found;
+}
+
+/**
+ * The post's OWN HTML — the only part of the page whose photographs belong
+ * in the gallery. The owner's ruling (round 57): the blog's header logo
+ * (`Header1_headerimg`), sidebar widgets (`Image1_img`), the profile photo
+ * (`class="profile-img"` — on this blog, the Omkar logo again) and the 72px
+ * comment avatars were all being pulled in as "photographs". Every one of
+ * them lives OUTSIDE the post body. Blogger wraps each post in
+ * `class="post-body entry-content"` and closes it before the
+ * `class="post-footer…"` block, so the body is the slice between those two
+ * markers. With either marker missing this returns "" — the run then falls
+ * back to the feed content and the entry thumbnail rather than guessing and
+ * dragging page furniture into the table.
+ */
+export function postBodyHtml(pageHtml) {
+  const page = String(pageHtml || "");
+  const startM = page.match(
+    /class=["'][^"']*(?:post-body|entry-content)[^"']*["']/
+  );
+  if (!startM) return "";
+  const start = startM.index;
+  const footerM = page.slice(start).match(/class=["'][^"']*post-footer/);
+  return footerM ? page.slice(start, start + footerM.index) : page.slice(start);
 }
 
 /** One page of the keyless feed. Plain fetch: this runs on a server. */
@@ -144,8 +179,10 @@ async function inChunks(items, size, fn) {
 /**
  * Posts → the rows the table stores, newest post first, order kept.
  * Round 55: images come from each post's PAGE first (the feed body is
- * empty on modern Blogger), then the feed body, then the entry
- * thumbnail — de-duplicated across the whole blog by full-size URL.
+ * empty on modern Blogger) — and since round 57 only from INSIDE the post
+ * body, never from the page's header, sidebar, profile or comments
+ * furniture — then the feed body, then the entry thumbnail, de-duplicated
+ * across the whole blog by full-size URL.
  * `fetchPage` is injectable so tests never touch the network.
  */
 export async function postsToImageRows(
@@ -165,10 +202,13 @@ export async function postsToImageRows(
     }
     const urls = [];
     for (const src of [
-      ...extractImageUrls(pageHtml),
+      ...extractImageUrls(postBodyHtml(pageHtml)),
       ...extractImageUrls(post.html),
       ...(post.thumb ? [post.thumb] : []),
     ]) {
+      // Second sieve: an avatar or a widget thumbnail must not become a
+      // gallery photograph even if a template ever hides one in the body.
+      if (JUNK_URL.test(src)) continue;
       const full = atSize(src, 1600);
       if (!urls.some((u) => u.full === full)) urls.push({ src, full });
     }
