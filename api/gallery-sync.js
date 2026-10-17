@@ -64,31 +64,6 @@ const IMAGE_HOSTS =
  */
 const JUNK_URL = /\/w\d+-h\d+-p-k-no-nu\/|[=/]s\d{1,2}([/?#]|$)/i;
 
-/** The smallest source a gallery photograph may come from, in pixels. */
-export const MIN_SOURCE_PX = 400;
-
-/**
- * The pixels a Blogger URL declares for its image: `/w640-h426/` (the
- * smaller side), `/s1600/`, `=s640`, `?s=640`. `null` when the URL carries
- * no size token at all — those are trusted, because guessing would drop
- * real photographs.
- *
- * Why this exists (round 58): a 72px avatar or a 200px embedded thumbnail,
- * normalized to s1600, paints as mud — the owner's "very low quality" tiles.
- * The blog's real event photographs carry w640-h426 or better, so a 400px
- * floor removes the mud and keeps every genuine picture.
- */
-export function declaredSize(src) {
-  const s = String(src);
-  // `[-/]` also catches Blogger's compound tokens like `s72-w640-h426-c`,
-  // where the real dimensions follow the 72px thumbnail marker.
-  const wh = s.match(/[-/]w(\d+)-h(\d+)/i);
-  if (wh) return Math.min(Number(wh[1]), Number(wh[2]));
-  const bare = s.match(/[?&=/]s(\d+)(?:-c)?([/?#]|$)/i);
-  if (bare) return Number(bare[1]);
-  return null;
-}
-
 /**
  * The Samithi's own mark, by whatever name it travels under — the profile
  * photo and any copy of it pasted into a post body are files whose name
@@ -107,8 +82,13 @@ export function isLogoFile(src) {
  * The two pasted graphics the owner right-clicked out of the gallery
  * (round 59): the circular Samithi emblem and the red Hanuman clipart.
  * New-editor Blogger URLs (`/img/a/AV…=s480`) carry a hash instead of a
- * filename, and 480px walks past the size floor — so these two are named
- * outright. A blocklist cannot guess, but it never misses.
+ * filename and look exactly like an ordinary embedded photograph — so
+ * these two are named outright. A blocklist cannot guess, but it never
+ * misses. Any future pasted graphic gets added here by its address, the
+ * same way (round 60: the owner's ruling is to KEEP every other page
+ * image — guessing which ones "look like graphics" wiped out every
+ * post-2019 photograph, because Google's servers answer format questions
+ * with whatever they feel like serving, WebP included).
  */
 const KNOWN_GRAPHIC_HASHES = [
   "AVvXsEhGWvUTc87Lk6vByLYNHAjqGQKfxG6v8yKy4_F8jaZypvC_WSf55Xrtv7BcAVB1Ge9AnsPRygklTfO9ZVDtAecQD2FdB-8qrLigzUUnVUE5do6LP1VmoA11TmtN3yTVEeQaVPej9fYVZo0RsrtuQ-Ku9_RTtKB7Unv-fDsepzE7xa57-lY8p-c37C4NEXMA",
@@ -119,29 +99,6 @@ const KNOWN_GRAPHIC_HASHES = [
 export function isKnownGraphic(src) {
   const s = String(src);
   return KNOWN_GRAPHIC_HASHES.some((h) => s.includes(h));
-}
-
-/**
- * A graphic in the new-editor URL shape (`/img/a/AV…=sNNN` — a hash, no
- * filename): the bytes are the only honest witness. Camera photographs are
- * JPEG; pasted clipart, emblems and logos are PNG/GIF/WebP. Probed at s72
- * (~3KB per check, and only for this URL shape). On ANY doubt — fetch
- * error, missing content-type, non-image — the URL is KEPT, because losing
- * a real photograph is worse than a junk tile the owner can report.
- */
-export async function isPastedGraphic(src, fetchImage = fetch) {
-  const s = String(src);
-  if (!/\/img\/a\/[^/=]+=s\d+([/?#]|$)/i.test(s)) return false;
-  try {
-    const res = await fetchImage(atSize(s, 72));
-    const type = String(
-      (res && res.headers && res.headers.get && res.headers.get("content-type")) || ""
-    );
-    if (!res.ok || !type.startsWith("image/")) return false;
-    return !type.startsWith("image/jpeg");
-  } catch {
-    return false;
-  }
 }
 
 /** s1600 / w400-h300-c / =s640 → the same picture at `size` pixels. */
@@ -277,8 +234,7 @@ export async function postsToImageRows(
   posts,
   host,
   syncedAt,
-  fetchPage = fetchPostPageHtml,
-  fetchImage = fetch
+  fetchPage = fetchPostPageHtml
 ) {
   const perPost = await inChunks(posts, PAGE_CONCURRENCY, async (post) => {
     // A post page that refuses to load must cost one post its page
@@ -295,17 +251,16 @@ export async function postsToImageRows(
       ...extractImageUrls(post.html),
       ...(post.thumb ? [post.thumb] : []),
     ]) {
-      // Second sieve: an avatar, a widget thumbnail, the Samithi's own
-      // logo file or any mud-sized source must not become a gallery
-      // photograph, even if a template or the blogger's editor hides one
-      // inside the post body.
+      // Second sieve (round 60 — the owner's ruling): KEEP every page
+      // image; remove only the Blogger junk — comment avatars and tiny
+      // border sizes, the Samithi's logo file, and the two graphics the
+      // owner identified by address. Nothing is judged by declared pixel
+      // size or by asking the bytes what format they are: post-2019
+      // photographs ride the nameless /img/a/AV… shape, and both of those
+      // "clever" gates wrongly wiped them out.
       if (JUNK_URL.test(src)) continue;
       if (isLogoFile(src)) continue;
       if (isKnownGraphic(src)) continue;
-      const size = declaredSize(src);
-      if (size !== null && size < MIN_SOURCE_PX) continue;
-      // The nameless new-editor shape (/img/a/AV…=sNNN): ask the bytes.
-      if (await isPastedGraphic(src, fetchImage)) continue;
       const full = atSize(src, 1600);
       if (!urls.some((u) => u.full === full)) urls.push({ src, full });
     }
