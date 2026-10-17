@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, lazy, Suspense } from "react";
-import { Facebook, Youtube, ExternalLink, MapPin, Mail } from "lucide-react";
+import { Facebook, Youtube, ExternalLink, MapPin, Mail, BookOpen, Instagram } from "lucide-react";
 import Header from "./components/Header.jsx";
 import EventsView from "./components/EventsView.jsx";
 import GalleryView from "./components/GalleryView.jsx";
@@ -769,6 +769,22 @@ export default function OmkarSamithiApp() {
               rel="noreferrer"
             >
               <Facebook size={13} aria-hidden="true" /> Facebook
+            </a>
+            <a
+              className="footer-link"
+              href="https://www.instagram.com/omkarsamithi/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Instagram size={13} aria-hidden="true" /> Instagram
+            </a>
+            <a
+              className="footer-link"
+              href="https://omkarsamithi.blogspot.com/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <BookOpen size={13} aria-hidden="true" /> {t.footerBlog}
             </a>
             <a
               className="footer-link"
