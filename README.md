@@ -17,14 +17,16 @@ Omkar Samithi is a bilingual (English/Kannada) community platform for the Oman K
 - 🇬🇧🇮🇳 Bilingual support (English/Kannada), persisted between visits
 - 📱 Mobile-responsive, dark gold-accented design with accessibility support (focus states, reduced motion)
 - 📲 **PWA-ready** — web app manifest + service worker for offline fallback
-- 🔗 Facebook Group, YouTube Channel and Feedback Form links live in the Pranaams footer on every page
+- 🔗 Instagram, Facebook Group, YouTube Channel, the Samithi's Blog and Feedback Form links live in the Pranaams footer on every page
 - #️⃣ Hash-based routing (`#/hub`, `#/events`, `#/gallery`, `#/seva`, `#/about`) so views are deep-linkable
 
 ## Tech
 
 - [Vite](https://vite.dev) + React 19
 - [lucide-react](https://lucide.dev) icons
-- No backend required — content lives in `src/data/content.js` (single source of truth for all bilingual text)
+- All bilingual copy and curated content lives in `src/data/content.js` (single source of truth) — the public site renders fully with no backend configured at all
+- **Supabase** backend for the live parts: seva signups, contact messages, admin-dashboard data and the blog-fed gallery table (`gallery_blog_images`)
+- **Vercel serverless function** `api/gallery-sync.js` — pulls the photographs from the Samithi's blog into Supabase on a fortnightly cron (see *Gallery sync* below)
 
 ## Development
 
@@ -43,7 +45,10 @@ administrator can then, without touching any code:
 - **Seva signups** — every registration with contact details, filterable by status (new / contacted / confirmed / declined)
 - **Messages** — everything sent through the contact form, with unread counts, read/unread and replied markers
 - **Events** — pick one of the three programmes from a list (English and Kannada come as a pair), name the guests, and set the date. Leave the date empty and the site shows "Date TBA" by itself; the venue is always Sri Krishna Temple, Darsait. The date repeats every year — the site moves it onto the current year by itself, and a cleared date means TBA (never a stale date)
-- **Photos** — upload one or many images at once, then correct the caption on each one (English and Kannada), publish or hide, delete. Uploads appear in the public gallery in front of the photographs that ship with the app; nothing uploaded means nothing changes
+
+There is deliberately **no Photos section**: the public gallery is fed from the
+Samithi's blog by the gallery-sync function (below), and the dashboard never
+uploads photographs.
 
 Access is by allow-list only: there is **no public sign-up**. An address must
 be in the `admins` table before it can open the dashboard (see
@@ -77,6 +82,33 @@ donations, and the site has no donation form.
 
 With nothing configured the site works exactly as before and the forms fall
 back to email.
+
+### 🖼️ Gallery sync — the blog-fed photographs (`api/gallery-sync.js`)
+
+The public gallery is fed from the Samithi's blog, not from dashboard uploads.
+A Vercel serverless function reads `omkarsamithi.blogspot.com`, fetches each
+post page, and takes ONLY the post body's own photographs — the blog's header
+and sidebar furniture, the profile photo, comment avatars, logo-named files
+and the specific graphics the owner named by address never become rows — then
+rewrites the `gallery_blog_images` table in Supabase. Rows a run does not
+re-see are pruned, so junk deleted anywhere deletes itself here on the next
+sync.
+
+- **Schedule:** Vercel cron, fortnightly at 04:00 UTC on the 1st and the 15th
+  (`0 4 1,15 * *` in `vercel.json`).
+- **Manual run:** the endpoint requires the `CRON_SECRET`, preferably as a
+  header — in PowerShell:
+  `Invoke-RestMethod -Headers @{Authorization="Bearer YOUR_CRON_SECRET"} https://omkarsamithi.com/api/gallery-sync`.
+  A `?secret=` query form exists for a plain browser visit, but it leaves the
+  secret in the browser's history — treat it as the emergency door and rotate
+  any secret typed that way if in doubt.
+- **Never cached:** the function answers `Cache-Control: no-store` on every
+  response (401s included), and the service worker bypasses `/api/` URLs
+  entirely — a sync response, whose URL may carry the secret, cannot land in
+  any cache.
+- **Env (Vercel → Settings → Environment Variables):** `CRON_SECRET`,
+  `SUPABASE_SERVICE_ROLE_KEY` (server-side only — this key never ships in a
+  page) and the site's Supabase URL.
 
 ### 🔑 Keys and credentials — all in one place
 
@@ -150,13 +182,13 @@ photos are still saved as `.jpg` — hotlinks go away either way. The same
 
 ## Deployment (Vercel)
 
-The app is configured for **auto-deployment to Vercel** at `https://omkar-app.vercel.app` (i.e. [Omkar-App.vercel.app](https://Omkar-App.vercel.app)).
+The app is configured for **auto-deployment to Vercel**. Production is **https://omkarsamithi.com** — the old `omkar-app.vercel.app` address permanently redirects to it (`redirects` in `vercel.json`), so the apex domain is the one canonical host for search engines, link previews, analytics and the PWA.
 
 **How it works** — [`.github/workflows/deploy-vercel.yml`](.github/workflows/deploy-vercel.yml) runs on every push:
 
 | Push target | Deployment |
 |---|---|
-| `main` | 🟢 **Production** → `omkar-app.vercel.app` |
+| `main` | 🟢 **Production** → `omkarsamithi.com` |
 | `arena/**` (or any other branch) | 🟡 Preview deployment |
 | manual (`workflow_dispatch`) | Runs from the Actions tab |
 

@@ -325,6 +325,11 @@ async function syncHost(baseUrl, serviceKey, host, rows, runStartIso) {
 }
 
 export default async function handler(req, res) {
+  // Round 63: a manual trigger may carry the secret in its query string.
+  // No copy of ANY response from this endpoint — the 401s included — may
+  // be stored by a browser cache, a proxy or a service worker, and none
+  // is reusable: every run must hit this function and Supabase live.
+  res.setHeader("Cache-Control", "no-store, max-age=0");
   const secret = process.env.CRON_SECRET || "";
   const bearer = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   const queried = String(req.query.secret || "");

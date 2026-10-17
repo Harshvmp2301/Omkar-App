@@ -41,8 +41,11 @@ describe("round 44 — the mobile report, answered", () => {
     expect(html).not.toContain('rel="icon" type="image/png" href="/omkar-logo.png"');
   });
 
-  it("keeps the precache slim and the cache at v4", () => {
-    expect(sw).toContain('"omkar-cache-v4"');
+  it("keeps the precache slim and the cache at its current version", () => {
+    // v5 since round 63: the bump is the purge — activate deletes every
+    // older cache, including any pre-v5 copy of an /api/ response
+    expect(sw).toContain('"omkar-cache-v5"');
+    expect(sw).not.toContain('"omkar-cache-v4"');
     expect(sw).not.toContain('"/omkar-logo.png"');
     expect(sw).not.toContain('"/icon-512.png"');
   });

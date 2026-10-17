@@ -1,7 +1,9 @@
 // Minimal offline-first service worker for Omkar Samithi.
 // Strategy: network-first (always try the network), cache successful same-origin
 // GET responses as a fallback so the app opens offline after the first visit.
-const CACHE = "omkar-cache-v4";
+// v5 (round 63): the bump is deliberate — activate deletes every older cache,
+// purging any pre-v5 copy of an /api/ response the fetch handler once stored.
+const CACHE = "omkar-cache-v5";
 
 // Pre-cache the app shell so the FIRST offline visit works (audit E17),
 // not only after a second visit.
@@ -40,6 +42,13 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  // Round 63: API calls are not the app shell. The gallery-sync trigger
+  // may carry its secret in the query string, so the worker must never
+  // store one of those responses (the URL would live on in the cache as
+  // the key) and never serve one from cache. Straight to the network,
+  // untouched — the endpoint itself answers Cache-Control: no-store.
+  if (url.pathname.startsWith("/api/")) return;
 
   event.respondWith(
     fetch(request)
