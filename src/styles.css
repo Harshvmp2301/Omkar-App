@@ -12,6 +12,9 @@
   --panel-light: #2C1620;
   --field: #1B0E14;
   --gold: #C9972C;
+  /* Round 64 (audit A5): the one colour a form error may wear — the same
+     soft red the admin's danger button already uses. */
+  --err: #E06A6A;
   --gold-bright: #E8B84B;
   --gold-deep: #8A6416;
   /* The focus ring is its own token, for the same reason text gold is: a
@@ -1148,6 +1151,25 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
   margin: 0 0 16px;
 }
 
+/* Round 64 (audit A5 + B3): the per-field error line sits under the field
+   it belongs to (wired with aria-describedby), and the honeypot lives
+   off-screen where no human can see, reach or tab to it — while a bot
+   parsing the HTML finds a perfectly ordinary input to fill. */
+.field-err {
+  margin: 6px 0 0;
+  color: var(--err);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+.hp-field {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 .btn-primary {
   display: block;
   width: 100%;
@@ -1612,6 +1634,9 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
   --panel-light: #FFF9EE;
   --panel-light-rgb: 255, 249, 238;
   --field: #FFFFFF;
+  /* Round 64: a deeper terracotta so the error line keeps its contrast on
+     the silk-ivory ground. */
+  --err: #9C3B2E;
   --ivory: #2E1A10;
   --ivory-rgb: 46, 26, 16;
   --muted: #6F5C43;

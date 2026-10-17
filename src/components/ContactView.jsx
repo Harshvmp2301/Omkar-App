@@ -1,18 +1,48 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { submitForm } from "../utils/submitForm.js";
+import { botFilled, requiredErrors, tooFast } from "../utils/formGuard.js";
 
 export default function ContactView({ t, lang, flash }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  /* Round 64 (audit A5 + B3): the message error lives under the textarea
+     (aria-invalid + aria-describedby); the honeypot and the velocity guard
+     stand in front of every submission, as on the Seva form. */
+  const [company, setCompany] = useState("");
+  const [msgErr, setMsgErr] = useState(false);
+  const [waitNote, setWaitNote] = useState(false);
+  // Stamped on mount (not during render — render must stay pure): the
+  // clock the velocity guard measures against.
+  const openedAt = useRef(0);
+  useEffect(() => {
+    openedAt.current = Date.now();
+  }, []);
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!message.trim()) {
-      flash(t.messageRequired);
+    if (botFilled({ company })) {
+      setName("");
+      setEmail("");
+      setSubject("");
+      setMessage("");
+      setMsgErr(false);
+      flash(t.formSent);
       return;
     }
+    if (tooFast(openedAt.current)) {
+      setWaitNote(true);
+      return;
+    }
+    setWaitNote(false);
+    if (requiredErrors({ message }, ["message"]).message) {
+      setMsgErr(true);
+      const el = document.getElementById("ct-message");
+      if (el) el.focus();
+      return;
+    }
+    setMsgErr(false);
     const mailSubject = subject.trim() || "Website enquiry";
     const body = [
       `Name: ${name}`,
@@ -51,6 +81,20 @@ export default function ContactView({ t, lang, flash }) {
         <p className="view-sub">{t.contactSub}</p>
 
         <form className="form-card" onSubmit={submit}>
+          {/* Round 64 (audit B3): the honeypot — off-screen, untabbable,
+              aria-hidden; a bot that fills every input fills this one. */}
+          <div className="hp-field" aria-hidden="true">
+            <label htmlFor="ct-company">Company</label>
+            <input
+              id="ct-company"
+              name="company"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+            />
+          </div>
           <div className="field">
             <label htmlFor="ct-name">{t.fullName}</label>
             <input
@@ -92,13 +136,28 @@ export default function ContactView({ t, lang, flash }) {
               id="ct-message"
               rows="5"
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) => {
+                setMessage(e.target.value);
+                if (msgErr) setMsgErr(false);
+              }}
               placeholder={t.messagePh}
               required
               aria-required="true"
+              aria-invalid={msgErr ? true : undefined}
+              aria-describedby={msgErr ? "ct-message-err" : undefined}
             />
+            {msgErr ? (
+              <p className="field-err" id="ct-message-err">
+                {t.messageRequired}
+              </p>
+            ) : null}
           </div>
 
+          {waitNote ? (
+            <p className="field-err" id="ct-wait" role="status">
+              {t.formWait}
+            </p>
+          ) : null}
           <button type="submit" className="btn-primary">
             {t.sendMessage}
           </button>
