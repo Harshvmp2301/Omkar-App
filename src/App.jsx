@@ -749,7 +749,7 @@ export default function OmkarSamithiApp() {
             </button>
           </nav>
 
-          <nav className="footer-col" aria-label={t.footerConnect}>
+          <nav className="footer-col footer-col--connect" aria-label={t.footerConnect}>
             <h2 className="footer-col-title">{t.footerConnect}</h2>
             <a className="footer-link" href={`mailto:${t.contactEmail}`}>
               <Mail size={13} aria-hidden="true" /> {t.footerEmail}

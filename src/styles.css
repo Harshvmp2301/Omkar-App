@@ -2805,6 +2805,31 @@ select.admin-input::-ms-expand { display: none; }
   .footer { padding: 34px 16px 24px; }
   .footer-inner { grid-template-columns: 1fr; gap: 22px; }
   .footer-link { min-height: 44px; }
+  /* Round 62: the phone footer used to be a whole screen — eleven 44px
+     links stacked under the brand. Same hierarchy, compact flow: the
+     brand centres, Explore wraps as one text line, Connect wraps as
+     hairline chips. The desktop three columns are untouched. */
+  .footer { padding: 30px 16px 22px; text-align: center; }
+  .footer-inner { grid-template-columns: 1fr; gap: 16px; justify-items: center; }
+  .footer-name { font-size: 1rem; }
+  .footer-org { font-size: 0.78rem; max-width: 34ch; }
+  .footer-pranaams { margin-top: 8px; }
+  .footer-col {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0 6px;
+  }
+  .footer-col-title { flex-basis: 100%; margin: 0 0 6px; text-align: center; }
+  .footer-link { min-height: 36px; padding: 7px 11px; }
+  .footer-col--connect { gap: 8px; }
+  .footer-col--connect .footer-link {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: 0.8rem;
+  }
+  .footer-base { justify-content: center; margin-top: 18px; padding-top: 12px; }
 }
 
 /* ---- Round 33: the public notifications page ------------------------- */
