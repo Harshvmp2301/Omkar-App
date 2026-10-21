@@ -1,31 +1,53 @@
 import { useCallback, useEffect, useState } from "react";
 import { AdminError, AdminLoading } from "../ui.jsx";
-import { EVENT_TITLES, eventRowFromForm } from "../../utils/events.js";
+import { eventRowFromForm } from "../../utils/events.js";
 import { dateOnly } from "../../utils/calendar.js";
 
 /**
- * The three programs, as three fixed tiles (round 31).
+ * The Samithi's programs, as a living list (round 66).
  *
- * The owner's rule: the programs never change — Jnanamrutha, Naadamrutha and
- * the Anjaneya Pooje are the Samithi's year — so nothing here can add, rename
- * or delete one. Each tile holds exactly what moves: the date, and for the
- * two programs that have one, the guest's name in English and Kannada. The
- * Anjaneya Pooje tile carries the date alone, as asked.
+ * Round 31 froze this page to three fixed tiles because the programs never
+ * changed. The client's round-66 ruling reversed that: the dashboard must be
+ * able to ADD an event (the Omkar Dashamotsava and whatever comes next),
+ * RENAME any event in both languages, and set a TIME of day beside the date.
+ * So the tiles became cards built from the stored rows themselves, plus an
+ * "Add event" card that inserts a fresh row.
  *
- * Saving writes the one row for that program (updating it if the dashboard
- * already holds one, inserting it the first time), and the public site shows
- * exactly what was saved: the Events tab at the stored date, the homepage
- * under "Upcoming Programs" while the date is still ahead.
+ * Saving a card writes its one row (updating when the card came from the
+ * database, inserting when it is new) and publishes it, because the public
+ * site only ever reads published rows: what you save here is exactly what
+ * the Events page, the homepage bar and the reminder bells show — now
+ * including the time of day, which rides in the `time_text` column
+ * (added with: alter table public.events add column if not exists
+ * time_text text;).
  */
 
-/** The two programs with a guest; the Pooje tile shows the date only. */
-const WITH_GUEST = new Set(["Omkar Jnanamrutha", "Omkar Naadamrutha"]);
+const BLANK_CARD = {
+  id: null,
+  title_en: "",
+  title_kn: "",
+  starts_at: "",
+  time_text: "",
+  guest_en: "",
+  guest_kn: "",
+};
 
-const BLANK_TILE = { starts_at: "", guest_en: "", guest_kn: "" };
+let cardSeq = 0;
+const nextKey = () => `new-${(cardSeq += 1)}`;
+
+const cardFromRow = (row) => ({
+  id: row.id,
+  title_en: row.title_en || "",
+  title_kn: row.title_kn || "",
+  starts_at: dateOnly(row.starts_at),
+  time_text: row.time_text || "",
+  guest_en: row.description_en || "",
+  guest_kn: row.description_kn || "",
+});
 
 export default function EventsAdmin({ getSupabase }) {
   const [rows, setRows] = useState(null);
-  const [tiles, setTiles] = useState({});
+  const [cards, setCards] = useState([]);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState("");
@@ -40,27 +62,6 @@ export default function EventsAdmin({ getSupabase }) {
     [getSupabase]
   );
 
-  /**
-   * The row a tile edits — and it must be the SAME row the public site reads.
-   * The public fetch filters `published=eq.true` and orders by starts_at, so
-   * the row a visitor sees is the published one with the latest date. Round
-   * 31 sorted by date alone and never touched `published`, so a save could
-   * land on a row the public page never reads (the owner's 7 Dec save stayed
-   * invisible behind an unpublished April row). Published first, then latest
-   * date, puts the tile on exactly the public row.
-   */
-  const rowFor = useCallback(
-    (title) =>
-      (rows || [])
-        .filter((r) => r.title_en === title)
-        .sort(
-          (a, b) =>
-            (b.published === true) - (a.published === true) ||
-            String(b.starts_at || "").localeCompare(String(a.starts_at || ""))
-        )[0],
-    [rows]
-  );
-
   useEffect(() => {
     let alive = true;
     fetchRows().then(({ data, error: err }) => {
@@ -68,151 +69,187 @@ export default function EventsAdmin({ getSupabase }) {
       if (err) return setError(err.message);
       const list = data || [];
       setRows(list);
-      const seeded = {};
-      for (const { en } of EVENT_TITLES) {
-        const row = list
-          .filter((r) => r.title_en === en)
-          .sort(
-            (a, b) =>
-              (b.published === true) - (a.published === true) ||
-              String(b.starts_at || "").localeCompare(String(a.starts_at || ""))
-          )[0];
-        seeded[en] = row
-          ? {
-              starts_at: dateOnly(row.starts_at),
-              guest_en: row.description_en || "",
-              guest_kn: row.description_kn || "",
-            }
-          : { ...BLANK_TILE };
-      }
-      setTiles(seeded);
+      // Soonest first, undated last — the same order the public list uses.
+      setCards(
+        [...list]
+          .sort((a, b) =>
+            String(a.starts_at || "9999").localeCompare(String(b.starts_at || "9999"))
+          )
+          .map((row) => ({ ...cardFromRow(row), key: nextKey() }))
+      );
     });
     return () => {
       alive = false;
     };
   }, [fetchRows]);
 
-  const set = (title, field, value) =>
-    setTiles((all) => ({ ...all, [title]: { ...all[title], [field]: value } }));
+  const setCard = (key, field, value) =>
+    setCards((all) => all.map((c) => (c.key === key ? { ...c, [field]: value } : c)));
 
-  async function save(title) {
-    setSaving(title);
+  const addCard = () =>
+    setCards((all) => [...all, { ...BLANK_CARD, key: nextKey() }]);
+
+  async function save(card) {
+    if (!String(card.title_en || "").trim()) {
+      return setError("Every event needs an English name — it is the row's identity.");
+    }
+    setSaving(card.key);
     setError("");
     setStatus("");
-    const tile = tiles[title] || BLANK_TILE;
     const supabase = await getSupabase();
     if (!supabase) return setSaving("");
 
     const payload = {
       ...eventRowFromForm({
-        title_en: title,
-        starts_at: tile.starts_at || null,
-        guest_en: WITH_GUEST.has(title) ? tile.guest_en : "",
-        guest_kn: WITH_GUEST.has(title) ? tile.guest_kn : "",
+        title_en: card.title_en,
+        title_kn: card.title_kn,
+        starts_at: card.starts_at || null,
+        time_text: card.time_text,
+        guest_en: card.guest_en,
+        guest_kn: card.guest_kn,
       }),
-      // The public page only ever reads published rows: saving a program is
-      // publishing it. Without this, a row born unpublished in the old table
-      // stayed invisible no matter how many times it was saved.
+      // The public page only ever reads published rows: saving an event is
+      // publishing it.
       published: true,
     };
-    const row = rowFor(title);
-    const { error: err } = row
-      ? await supabase.from("events").update(payload).eq("id", row.id)
+    const { error: err } = card.id
+      ? await supabase.from("events").update(payload).eq("id", card.id)
       : await supabase.from("events").insert(payload);
 
     setSaving("");
     if (err) return setError(err.message);
-    setStatus(`${title} saved — the site now shows exactly this.`);
+    setStatus(`“${card.title_en}” saved — the site now shows exactly this.`);
     /* Round 33: the database trigger has already queued this change for
        every subscribed device; this asks the edge function to deliver it
-       now instead of at the next cron tick. Fire-and-forget on purpose —
-       the save succeeded either way, and the cron is the safety net. */
+       now instead of at the next cron tick. Fire-and-forget on purpose. */
     supabase.functions.invoke("push-send").catch(() => {});
     fetchRows().then(({ data, error: err2 }) => {
       if (err2) return setError(err2.message);
-      setRows(data || []);
+      const list = data || [];
+      setRows(list);
+      // Re-point every card at its stored row (new cards get their id here)
+      // without throwing away cards the owner is still typing.
+      setCards((all) =>
+        all.map((c) => {
+          if (c.key !== card.key) return c;
+          const mine = list
+            .filter((r) => r.title_en === String(card.title_en).trim())
+            .sort((a, b) =>
+              (b.published === true) - (a.published === true) ||
+              String(b.starts_at || "").localeCompare(String(a.starts_at || ""))
+            )[0];
+          return mine ? { ...c, id: mine.id } : c;
+        })
+      );
     });
   }
 
-  if (!rows) return <AdminLoading label="Reading the three programs…" />;
+  if (!rows) return <AdminLoading label="Reading the programs…" />;
 
   return (
     <div className="admin-tiles">
       <p className="admin-muted">
-        The three programs are fixed. Update a date or a guest and save — the
-        public site shows exactly what is stored here: every program on the
-        Events page at its stored date, and under “Upcoming Programs” on the
-        homepage while its date is still ahead.
+        Add, rename, date and time any event — what you save is exactly what
+        the public site shows: every published event on the Events page at its
+        stored date and time, and under “Upcoming Programs” on the homepage
+        while the date is still ahead. Names are free text in both languages;
+        the time is shown beside the date wherever the date appears.
       </p>
       {error ? <AdminError>{error}</AdminError> : null}
       {status ? <p className="admin-muted">{status}</p> : null}
 
-      {EVENT_TITLES.map(({ en, kn }) => {
-        const tile = tiles[en] || BLANK_TILE;
-        const stored = (rows || []).filter((r) => r.title_en === en);
-        return (
-          <section className="admin-tile" key={en} aria-label={en}>
-            <h3>
-              {en} <span className="admin-tile-kn">{kn}</span>
-            </h3>
-            {stored.length > 1 ? (
-              <p className="admin-muted">
-                Heads-up: {stored.length} stored rows carry this program's name
-                (left over from the old free-form table). This tile edits the
-                published one with the latest date — the same row the site
-                reads. The duplicates can be removed with the SQL in
-                TRANSFER-NOTES; until then they are simply ignored.
-              </p>
-            ) : null}
+      {cards.map((card) => (
+        <section
+          className="admin-tile"
+          key={card.key}
+          aria-label={card.title_en || "New event"}
+        >
+          <h3>
+            {card.title_en || "New event"}
+            {card.title_kn ? <span className="admin-tile-kn">{card.title_kn}</span> : null}
+          </h3>
 
-            <label className="admin-field">
-              Date of the program
-              <input
-                className="admin-input"
-                type="date"
-                value={tile.starts_at}
-                onChange={(e) => set(en, "starts_at", e.target.value)}
-              />
-            </label>
+          <label className="admin-field">
+            Name (English)
+            <input
+              className="admin-input"
+              type="text"
+              value={card.title_en}
+              placeholder="e.g. Omkar Dashamotsava"
+              onChange={(e) => setCard(card.key, "title_en", e.target.value)}
+            />
+          </label>
+          <label className="admin-field">
+            Name (Kannada)
+            <input
+              className="admin-input"
+              type="text"
+              value={card.title_kn}
+              placeholder="ಉದಾ. ಓಂಕಾರ ದಶಮಹೋತ್ಸವ"
+              onChange={(e) => setCard(card.key, "title_kn", e.target.value)}
+            />
+          </label>
+          <label className="admin-field">
+            Date
+            <input
+              className="admin-input"
+              type="date"
+              value={card.starts_at}
+              onChange={(e) => setCard(card.key, "starts_at", e.target.value)}
+            />
+          </label>
+          <label className="admin-field">
+            Time of day (shown beside the date)
+            <input
+              className="admin-input"
+              type="text"
+              value={card.time_text}
+              placeholder="e.g. 6:30 PM / ಸಂಜೆ 6:30"
+              onChange={(e) => setCard(card.key, "time_text", e.target.value)}
+            />
+          </label>
+          <label className="admin-field">
+            Guest (English)
+            <input
+              className="admin-input"
+              type="text"
+              value={card.guest_en}
+              placeholder="e.g. Smt. Amrutha Naidu — leave empty for none"
+              onChange={(e) => setCard(card.key, "guest_en", e.target.value)}
+            />
+          </label>
+          <label className="admin-field">
+            Guest (Kannada)
+            <input
+              className="admin-input"
+              type="text"
+              value={card.guest_kn}
+              placeholder="ಉದಾ. ಶ್ರೀಮತಿ ಅಮೃತಾ ನಾಯ್ಡು"
+              onChange={(e) => setCard(card.key, "guest_kn", e.target.value)}
+            />
+          </label>
 
-            {WITH_GUEST.has(en) ? (
-              <>
-                <label className="admin-field">
-                  Guest (English)
-                  <input
-                    className="admin-input"
-                    type="text"
-                    value={tile.guest_en}
-                    placeholder="e.g. Smt. Amrutha Naidu"
-                    onChange={(e) => set(en, "guest_en", e.target.value)}
-                  />
-                </label>
-                <label className="admin-field">
-                  Guest (Kannada)
-                  <input
-                    className="admin-input"
-                    type="text"
-                    value={tile.guest_kn}
-                    placeholder="ಉದಾ. ಶ್ರೀಮತಿ ಅಮೃತಾ ನಾಯ್ಡು"
-                    onChange={(e) => set(en, "guest_kn", e.target.value)}
-                  />
-                </label>
-              </>
-            ) : (
-              <p className="admin-muted">This program carries no guest — the date alone.</p>
-            )}
+          <button
+            type="button"
+            className="admin-btn"
+            disabled={saving !== ""}
+            onClick={() => save(card)}
+          >
+            {saving === card.key ? "Saving…" : "Save event"}
+          </button>
+        </section>
+      ))}
 
-            <button
-              type="button"
-              className="admin-btn"
-              disabled={saving !== ""}
-              onClick={() => save(en)}
-            >
-              {saving === en ? "Saving…" : "Save"}
-            </button>
-          </section>
-        );
-      })}
+      <section className="admin-tile" aria-label="Add an event">
+        <h3>Add an event</h3>
+        <p className="admin-muted">
+          A new card appears below the saved ones; fill it and save — it joins
+          the public list the moment it is stored.
+        </p>
+        <button type="button" className="admin-btn admin-btn--primary" onClick={addCard}>
+          + Add event
+        </button>
+      </section>
     </div>
   );
 }

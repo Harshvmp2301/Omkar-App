@@ -20,7 +20,7 @@ describe("round 50 — the site behaves on iPhones and iPads", () => {
     expect(html).toContain('rel="apple-touch-icon"');
     expect(html).toContain('name="apple-mobile-web-app-capable" content="yes"');
     expect(html).toContain('name="apple-mobile-web-app-status-bar-style"');
-    expect(html).toContain('name="apple-mobile-web-app-title" content="Omkar"');
+    expect(html).toContain('name="apple-mobile-web-app-title" content="Omkar Samithi"');
   });
 
   it("hangs the sticky header off the top inset so it never sits under the notch", () => {

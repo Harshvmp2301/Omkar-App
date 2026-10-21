@@ -1,4 +1,4 @@
-import { User, MapPin, Bell, BellRing, CalendarPlus } from "lucide-react";
+import { User, MapPin, Bell, BellRing, CalendarPlus, Clock } from "lucide-react";
 import { dateParts, countdownLabel, formatFullDate, downloadIcs } from "../utils/calendar.js";
 import FestivalCalendar from "./FestivalCalendar.jsx";
 
@@ -54,6 +54,11 @@ export default function EventsView({ t, lang, events, notify, onToggleNotify, fl
               <div className="event-info">
                 <p className="event-title display">{e.title}</p>
                 <div className="event-sub">
+                  {e.time && (
+                    <span>
+                      <Clock size={12} aria-hidden="true" /> {e.time}
+                    </span>
+                  )}
                   {e.guest && (
                     <span>
                       <User size={12} aria-hidden="true" /> {e.guest}

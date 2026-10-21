@@ -8,7 +8,6 @@ import ContentHub from "../src/components/ContentHub.jsx";
 import EventsView from "../src/components/EventsView.jsx";
 import GalleryView from "../src/components/GalleryView.jsx";
 import Hero from "../src/components/Hero.jsx";
-import SevaView from "../src/components/SevaView.jsx";
 
 /**
  * Every view, rendered for real — server-side, in both languages.
@@ -79,7 +78,6 @@ describe.each(locales)("rendering the %s views", (lang, t) => {
       />
     ),
     GalleryView: <GalleryView t={t} lang={lang} />,
-    SevaView: <SevaView t={t} lang={lang} flash={noop} />,
     AboutView: <AboutView t={t} />,
     ContactView: <ContactView t={t} lang={lang} flash={noop} />,
     Contact: <Contact t={t} />,
@@ -105,7 +103,6 @@ describe.each(locales)("rendering the %s views", (lang, t) => {
   it.each([
     ["EventsView", "EventsView"],
     ["GalleryView", "GalleryView"],
-    ["SevaView", "SevaView"],
     ["AboutView", "AboutView"],
   ])("%s presents its own heading as the page h1", (_label, name) => {
     const { h1 } = headings(render(views[name]));

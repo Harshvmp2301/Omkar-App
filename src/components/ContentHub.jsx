@@ -3,7 +3,6 @@ import { Play, BookOpen, ExternalLink } from "lucide-react";
 import NextProgram from "./NextProgram.jsx";
 import WhatWeDo from "./WhatWeDo.jsx";
 import GalleryStrip from "./GalleryStrip.jsx";
-import SevaInvite from "./SevaInvite.jsx";
 import { fetchLatestVideos, youtubeEnabled } from "../utils/youtube.js";
 import { fetchLatestPosts, bloggerEnabled } from "../utils/blogger.js";
 
@@ -11,7 +10,7 @@ import { fetchLatestPosts, bloggerEnabled } from "../utils/blogger.js";
  * The homepage, in the order a visitor needs it:
  *
  *   who we are (the hero above) → what is happening next → what we do →
- *   the community in photographs → seva → the recordings, writing and festival
+ *   the community in photographs → the recordings, writing and festival
  *   notes that are worth browsing once the first four have been read.
  *
  * The programs lead because that is what people come for; the recordings and
@@ -72,7 +71,6 @@ export default function ContentHub({ t, lang, events = [], onTab, flash }) {
 
       <GalleryStrip t={t} onOpenGallery={() => onTab("gallery")} />
 
-      <SevaInvite t={t} lang={lang} events={events} onOpenSeva={() => onTab("seva")} />
 
       {/* ---- the archive: recordings, writing, festival notes ---------------- */}
       <div className="section section--archive">

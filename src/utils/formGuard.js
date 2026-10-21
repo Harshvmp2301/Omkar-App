@@ -7,8 +7,8 @@
       it; a filled honeypot means the submission is discarded silently,
       answered with the same success the human flow shows.
    2. VELOCITY — a form a bot opens and posts in under three seconds is a
-      bot. A human cannot read the labels, choose sevas and type a phone
-      number that fast; an autofill user who somehow does is shown the
+      bot. A human cannot read the labels and type a message that fast;
+      an autofill user who somehow does is shown the
       wait line once and succeeds on the next attempt — no real signup is
       ever lost, which is why this guard warns instead of discarding.
 

@@ -8,7 +8,6 @@ import {
   messageRow,
   photoUrl,
   rowFor,
-  sevaRow,
   supabaseEnabled,
   supabaseMissing,
 } from "./supabase.js";
@@ -32,7 +31,7 @@ describe("supabase — zero-config contract", () => {
   });
 
   it("reports not-configured instead of throwing or reaching the network", async () => {
-    await expect(insertSubmission("seva", { name: "A" })).resolves.toEqual({
+    await expect(insertSubmission("contact", { message: "A" })).resolves.toEqual({
       ok: false,
       reason: "not-configured",
     });
@@ -51,25 +50,10 @@ describe("supabase — zero-config contract", () => {
 
 /**
  * The payloads below are copied from what the real forms actually send
- * (SevaView / ContactView), so this pins the contract between
+ * (ContactView), so this pins the contract between
  * the UI and the database rather than an invented shape.
  */
 describe("supabase — row mapping", () => {
-  it("maps a seva signup, keeping the seva and its sub-label apart", () => {
-    const row = sevaRow({
-      name: "Lakshmi",
-      contact: "+968 9000 0000",
-      details: "Happy to help on the day",
-      seva: "Food",
-      sevaSub: "Langar distribution",
-    });
-
-    expect(row.name).toBe("Lakshmi");
-    expect(row.seva).toBe("Food");
-    expect(row.seva_detail).toBe("Langar distribution");
-    expect(row.details).toBe("Happy to help on the day");
-  });
-
   it("maps a contact message", () => {
     const row = messageRow({
       name: "Anand",
@@ -90,20 +74,19 @@ describe("supabase — row mapping", () => {
 
   it("falls back to Anonymous and never sends an empty name", () => {
     // The database requires a non-empty name; blank would be rejected.
-    expect(sevaRow({ name: "   " }).name).toBe("Anonymous");
     expect(messageRow({}).name).toBe("Anonymous");
   });
 
   it("strips empty strings to null so blanks are not stored as ''", () => {
-    const row = sevaRow({ name: "A", contact: "   ", seva: "" });
-    expect(row.contact).toBeNull();
-    expect(row.seva).toBeNull();
+    const row = messageRow({ name: "A", email: "   ", subject: "" });
+    expect(row.email).toBeNull();
+    expect(row.subject).toBeNull();
   });
 
   it("truncates over-long values instead of letting the insert fail", () => {
     const row = messageRow({ name: "A", subject: "x".repeat(500) });
     expect(row.subject).toHaveLength(200);
-    expect(sevaRow({ name: "y".repeat(500) }).name).toHaveLength(120);
+    expect(messageRow({ name: "y".repeat(500) }).name).toHaveLength(120);
   });
 
   it("refuses an unknown form rather than writing somewhere wrong", () => {
@@ -141,9 +124,9 @@ describe("supabase — the request it actually sends", () => {
     expect(mod.supabaseMissing).toEqual([]);
 
     const res = await mod.insertSubmission(
-      "seva",
-      { name: "Ravi", contact: "ravi@x.com", seva: "Food", sevaSub: "Langar", details: "note" },
-      { lang: "en", source: "https://example.org/#/seva" }
+      "contact",
+      { name: "Ravi", email: "ravi@x.com", subject: "Query", message: "note" },
+      { lang: "en", source: "https://example.org/#/about" }
     );
 
     expect(res).toEqual({ ok: true });
@@ -151,7 +134,7 @@ describe("supabase — the request it actually sends", () => {
 
     const [url, init] = fetchMock.mock.calls[0];
     // The trailing slash in the configured URL must not become a double slash.
-    expect(url).toBe("https://demo.supabase.co/rest/v1/seva_signups");
+    expect(url).toBe("https://demo.supabase.co/rest/v1/messages");
     expect(init.method).toBe("POST");
     expect(init.headers.apikey).toBe("anon-test-key");
     expect(init.headers.Authorization).toBe("Bearer anon-test-key");
@@ -160,8 +143,8 @@ describe("supabase — the request it actually sends", () => {
 
     const body = JSON.parse(init.body);
     expect(body.name).toBe("Ravi");
-    expect(body.seva).toBe("Food");
-    expect(body.seva_detail).toBe("Langar");
+    expect(body.message).toBe("note");
+    expect(body.subject).toBe("Query");
     expect(body.lang).toBe("en");
   });
 
@@ -170,11 +153,9 @@ describe("supabase — the request it actually sends", () => {
     vi.stubGlobal("fetch", fetchMock);
     const mod = await loadConfigured();
 
-    await mod.insertSubmission("seva", { name: "A", seva: "Food" });
     await mod.insertSubmission("contact", { name: "A", message: "Hi" });
 
-    expect(fetchMock.mock.calls[0][0]).toContain("/rest/v1/seva_signups");
-    expect(fetchMock.mock.calls[1][0]).toContain("/rest/v1/messages");
+    expect(fetchMock.mock.calls[0][0]).toContain("/rest/v1/messages");
   });
 
   it("surfaces the database's own explanation when it rejects a row", async () => {
@@ -201,7 +182,7 @@ describe("supabase — the request it actually sends", () => {
     const mod = await loadConfigured();
 
     await expect(
-      mod.insertSubmission("seva", { name: "A" })
+      mod.insertSubmission("contact", { message: "A" })
     ).resolves.toMatchObject({ ok: false, reason: "network" });
   });
 
@@ -212,7 +193,7 @@ describe("supabase — the request it actually sends", () => {
     );
     const mod = await loadConfigured();
 
-    const res = await mod.insertSubmission("seva", { name: "A" });
+    const res = await mod.insertSubmission("contact", { message: "A" });
     expect(JSON.stringify(res)).not.toContain("anon-test-key");
   });
 
@@ -254,7 +235,6 @@ describe("supabase — schema drift guard", () => {
   }
 
   const CASES = [
-    ["seva", "seva_signups", () => sevaRow({ name: "A" })],
     ["contact", "messages", () => messageRow({ name: "A" })],
   ];
 

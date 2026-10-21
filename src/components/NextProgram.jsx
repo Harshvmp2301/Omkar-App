@@ -62,6 +62,7 @@ export default function NextProgram({ t, lang, events, onViewAll, flash }) {
             <dd>
               <span className="feature-date-text">
                 {featured.date ? formatFullDate(featured.date, lang) : t.tbaDate}
+                {featured.time ? ` · ${featured.time}` : ""}
               </span>
             </dd>
           </div>
@@ -119,6 +120,7 @@ export default function NextProgram({ t, lang, events, onViewAll, flash }) {
                     <span className="also-title">{e.title}</span>
                     <span className="also-meta">
                       {e.date ? formatFullDate(e.date, lang) : t.tbaDate}
+                      {e.time ? ` · ${e.time}` : ""}
                     </span>
                     <ArrowRight size={14} className="also-arrow" aria-hidden="true" />
                   </button>

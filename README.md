@@ -8,7 +8,6 @@ Omkar Samithi is a bilingual (English/Kannada) community platform for the Oman K
 - 📅 **Upcoming programs** with live countdowns, per-event reminders and a permanent one-click **Add to Calendar** (.ics) button — dimmed until the date is announced. The Samithi sets each program's date once in the dashboard; the site repeats it every year on its own, so nothing needs updating in January
 - 🪔 **Diya lamps that follow the year** — each lamp lights 30 days before its own program and, once lit, stays lit until New Year. The row fills up through the year (one lamp, then two, then all three) and goes dark again on 1 January — see `src/utils/diya.js`
 - 🗓️ **Festival calendar** — a wall-calendar month grid with every festival and program under its date and today highlighted in gold; click a chip to download the .ics. The festival dates are **worked out from the panchang for whatever year is on screen** (sun and moon, Lahiri ayanamsa, sunrise over Muscat — see `src/utils/panchang.js`), so they move with the moon year after year and nobody maintains a list
-- 🙏 **Seva** — volunteer opportunities (Food, Flowers, Oil Lamps, Incense, Temple Bells, Cleaning) with a registration form fixed to **Sri Anjaneya Pooja** (yearly program dates shown; no date picker)
 - ✉️ **About & Contact** — one merged tab (last in the nav): mission pillars, support call-out, message form and the contact emails. Contact details appear nowhere else
 - 🔔 Browser notifications for event reminders
 - 🎥 YouTube video recordings of past programs
@@ -18,14 +17,14 @@ Omkar Samithi is a bilingual (English/Kannada) community platform for the Oman K
 - 📱 Mobile-responsive, dark gold-accented design with accessibility support (focus states, reduced motion)
 - 📲 **PWA-ready** — web app manifest + service worker for offline fallback
 - 🔗 Instagram, Facebook Group, YouTube Channel, the Samithi's Blog and Feedback Form links live in the Pranaams footer on every page
-- #️⃣ Hash-based routing (`#/hub`, `#/events`, `#/gallery`, `#/seva`, `#/about`) so views are deep-linkable
+- #️⃣ Hash-based routing (`#/hub`, `#/events`, `#/gallery`, `#/about`) so views are deep-linkable (the retired `#/seva` link falls home)
 
 ## Tech
 
 - [Vite](https://vite.dev) + React 19
 - [lucide-react](https://lucide.dev) icons
 - All bilingual copy and curated content lives in `src/data/content.js` (single source of truth) — the public site renders fully with no backend configured at all
-- **Supabase** backend for the live parts: seva signups, contact messages, admin-dashboard data and the blog-fed gallery table (`gallery_blog_images`)
+- **Supabase** backend for the live parts: contact messages, admin-dashboard data (events, admins) and the blog-fed gallery table (`gallery_blog_images`)
 - **Vercel serverless function** `api/gallery-sync.js` — pulls the photographs from the Samithi's blog into Supabase on a fortnightly cron (see *Gallery sync* below)
 
 ## Development
@@ -42,9 +41,8 @@ npm run preview  # serve the production build
 Open **`/#/admin`** on the site and sign in with Google. The Samithi's
 administrator can then, without touching any code:
 
-- **Seva signups** — every registration with contact details, filterable by status (new / contacted / confirmed / declined)
 - **Messages** — everything sent through the contact form, with unread counts, read/unread and replied markers
-- **Events** — pick one of the three programmes from a list (English and Kannada come as a pair), name the guests, and set the date. Leave the date empty and the site shows "Date TBA" by itself; the venue is always Sri Krishna Temple, Darsait. The date repeats every year — the site moves it onto the current year by itself, and a cleared date means TBA (never a stale date)
+- **Events** — a living list: add any event (the three standing programmes and whatever comes next, Dashamotsava included), rename it in both languages, name the guests, set the date AND a time of day that the site prints beside the date everywhere the date appears. Leave the date empty and the site shows "Date TBA" by itself; the venue is always Sri Krishna Temple, Darsait. A stored date repeats every year — the site moves it onto the current year by itself (the `time_text` column carries the time: `alter table public.events add column if not exists time_text text;`)
 
 There is deliberately **no Photos section**: the public gallery is fed from the
 Samithi's blog by the gallery-sync function (below), and the dashboard never
@@ -156,7 +154,7 @@ place, and results are cached for 6 hours.
 
 ### Optional: form endpoint
 
-Seva and Contact POST JSON to `VITE_FORM_ENDPOINT` when set
+The contact form POSTs JSON to `VITE_FORM_ENDPOINT` when set
 (Formspree, Google Apps Script, SheetDB — any CORS JSON webhook), with
 success/failure toasts in both languages. Unset (default) or on delivery
 failure the forms fall back to the existing `mailto:` flow, so no message
@@ -228,7 +226,6 @@ src/
     ├── FestivalCalendar.jsx # yellow month-grid festival calendar
     ├── GalleryView.jsx     # gallery grid + lightbox
     ├── AboutView.jsx       # mission, pillars, support CTA
-    ├── SevaView.jsx        # seva cards + registration form
     ├── ContactView.jsx     # contact form (merged into the About tab)
     └── Contact.jsx         # contact emails (About tab only)
 public/

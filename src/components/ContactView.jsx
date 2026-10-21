@@ -9,7 +9,7 @@ export default function ContactView({ t, lang, flash }) {
   const [message, setMessage] = useState("");
   /* Round 64 (audit A5 + B3): the message error lives under the textarea
      (aria-invalid + aria-describedby); the honeypot and the velocity guard
-     stand in front of every submission, as on the Seva form. */
+     stand in front of every submission. */
   const [company, setCompany] = useState("");
   const [msgErr, setMsgErr] = useState(false);
   const [waitNote, setWaitNote] = useState(false);

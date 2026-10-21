@@ -8,7 +8,8 @@ describe("tabFromHash", () => {
   it("reads an ordinary fragment route", () => {
     expect(tabFromHash(at("#/gallery"))).toBe("gallery");
     expect(tabFromHash(at("#gallery"))).toBe("gallery");
-    expect(tabFromHash(at("#/seva"))).toBe("seva");
+    // round 66: seva retired — its old deep link falls home
+    expect(tabFromHash(at("#/seva"))).toBe("hub");
   });
 
   it("opens the dashboard for #/admin", () => {

@@ -122,7 +122,6 @@ describe("every tab, rendered in full", () => {
     ["#/hub", "hub"],
     ["#/events", "events"],
     ["#/gallery", "gallery"],
-    ["#/seva", "seva"],
     ["#/about", "about"],
     ["#/contact", "about (legacy alias)"],
   ])("%s renders", (hash) => {
@@ -131,13 +130,13 @@ describe("every tab, rendered in full", () => {
 
   it("shows the hero on Home, and only on Home", () => {
     expect(at("#/hub")).toContain('class="hero"');
-    for (const hash of ["#/events", "#/gallery", "#/seva", "#/about"]) {
+    for (const hash of ["#/events", "#/gallery", "#/about"]) {
       expect(at(hash), `${hash} still shows the homepage hero`).not.toContain('class="hero"');
     }
   });
 
   it("still renders the mark and the header on every tab", () => {
-    for (const hash of ["#/hub", "#/events", "#/gallery", "#/seva", "#/about"]) {
+    for (const hash of ["#/hub", "#/events", "#/gallery", "#/about"]) {
       const html = at(hash);
       expect(html, hash).toContain('class="app-logo"');
       expect(html, hash).toContain('class="header"');
@@ -146,7 +145,7 @@ describe("every tab, rendered in full", () => {
   });
 
   it("gives every tab exactly one h1", () => {
-    for (const hash of ["#/hub", "#/events", "#/gallery", "#/seva", "#/about"]) {
+    for (const hash of ["#/hub", "#/events", "#/gallery", "#/about"]) {
       const list = headings(at(hash)).filter((h) => h.level === 1);
       expect(list.length, `${hash} has ${list.length} h1s`).toBe(1);
       expect(list[0].text.length, hash).toBeGreaterThan(2);
@@ -154,7 +153,7 @@ describe("every tab, rendered in full", () => {
   });
 
   it("never skips a heading level on any tab", () => {
-    for (const hash of ["#/hub", "#/events", "#/gallery", "#/seva", "#/about"]) {
+    for (const hash of ["#/hub", "#/events", "#/gallery", "#/about"]) {
       const list = headings(at(hash));
       let previous = list[0].level;
       expect(previous, `${hash} starts at h${previous}`).toBe(1);
@@ -188,17 +187,6 @@ describe("every tab, rendered in full", () => {
     for (const human of printed) {
       expect(parse(human), `${human} is in the past`).toBeGreaterThanOrEqual(midnight);
     }
-  });
-
-  it("prints the stored dates on the Seva tab — the dashboard's own list", () => {
-    // Round 31 parity: the chips under "Our Yearly Programs" print exactly the
-    // dates the dashboard stores, past ones included (the Events tab is the
-    // record, and the Seva chips read the same list). What must never appear
-    // is a date NOBODY stored — the old year-roll's invented April 2027.
-    const html = at("#/seva");
-    const printed = [...html.matchAll(/>([0-9]{1,2} (?:January|February|March|April|May|June|July|August|September|October|November|December) [0-9]{4})</g)]
-      .map((m) => m[1]);
-    expect(printed).toEqual(["1 April 2026", "2 October 2026", "18 December 2026"]);
   });
 
   it("shows the same next programme on the homepage and on the Events tab", () => {

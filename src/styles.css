@@ -1793,11 +1793,19 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
   to { opacity: 1; transform: none; }
 }
 .app-logo { transition: opacity 0.25s var(--ease); }
-.app:has(.nav-drawer) .app-logo { opacity: 0; }
+/* Round 51: these two rules used to be `.app:has(.nav-drawer)` and
+   `body:has(.nav-drawer)`. Safari's :has() invalidation is document-wide:
+   every per-frame style write the scroll loop makes inside .app or <body>
+   (the logo's transform, the hairline's scaleX) re-ran both selectors
+   against the whole document, mid-gesture — the iPhone-only stutter in
+   the logo flight. One class on <html>, toggled by Header.jsx when the
+   drawer opens or closes, carries the same two meanings without any
+   selector watching the subtree. */
+html.drawer-open .app-logo { opacity: 0; }
 /* An open menu owns the screen: the page behind it must not scroll underneath
    (very obvious on iOS, where the body rubber-bands behind a fixed panel), and
    the menu itself scrolls if the viewport is too short for five rows. */
-body:has(.nav-drawer) { overflow: hidden; }
+html.drawer-open body { overflow: hidden; }
 .nav-drawer {
   max-height: calc(100dvh - var(--header-h, 80px) - 8px);
   overflow-y: auto;
@@ -2802,9 +2810,6 @@ select.admin-input::-ms-expand { display: none; }
   .strip-row { grid-template-columns: repeat(2, 1fr); }
   .invite-card { padding: 20px; }
   .invite-card .link-cta { min-height: 44px; }
-  .footer { padding: 34px 16px 24px; }
-  .footer-inner { grid-template-columns: 1fr; gap: 22px; }
-  .footer-link { min-height: 44px; }
   /* Round 62: the phone footer used to be a whole screen — eleven 44px
      links stacked under the brand. Same hierarchy, compact flow: the
      brand centres, Explore wraps as one text line, Connect wraps as

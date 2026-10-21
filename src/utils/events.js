@@ -1,13 +1,14 @@
 /**
- * The Samithi's three programs, defined once.
+ * The Samithi's standing programs, defined once.
  *
- * The admin dashboard does not let anyone type an event title: there are three
- * programs, they always pair with the same Kannada name, and a typo in either
- * would show up on the public site. So the choices live here, and both the
- * dropdowns and the public list are built from this one array.
+ * Round 66 freed the dashboard: events can be added, renamed in both
+ * languages, and given a time of day. These three remain as the curated
+ * FALLBACK the public site shows when the database holds nothing, and as
+ * the Kannada pairing the row builder falls back to when a title's Kannada
+ * name is left empty.
  *
  * `events.test.js` asserts these strings against the curated `eventsList` in
- * src/data/content.js, so the dropdown and the built-in list cannot drift.
+ * src/data/content.js, so the fallback and the built-in list cannot drift.
  */
 
 import { annualOccurrence, dateOnly } from "./calendar.js";
@@ -77,6 +78,9 @@ export function mapEventRow(row = {}, lang = "en") {
     // the field "Guest" and nothing else writes there.
     guest: correctDarsait((kn ? row.description_kn : row.description_en) || row.description_en || null),
     venue: correctDarsait((kn ? row.location_kn : row.location_en) || DEFAULT_VENUE[kn ? "kn" : "en"]),
+    // Round 66: the time of day the dashboard stores beside the date.
+    // Free text ("6:30 PM", "ಸಂಜೆ 6:30") — shown wherever the date is shown.
+    time: String(row.time_text || "").trim(),
   };
 }
 
@@ -103,6 +107,7 @@ export function eventRowFromForm(form = {}) {
     description_en: guest(form.guest_en),
     description_kn: guest(form.guest_kn),
     starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : null,
+    time_text: String(form.time_text || "").trim() || null,
     date_label_en: null,
     date_label_kn: null,
     location_en: DEFAULT_VENUE.en,

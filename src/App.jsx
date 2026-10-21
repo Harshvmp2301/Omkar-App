@@ -4,7 +4,6 @@ import Header from "./components/Header.jsx";
 import EventsView from "./components/EventsView.jsx";
 import GalleryView from "./components/GalleryView.jsx";
 import AboutView from "./components/AboutView.jsx";
-import SevaView from "./components/SevaView.jsx";
 import Hero from "./components/Hero.jsx";
 import ContentHub from "./components/ContentHub.jsx";
 import NotifyPanel from "./components/NotifyPanel.jsx";
@@ -134,7 +133,6 @@ export default function OmkarSamithiApp() {
     hub: t.contentHub,
     events: t.events,
     gallery: t.galleryTab,
-    seva: t.sevaTab,
     about: t.aboutTab,
   };
   // View change → move focus into the new view so screen readers announce it,
@@ -720,9 +718,6 @@ export default function OmkarSamithiApp() {
             <Contact t={t} />
           </>
         )}
-        {tab === "seva" && (
-          <SevaView t={t} lang={lang} flash={flash} events={yearList} />
-        )}
       </main>
 
       <footer className="footer">
@@ -740,9 +735,6 @@ export default function OmkarSamithiApp() {
             </button>
             <button type="button" className="footer-link" onClick={() => setTab("gallery")}>
               {t.galleryTab}
-            </button>
-            <button type="button" className="footer-link" onClick={() => setTab("seva")}>
-              {t.sevaTab}
             </button>
             <button type="button" className="footer-link" onClick={() => setTab("about")}>
               {t.aboutTab}

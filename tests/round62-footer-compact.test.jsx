@@ -89,7 +89,7 @@ describe("round 62 — the footer stops eating the phone screen", () => {
     ]) {
       expect(html).toContain(href);
     }
-    // the four Explore buttons survive as buttons
-    expect((html.match(/class="footer-link"/g) || []).length).toBeGreaterThanOrEqual(11);
+    // the three Explore buttons survive as buttons (seva retired, round 66)
+    expect((html.match(/class="footer-link"/g) || []).length).toBeGreaterThanOrEqual(10);
   });
 });

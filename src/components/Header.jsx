@@ -21,7 +21,6 @@ const Header = forwardRef(function Header(
     { id: "hub", label: t.contentHub },
     { id: "events", label: t.events },
     { id: "gallery", label: t.galleryTab },
-    { id: "seva", label: t.sevaTab },
     { id: "about", label: t.aboutTab },
   ];
 

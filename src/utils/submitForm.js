@@ -1,5 +1,6 @@
 /**
- * Unified form submission handler (seva / contact).
+ * Unified form submission handler (contact; the seva form was retired
+ * in round 66 along with everything seva).
  *
  * A submission now has TWO possible destinations, and both are optional:
  *

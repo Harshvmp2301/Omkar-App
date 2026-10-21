@@ -12,7 +12,7 @@
  *   VITE_SUPABASE_ANON_KEY  the "anon" / publishable key
  *
  * ⛔ NEVER the service_role key. It ignores every rule in the database and
- *    would hand your seva signups and messages to anyone who views the page
+ *    would hand your messages to anyone who views the page
  *    source. The anon key is safe precisely because the schema's Row Level
  *    Security refuses to let it READ these tables — it may only add rows.
  *
@@ -42,7 +42,7 @@ const TIMEOUT_MS = 12000;
 
 /* ----------------------------------------------------------------- mapping */
 /* Pure functions, exported for tests. Field names mirror exactly what each
-   form sends — see the payloads in SevaView / ContactView. */
+   form sends — see the payload in ContactView. */
 
 function trimOrNull(value, max = 4000) {
   if (value === null || value === undefined) return null;
@@ -58,17 +58,6 @@ function baseRow(meta = {}) {
   };
 }
 
-export function sevaRow(payload = {}, meta = {}) {
-  return {
-    ...baseRow(meta),
-    name: trimOrNull(payload.name, 120) || "Anonymous",
-    contact: trimOrNull(payload.contact, 160),
-    seva: trimOrNull(payload.seva, 120),
-    seva_detail: trimOrNull(payload.sevaSub, 200),
-    details: trimOrNull(payload.details || payload.body),
-  };
-}
-
 export function messageRow(payload = {}, meta = {}) {
   return {
     ...baseRow(meta),
@@ -80,12 +69,10 @@ export function messageRow(payload = {}, meta = {}) {
 }
 
 const TABLE_FOR = {
-  seva: "seva_signups",
   contact: "messages",
 };
 
 const MAPPER_FOR = {
-  seva: sevaRow,
   contact: messageRow,
 };
 
@@ -178,9 +165,6 @@ async function selectRows(table, { accessToken, query = "", limit = 200 } = {}) 
     if (timer) clearTimeout(timer);
   }
 }
-
-export const listSevaSignups = (opts) =>
-  selectRows("seva_signups", { query: "select=*&order=created_at.desc", ...opts });
 
 export const listMessages = (opts) =>
   selectRows("messages", { query: "select=*&order=created_at.desc", ...opts });

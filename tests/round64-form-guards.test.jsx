@@ -19,7 +19,6 @@ import {
        silently with a fake success; a velocity guard (3s) warns instead of
        discarding, so an autofill human is never lost. */
 
-const seva = readFileSync(new URL("../src/components/SevaView.jsx", import.meta.url), "utf8");
 const contact = readFileSync(new URL("../src/components/ContactView.jsx", import.meta.url), "utf8");
 const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 
@@ -74,7 +73,7 @@ describe("round 64 · B3 — the guards", () => {
   });
 
   it("both forms wire both guards", () => {
-    for (const src of [seva, contact]) {
+    for (const src of [contact]) {
       expect(src).toContain('botFilled({ company })');
       expect(src).toContain("tooFast(openedAt.current)");
       expect(src).toContain('className="hp-field" aria-hidden="true"');
@@ -95,12 +94,6 @@ describe("round 64 · B3 — the guards", () => {
 
 describe("round 64 · A5 — errors belong to their fields", () => {
   it("wires aria-invalid, aria-describedby and a line under each field", () => {
-    expect(seva).toContain('aria-invalid={errors.name ? true : undefined}');
-    expect(seva).toContain('aria-describedby={errors.name ? "seva-name-err" : undefined}');
-    expect(seva).toContain('id="seva-name-err"');
-    expect(seva).toContain('id="seva-contact-err"');
-    expect(seva).toContain('id="seva-choose-err"');
-    expect(seva).toContain("first.focus()");
     expect(contact).toContain('aria-invalid={msgErr ? true : undefined}');
     expect(contact).toContain('aria-describedby={msgErr ? "ct-message-err" : undefined}');
     expect(contact).toContain('id="ct-message-err"');
@@ -126,13 +119,10 @@ describe("round 64 · A5 — errors belong to their fields", () => {
       globalThis.window.location.hash = hash;
       return renderToStaticMarkup(<App />);
     };
-    const sevaHtml = at("#/seva");
-    expect(sevaHtml).toContain('class="hp-field"');
-    expect(sevaHtml).toContain('id="seva-company"');
-    expect(sevaHtml).not.toContain('id="ct-company"');
+    const hubHtml = at("#/hub");
+    expect(hubHtml).not.toContain('class="hp-field"');
     const aboutHtml = at("#/about");
     expect(aboutHtml).toContain('class="hp-field"');
     expect(aboutHtml).toContain('id="ct-company"');
-    expect(aboutHtml).not.toContain('id="seva-company"');
   });
 });
