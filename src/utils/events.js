@@ -175,6 +175,10 @@ export function mergeEvents(curated = [], rows = [], lang = "en") {
       title: live.title || entry.title,
       guest: live.guest || entry.guest,
       venue: live.venue || entry.venue,
+      // Round 68: the stored time of day must survive the merge — this is
+      // exactly the row the Events page and the homepage render, and the
+      // clock chip (and the .ics file) read `time` off it.
+      time: live.time || entry.time || "",
     };
   });
 

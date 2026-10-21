@@ -27,6 +27,8 @@ export default function EventsView({ t, lang, events, notify, onToggleNotify, fl
       dateISO: e.date,
       venue: e.venue,
       description: `${t.appName}${e.guest ? ` — ${e.guest}` : ""}`,
+      // Round 68: the saved time of day rides into the calendar file.
+      timeText: e.time,
     });
     flash(ok ? t.icsDownloaded : t.tbaDate);
   };

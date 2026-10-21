@@ -137,26 +137,82 @@ function nextDayCompact(iso) {
  * Download a single all-day VEVENT for the given ISO date.
  * All-day (VALUE=DATE) avoids inventing event times — venues/TBA stay flexible.
  */
-export function downloadIcs({ title, dateISO, venue, description }) {
-  if (!dateISO || typeof document === "undefined") return false;
-  const dtstamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-  const lines = [
+/* Round 68 — read a time of day out of the dashboard's free-text field so the
+   .ics file can carry it ("10:00 AM / ಬೆಳಿಗ್ಗೆ, 10:00", "6:30 PM",
+   "ಸಂಜೆ 6:30", "18:45"). Returns "HHMM" in 24-hour form, or "" when the text
+   holds no readable time — the calendar entry then stays a whole-day event,
+   exactly as before.
+
+   Rules, in order: the FIRST clock-like number wins (digits with a colon, or
+   digits hugging an am/pm); a meridiem comes from an English am/pm next to
+   that number, else from a Kannada day-part word anywhere in the text
+   (ಬೆಳಿಗ್ಗೆ morning, ಮಧ್ಯಾಹ್ನ midday, ಸಂಜೆ evening, ರಾತ್ರಿ night); with
+   neither, the number is taken as a 24-hour clock. Out-of-range values are
+   not a time. */
+const KN_DAYPART_PM = ["ಮಧ್ಯಾಹ್ನ", "ಸಂಜೆ", "ರಾತ್ರಿ"];
+const KN_DAYPART_AM = ["ಬೆಳಿಗ್ಗೆ"];
+
+export function timeCompactFromText(text) {
+  const s = String(text || "");
+  if (!s.trim()) return "";
+
+  const clock = s.match(/(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?/i);
+  if (!clock) return "";
+  let hour = Number(clock[1]);
+  const minute = clock[2] ? Number(clock[2]) : 0;
+  let meridiem = (clock[3] || "").toLowerCase();
+
+  if (!meridiem) {
+    if (KN_DAYPART_PM.some((w) => s.includes(w))) meridiem = "pm";
+    else if (KN_DAYPART_AM.some((w) => s.includes(w))) meridiem = "am";
+  }
+  if (meridiem === "pm" && hour < 12) hour += 12;
+  if (meridiem === "am" && hour === 12) hour = 0;
+  if (hour > 23 || minute > 59) return "";
+  return pad(hour) + pad(minute);
+}
+
+/** The VEVENT lines for one program. Pure, so the round-68 test can read
+    them without a browser. With a readable time the event is a timed one
+    (two hours long, floating local time — the temple's clock); without, it
+    stays the whole-day entry it always was. */
+export function icsLines({ title, dateISO, venue, description, timeText, dtstamp }) {
+  const hm = timeCompactFromText(timeText);
+  const day = compactDate(dateISO);
+  let start;
+  let end;
+  if (hm) {
+    const minutes = Number(hm.slice(0, 2)) * 60 + Number(hm.slice(2));
+    const endMinutes = Math.min(minutes + 120, 23 * 60 + 59);
+    start = `DTSTART:${day}T${hm}00`;
+    end = `DTEND:${day}T${pad(Math.floor(endMinutes / 60))}${pad(endMinutes % 60)}00`;
+  } else {
+    start = `DTSTART;VALUE=DATE:${day}`;
+    end = `DTEND;VALUE=DATE:${nextDayCompact(dateISO)}`;
+  }
+  return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
     "PRODID:-//Omkar Samithi//Programs//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",
-    `UID:${compactDate(dateISO)}-${slugify(title)}@omkarsamithi`,
+    `UID:${day}-${slugify(title)}@omkarsamithi`,
     `DTSTAMP:${dtstamp}`,
-    `DTSTART;VALUE=DATE:${compactDate(dateISO)}`,
-    `DTEND;VALUE=DATE:${nextDayCompact(dateISO)}`,
+    start,
+    end,
     `SUMMARY:${escapeICS(title)}`,
     venue ? `LOCATION:${escapeICS(venue)}` : null,
     description ? `DESCRIPTION:${escapeICS(description)}` : null,
     "END:VEVENT",
     "END:VCALENDAR",
   ].filter(Boolean);
+}
+
+export function downloadIcs({ title, dateISO, venue, description, timeText }) {
+  if (!dateISO || typeof document === "undefined") return false;
+  const dtstamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const lines = icsLines({ title, dateISO, venue, description, timeText, dtstamp });
 
   try {
     const blob = new Blob([lines.join("\r\n") + "\r\n"], {

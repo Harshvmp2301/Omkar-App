@@ -30,6 +30,8 @@ export default function NextProgram({ t, lang, events, onViewAll, flash }) {
       dateISO: featured.date,
       venue: featured.venue,
       description: `${t.appName}${featured.guest ? ` — ${featured.guest}` : ""}`,
+      // Round 68: the saved time of day rides into the calendar file.
+      timeText: featured.time,
     });
     flash(ok ? t.icsDownloaded : t.tbaDate);
   };
