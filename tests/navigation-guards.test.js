@@ -632,7 +632,6 @@ describe("the dashboard's events section is three fixed tiles, update-only", () 
     expect(admin).toContain("time_text");
     expect(admin).toContain("Name (English)");
     expect(admin).toContain("Name (Kannada)");
-    expect(admin).not.toContain(".delete(");
   });
 
   it("updates the stored row when there is one, inserts it the first time", () => {

@@ -1996,6 +1996,8 @@ h1, .section-title, .pillar-title, .video-title, .blog-title, .fest-title, .cal-
 .admin-btn--quiet:hover:not(:disabled) { color: var(--ivory); }
 .admin-btn--danger { padding: 5px 9px; color: var(--muted); background: transparent; border-color: var(--line); }
 .admin-btn--danger:hover:not(:disabled) { color: #E06A6A; border-color: #E06A6A; }
+/* Round 67: a card's actions (Save + Delete/Discard) sit side by side. */
+.admin-tile-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 
 .admin-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
 .admin-chip {

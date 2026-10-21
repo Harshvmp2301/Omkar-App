@@ -42,7 +42,7 @@ Open **`/#/admin`** on the site and sign in with Google. The Samithi's
 administrator can then, without touching any code:
 
 - **Messages** — everything sent through the contact form, with unread counts, read/unread and replied markers
-- **Events** — a living list: add any event (the three standing programmes and whatever comes next, Dashamotsava included), rename it in both languages, name the guests, set the date AND a time of day that the site prints beside the date everywhere the date appears. Leave the date empty and the site shows "Date TBA" by itself; the venue is always Sri Krishna Temple, Darsait. A stored date repeats every year — the site moves it onto the current year by itself (the `time_text` column carries the time: `alter table public.events add column if not exists time_text text;`)
+- **Events** — a living list: add any event (the three standing programmes and whatever comes next, Dashamotsava included), rename it in both languages, name the guests, set the date AND a time of day that the site prints beside the date everywhere the date appears — and delete any event (confirm-first; it leaves the public site immediately). Leave the date empty and the site shows "Date TBA" by itself; the venue is always Sri Krishna Temple, Darsait. A stored date repeats every year — the site moves it onto the current year by itself (the `time_text` column carries the time: `alter table public.events add column if not exists time_text text;`)
 
 There is deliberately **no Photos section**: the public gallery is fed from the
 Samithi's blog by the gallery-sync function (below), and the dashboard never

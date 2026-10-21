@@ -20,6 +20,10 @@ import { dateOnly } from "../../utils/calendar.js";
  * including the time of day, which rides in the `time_text` column
  * (added with: alter table public.events add column if not exists
  * time_text text;).
+ *
+ * Round 67 completes the lifecycle: a saved card can also be DELETED —
+ * confirm-first, the same pattern the Messages page uses — and an unsaved
+ * new card can be discarded without touching the database.
  */
 
 const BLANK_CARD = {
@@ -51,6 +55,7 @@ export default function EventsAdmin({ getSupabase }) {
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState("");
+  const [removing, setRemoving] = useState("");
 
   const fetchRows = useCallback(
     () =>
@@ -144,13 +149,46 @@ export default function EventsAdmin({ getSupabase }) {
     });
   }
 
+  /* Round 67 — delete a stored event, or discard a card that was never
+     saved. Stored rows leave the database (and the public site) for good,
+     so the confirm names the event, exactly like the Messages page does. */
+  async function remove(card) {
+    if (!card.id) {
+      setCards((all) => all.filter((c) => c.key !== card.key));
+      setStatus("Unsaved card discarded.");
+      return;
+    }
+    const sure = window.confirm(
+      `Delete “${card.title_en || "this event"}”? It leaves the public site immediately. This cannot be undone.`
+    );
+    if (!sure) return;
+    setRemoving(card.key);
+    setError("");
+    setStatus("");
+    const supabase = await getSupabase();
+    if (!supabase) return setRemoving("");
+
+    const { error: err } = await supabase.from("events").delete().eq("id", card.id);
+    setRemoving("");
+    if (err) return setError(err.message);
+    setCards((all) => all.filter((c) => c.key !== card.key));
+    setStatus(`“${card.title_en}” deleted — it is off the site now.`);
+    /* Same round-33 nudge as the save: the row is gone, so ask the edge
+       function to deliver the updated program list now. Fire-and-forget. */
+    supabase.functions.invoke("push-send").catch(() => {});
+    fetchRows().then(({ data, error: err2 }) => {
+      if (err2) return setError(err2.message);
+      setRows(data || []);
+    });
+  }
+
   if (!rows) return <AdminLoading label="Reading the programs…" />;
 
   return (
     <div className="admin-tiles">
       <p className="admin-muted">
-        Add, rename, date and time any event — what you save is exactly what
-        the public site shows: every published event on the Events page at its
+        Add, rename, date, time and delete any event — what you save is
+        exactly what the public site shows: every published event on the Events page at its
         stored date and time, and under “Upcoming Programs” on the homepage
         while the date is still ahead. Names are free text in both languages;
         the time is shown beside the date wherever the date appears.
@@ -229,14 +267,35 @@ export default function EventsAdmin({ getSupabase }) {
             />
           </label>
 
-          <button
-            type="button"
-            className="admin-btn"
-            disabled={saving !== ""}
-            onClick={() => save(card)}
-          >
-            {saving === card.key ? "Saving…" : "Save event"}
-          </button>
+          <div className="admin-tile-actions">
+            <button
+              type="button"
+              className="admin-btn"
+              disabled={saving !== "" || removing !== ""}
+              onClick={() => save(card)}
+            >
+              {saving === card.key ? "Saving…" : "Save event"}
+            </button>
+            {card.id ? (
+              <button
+                type="button"
+                className="admin-btn admin-btn--danger"
+                disabled={saving !== "" || removing !== ""}
+                onClick={() => remove(card)}
+              >
+                {removing === card.key ? "Deleting…" : "Delete event"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="admin-btn admin-btn--quiet"
+                disabled={saving !== "" || removing !== ""}
+                onClick={() => remove(card)}
+              >
+                Discard card
+              </button>
+            )}
+          </div>
         </section>
       ))}
 
