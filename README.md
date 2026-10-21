@@ -5,7 +5,7 @@ Omkar Samithi is a bilingual (English/Kannada) community platform for the Oman K
 ## Features
 
 - ✨ **Scroll-driven logo animation (every tab)** — at `scrollY = 0` the single Omkar logo sits large and exactly centred over the full-screen hero while the title, tagline and diya row are anchored to the bottom of the screen (the original first-deployment composition); scrolling shrinks and glides the logo into its slot in the sticky navbar within the first 15% of the page's scroll, and scrolling back up glides it out again — on every tab. Clearance logic lifts the flight only when needed, so the logo never overlaps the hero copy or the content below it (one element, no duplicates)
-- 📅 **Upcoming programs** with live countdowns, per-event reminders and a permanent one-click **Add to Calendar** (.ics) button — dimmed until the date is announced. The Samithi sets each program's date once in the dashboard; the site repeats it every year on its own, so nothing needs updating in January
+- 📅 **Upcoming programs — a living list** with live countdowns, per-event reminders and a permanent one-click **Add to Calendar** (.ics) button — dimmed until the date is announced. The dashboard adds, renames, dates, times and deletes events (any number of them); the three standing programmes survive as the fallback when the database is empty. A stored date repeats every year on its own, so nothing needs updating in January, and a stored time of day prints beside the date on every card, in the homepage bar and inside the .ics file
 - 🪔 **Diya lamps that follow the year** — each lamp lights 30 days before its own program and, once lit, stays lit until New Year. The row fills up through the year (one lamp, then two, then all three) and goes dark again on 1 January — see `src/utils/diya.js`
 - 🗓️ **Festival calendar** — a wall-calendar month grid with every festival and program under its date and today highlighted in gold; click a chip to download the .ics. The festival dates are **worked out from the panchang for whatever year is on screen** (sun and moon, Lahiri ayanamsa, sunrise over Muscat — see `src/utils/panchang.js`), so they move with the moon year after year and nobody maintains a list
 - ✉️ **About & Contact** — one merged tab (last in the nav): mission pillars, support call-out, message form and the contact emails. Contact details appear nowhere else
@@ -15,7 +15,7 @@ Omkar Samithi is a bilingual (English/Kannada) community platform for the Oman K
 - 🖼️ **Photo gallery** — real photos pulled from the Samithi blog posts, with a keyboard-navigable lightbox
 - 🇬🇧🇮🇳 Bilingual support (English/Kannada), persisted between visits
 - 📱 Mobile-responsive, dark gold-accented design with accessibility support (focus states, reduced motion)
-- 📲 **PWA-ready** — web app manifest + service worker for offline fallback
+- 📲 **PWA-ready** — web app manifest (installed as **Omkar Samithi**, on Android and as the iOS home-screen title) + service worker for offline fallback
 - 🔗 Instagram, Facebook Group, YouTube Channel, the Samithi's Blog and Feedback Form links live in the Pranaams footer on every page
 - #️⃣ Hash-based routing (`#/hub`, `#/events`, `#/gallery`, `#/about`) so views are deep-linkable (the retired `#/seva` link falls home)
 
@@ -42,6 +42,7 @@ Open **`/#/admin`** on the site and sign in with Google. The Samithi's
 administrator can then, without touching any code:
 
 - **Messages** — everything sent through the contact form, with unread counts, read/unread and replied markers
+- **Push** — the subscriber count and a compose box for one custom bilingual block. The bell in the header is the only opt-in door; this page never claims a send succeeded unless the edge function delivered it
 - **Events** — a living list: add any event (the three standing programmes and whatever comes next, Dashamotsava included), rename it in both languages, name the guests, set the date AND a time of day that the site prints beside the date everywhere the date appears — and delete any event (confirm-first; it leaves the public site immediately). The saved time of day prints beside the date on every card, in the homepage bar and inside the Add-to-Calendar (.ics) file as a timed entry. Leave the date empty and the site shows "Date TBA" by itself; the venue is always Sri Krishna Temple, Darsait. A stored date repeats every year — the site moves it onto the current year by itself (the `time_text` column carries the time: `alter table public.events add column if not exists time_text text;`)
 
 There is deliberately **no Photos section**: the public gallery is fed from the
@@ -60,8 +61,10 @@ when someone opens `#/admin`. A normal visitor's download is unaffected —
 
 ### 🗄️ Database — where submissions are stored
 
-Seva signups and contact messages are saved to **Supabase**, and that is what
-the admin dashboard reads. One SQL file creates everything:
+Contact messages are saved to **Supabase**, and that is what the admin
+dashboard reads. One SQL file creates everything (the historical
+`seva_signups` table is still in it — round 66 retired seva from the site and
+the dashboard, and nothing reads or writes that table any more):
 
 ```
 supabase/migrations/0001_init.sql   tables, security rules, photo storage
@@ -72,7 +75,7 @@ create a project, run the SQL, add your email to the `admins` table, enable
 Google sign-in, then put the URL and **anon** key in `config/.env.local`.
 
 Row Level Security means the public site can only **add** submissions — the
-anon key that ships in the page cannot read seva signups or messages back.
+anon key that ships in the page cannot read messages back.
 Never put the `service_role` key in this app.
 
 There is deliberately **no donations table**: Omkar Samithi does not accept
@@ -215,19 +218,30 @@ src/
 ├── App.jsx                 # orchestration: routing, notifications, toasts
 ├── styles.css              # global stylesheet (design tokens as CSS vars)
 ├── theme.js                # shared color palette (JS side)
-├── data/content.js         # ALL bilingual copy & content
+├── data/content.js         # ALL bilingual copy + the fallback program list
 ├── hooks/useLocalStorage.js
-├── utils/calendar.js       # countdowns, date formatting, .ics generation
+├── utils/
+│   ├── calendar.js         # countdowns, date formatting, .ics + time reader
+│   ├── events.js           # stored rows over the fallback list, ordering
+│   ├── route.js            # fragment → view (auth-callback safe)
+│   ├── supabase.js         # the only place the SDK is touched
+│   └── panchang.js         # sun/moon astronomy for the festival calendar
+├── admin/                  # code-split dashboard (#/admin)
+│   ├── AdminApp.jsx        # tabs: Messages · Events · Push
+│   └── views/              # MessagesAdmin, EventsAdmin, PushAdmin
 └── components/
     ├── Header.jsx          # logo, language toggle, notifications, nav tabs
     ├── Hero.jsx / Diya.jsx
+    ├── NextProgram.jsx     # homepage feature card + its calendar button
     ├── ContentHub.jsx      # videos, blog, festival notes
-    ├── EventsView.jsx      # countdowns + add-to-calendar + festival calendar
+    ├── EventsView.jsx      # program list + add-to-calendar + lightbox-free rows
     ├── FestivalCalendar.jsx # yellow month-grid festival calendar
     ├── GalleryView.jsx     # gallery grid + lightbox
+    ├── NotifyPanel.jsx     # the bell's panel: opt-in, state, enable/disable
     ├── AboutView.jsx       # mission, pillars, support CTA
     ├── ContactView.jsx     # contact form (merged into the About tab)
     └── Contact.jsx         # contact emails (About tab only)
+tests/                      # vitest suite: every round's rulings, pinned
 public/
 ├── manifest.webmanifest    # PWA manifest
 └── sw.js                   # offline-capable service worker
@@ -238,7 +252,7 @@ vercel.json                 # Vercel build config (Vite → dist/)
 
 ## Content updates
 
-All text — including events, videos, blog posts, festival names and gallery captions — is edited in **`src/data/content.js`** under the `en` and `kn` blocks. Event dates use ISO format (`YYYY-MM-DD`) which powers countdowns and calendar downloads automatically.
+All text — videos, blog posts, festival names, gallery captions and every label in both languages — is edited in **`src/data/content.js`** under the `en` and `kn` blocks. **Events themselves live in the dashboard**, not in this file: what remains here is the curated fallback the public list shows when the database is empty (and the Kannada pairing a row falls back to when its Kannada name is left blank). Event dates use ISO format (`YYYY-MM-DD`) which powers countdowns and calendar downloads automatically.
 
 Dates are not text, and none of them need a yearly edit:
 
