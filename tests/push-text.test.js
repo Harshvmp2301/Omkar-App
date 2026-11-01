@@ -46,13 +46,7 @@ describe("push notification wording", () => {
     expect(push.body_kn).toContain("ದಿನಾಂಕ ಘೋಷಿಸಲಾಗುವುದು");
   });
 
-  it("says what the in-tab blog and video lines say, in both languages", () => {
-    expect(feedPush("blog", "Diwali at the temple").body_en).toBe(
-      translations.en.remindBlog.replaceAll("{title}", "Diwali at the temple")
-    );
-    expect(feedPush("blog", "Diwali at the temple").body_kn).toBe(
-      translations.kn.remindBlog.replaceAll("{title}", "Diwali at the temple")
-    );
+  it("says what the in-tab video line says, in both languages", () => {
     expect(feedPush("video", "Naadamrutha 2026").body_en).toBe(
       translations.en.remindVideo.replaceAll("{title}", "Naadamrutha 2026")
     );

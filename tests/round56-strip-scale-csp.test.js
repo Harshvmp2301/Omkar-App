@@ -7,7 +7,6 @@ const root = new URL("..", import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), "utf8");
 
 const vercel = read("vercel.json");
-const blogger = read("src/utils/blogger.js");
 const youtube = read("src/utils/youtube.js");
 const supabase = read("src/utils/supabase.js");
 const strip = read("src/components/GalleryStrip.jsx");
@@ -15,13 +14,15 @@ const view = read("src/components/GalleryView.jsx");
 const styles = read("src/styles.css");
 
 describe("round 56 — the CSP allows the feeds it must never silently kill", () => {
-  it("lets the blog's JSONP feed through script-src", () => {
-    // The host the feed module actually dials is the host the CSP must name.
-    expect(blogger).toContain('const DEFAULT_BLOG_HOST = "omkarsamithi.blogspot.com"');
+  it("names only the feeds the page still dials (round 70)", () => {
+    // The blog's JSONP feed is retired with the blog itself: the CSP no
+    // longer names its host. The YouTube Data API host stays — the shelves
+    // and the uploads feed dial it from the page.
     const scriptSrc = vercel.match(/script-src [^;]+/)[0];
-    expect(scriptSrc).toContain("https://omkarsamithi.blogspot.com");
-    // The Blogger v3 fallback is JSONP to googleapis too.
+    expect(scriptSrc).not.toContain("omkarsamithi.blogspot.com");
     expect(scriptSrc).toContain("https://www.googleapis.com");
+    // gallery photographs still come from the blog CDN, so img-src keeps it
+    expect(vercel).toContain("https://bp.blogspot.com");
   });
 
   it("lets the YouTube fetch through connect-src", () => {

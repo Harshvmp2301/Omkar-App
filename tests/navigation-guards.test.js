@@ -106,38 +106,46 @@ describe("the mobile menu behaves like a menu", () => {
   });
 });
 
-describe("the archive reads as curated, not as a CMS listing", () => {
+describe("round 70 — the watch shelves replace the recordings grid", () => {
   const hub = component("ContentHub.jsx");
+  const stacks = component("WatchStacks.jsx");
+  const yt = readFileSync(new URL("../src/utils/youtube.js", import.meta.url), "utf8");
   const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8")
     .replace(/\/\*[\s\S]*?\*\//g, "");
 
-  it("leads with recordings as the featured resource", () => {
-    // The recordings section keeps the full section head…
-    expect(hub).toMatch(/<h2 className="section-title display">\{t\.programsRecordings\}<\/h2>/);
-    // …and appears before the secondary material.
-    expect(hub.indexOf("programsRecordings")).toBeLessThan(hub.indexOf("archiveReading"));
+  it("leads with the fanned stack cards, above the photographs", () => {
+    expect(hub).toContain("<WatchStacks");
+    expect(stacks).toContain("PROGRAM_PLAYLISTS");
+    expect(stacks).toContain("{t.watchTitle}");
+    expect(hub.indexOf("<WhatWeDo")).toBeLessThan(hub.indexOf("<WatchStacks"));
+    expect(hub.indexOf("<WatchStacks")).toBeLessThan(hub.indexOf("<GalleryStrip"));
   });
 
-  it("gives blog + festival notes ONE heading, not two more section heads", () => {
-    expect(hub).toMatch(/<h2 className="section-title display">\{t\.archiveReading\}<\/h2>/);
-    // the two lists are labelled as sub-sections instead
-    expect((hub.match(/<h3 className="archive-label">/g) || []).length).toBe(2);
-    expect(hub).toContain("{t.fromBlog}");
-    expect(hub).toContain("{t.festivalNotes}");
+  it("fans the newest thumbnails and links straight to the playlist", () => {
+    expect(stacks).toContain("fetchPlaylistItems(p.playlistId)");
+    expect(stacks).toContain("href={playlistUrl(p.playlistId)}");
+    expect(stacks).toContain("slice(0, 3)");
+    expect(stacks).toContain("publishedAt");
+    expect(stacks).not.toContain("watch-pill");
+    expect(css).toMatch(/\.stack-card \+ \.stack-card \{ margin-left: -36px; \}/);
+    expect(css).toMatch(/\.stack-card:hover,[\s\S]{0,40}?\{[^}]*translateY\(-14px\) scale\(1\.04\);/);
   });
 
-  it("lays them out as a secondary two-column band", () => {
-    expect(hub).toContain('className="archive-columns"');
-    expect(css).toMatch(/\.archive-columns \{[^}]*grid-template-columns: 1fr;/);
-    expect(css).toMatch(/@media \(min-width: 900px\)/);
-    expect(css).toMatch(/\.archive-label \{/);
+  it("carries the owner's three playlists and always offers YouTube", () => {
+    expect(yt).toContain('"PLXmxYuAwGJsY"');
+    expect(yt).toContain('"PLGceKo2Bb8jM"');
+    expect(yt).toContain('"PLGrL6fhBMhelYAFZeTkJxmprHloDEcg01"');
+    expect(stacks).toContain("playlistUrl(p.playlistId)");
+    expect(stacks).toContain("t.shelfFail");
   });
 
-  it("keeps every archive link and its content", () => {
-    // no content was dropped to make the layout nicer
-    expect(hub).toContain("blogPosts.map");
-    expect(hub).toContain("festivalPosts.map");
-    expect(hub).toContain("videos.map");
+  it("retires the archive band completely", () => {
+    expect(hub).not.toContain("blogPosts");
+    expect(hub).not.toContain("festivalPosts");
+    expect(hub).not.toContain("blogger");
+    expect(css).not.toContain(".archive-columns");
+    expect(css).not.toContain(".blog-card");
+    expect(css).not.toContain(".fest-card");
   });
 });
 

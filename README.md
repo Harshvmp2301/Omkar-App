@@ -10,13 +10,12 @@ Omkar Samithi is a bilingual (English/Kannada) community platform for the Oman K
 - 🗓️ **Festival calendar** — a wall-calendar month grid with every festival and program under its date and today highlighted in gold; click a chip to download the .ics. The festival dates are **worked out from the panchang for whatever year is on screen** (sun and moon, Lahiri ayanamsa, sunrise over Muscat — see `src/utils/panchang.js`), so they move with the moon year after year and nobody maintains a list
 - ✉️ **About & Contact** — one merged tab (last in the nav): mission pillars, support call-out, message form and the contact emails. Contact details appear nowhere else
 - 🔔 Browser notifications for event reminders
-- 🎥 YouTube video recordings of past programs
-- 📝 Blog and festival notes integration
+- 🎥 **Watch the Programs** — three fanned stack-cards, one per standing program (Jnanamrutha, Naadamrutha, Anjaneya Pooje), overlapping like scattered prints; each card fans the three newest thumbnails of its playlist (newest added on top) and springs open with a staggered CSS spring on hover or keyboard focus. One click on a card goes straight to that program's YouTube playlist. Without the API key the cards still stand and still lead to their playlists, fans resting empty
 - 🖼️ **Photo gallery** — real photos pulled from the Samithi blog posts, with a keyboard-navigable lightbox
 - 🇬🇧🇮🇳 Bilingual support (English/Kannada), persisted between visits
 - 📱 Mobile-responsive, dark gold-accented design with accessibility support (focus states, reduced motion)
 - 📲 **PWA-ready** — web app manifest (installed as **Omkar Samithi**, on Android and as the iOS home-screen title) + service worker for offline fallback
-- 🔗 Instagram, Facebook Group, YouTube Channel, the Samithi's Blog and Feedback Form links live in the Pranaams footer on every page
+- 🔗 Instagram, Facebook Group, YouTube Channel and Feedback Form links live in the Pranaams footer on every page
 - #️⃣ Hash-based routing (`#/hub`, `#/events`, `#/gallery`, `#/about`) so views are deep-linkable (the retired `#/seva` link falls home)
 
 ## Tech
@@ -87,6 +86,8 @@ back to email.
 ### 🖼️ Gallery sync — the blog-fed photographs (`api/gallery-sync.js`)
 
 The public gallery is fed from the Samithi's blog, not from dashboard uploads.
+(Round 70: the blog has no user-facing presence left — this function is the
+one place it is read, for photographs only.)
 A Vercel serverless function reads `omkarsamithi.blogspot.com`, fetches each
 post page, and takes ONLY the post body's own photographs — the blog's header
 and sidebar furniture, the profile photo, comment avatars, logo-named files
@@ -128,32 +129,31 @@ script. The live site reads the same names from Vercel → Project → Settings
 
 Blank values are always safe: the site falls back to the curated content.
 
-### Optional: live YouTube uploads
+### The YouTube key — shelves and the new-video reminder
 
-The Content Hub shows a curated video list by default. With
-`VITE_YOUTUBE_API_KEY` and `VITE_YOUTUBE_CHANNEL_ID` set, the channel's
-newest **3** uploads replace it:
+With `VITE_YOUTUBE_API_KEY` set (and `VITE_YOUTUBE_CHANNEL_ID` for the
+uploads feed), two live parts wake up:
+
+- the three **stack cards** read each program's playlist
+  (`playlistItems`, up to 50 videos, cached 6 h per program; the fan shows
+  the three newest adds, sorted by `publishedAt`);
+- the in-tab / push "new video" reminder compares the channel's newest
+  upload against what this browser already announced.
 
 ```
 VITE_YOUTUBE_API_KEY=…      # YouTube Data API v3 key
 VITE_YOUTUBE_CHANNEL_ID=…   # channel id starting with UC
 ```
 
-No keys, any API error, or quota exhaustion → the curated list stays on
-screen; successful responses are cached in `localStorage` for 6 hours.
+No key, any API error, or quota exhaustion → the cards rest with empty
+fans and a quiet note, still linking to their playlists, and the reminder
+simply stays quiet; the page can never break. The key ships in the page (that is what `VITE_` means), so it is
+referrer-restricted in Google Cloud to the two production origins.
 
-### Live blog posts — on by default, no key needed
-
-The newest 3 posts stream into the Content Hub's "From the Blog" list from
-`omkarsamithi.blogspot.com`, which is built in as the default so this works
-with no configuration at all. Blogger's public feed needs **no API key** —
-it sends no CORS headers, so it is loaded over JSONP (no proxy, no server).
-
-Override the blog with `VITE_BLOGGER_BLOG_URL` and the count with
-`VITE_BLOGGER_MAX`. If the open feed ever stops responding, the app falls
-back to Blogger API v3 when `VITE_BLOGGER_API_KEY` (or the YouTube key) is
-present. Same contract as YouTube: any failure leaves the curated list in
-place, and results are cached for 6 hours.
+There is deliberately **no blog anywhere in the UI** (round 70): the Omkar
+Sandesh blog, its festival notes and its footer link are retired from the
+site and the PWA. The blog survives in exactly one place — server-side, as
+the photograph source for the gallery sync below.
 
 ### Optional: form endpoint
 

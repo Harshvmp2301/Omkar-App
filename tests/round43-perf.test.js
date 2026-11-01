@@ -3,7 +3,9 @@ import { readFileSync, statSync, readdirSync } from "node:fs";
 
 const content = readFileSync(new URL("../src/data/content.js", import.meta.url), "utf8");
 const yt = readFileSync(new URL("../src/utils/youtube.js", import.meta.url), "utf8");
-const hub = readFileSync(new URL("../src/components/ContentHub.jsx", import.meta.url), "utf8");
+const hub =
+  readFileSync(new URL("../src/components/ContentHub.jsx", import.meta.url), "utf8") +
+  readFileSync(new URL("../src/components/WatchStacks.jsx", import.meta.url), "utf8");
 const app = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 
@@ -11,12 +13,12 @@ describe("round 43 — the performance audit, fixed at the source", () => {
   it("serves YouTube thumbnails as small webp, never maxres jpg", () => {
     expect(content).not.toContain("maxresdefault.jpg");
     expect(yt).not.toContain("maxresdefault.jpg");
-    expect(content).toContain("hqdefault.webp");
+    expect(yt).toContain("hqdefault.webp");
   });
 
   it("gives the thumbnail and the logo explicit dimensions (no layout shift)", () => {
-    expect(hub).toContain("width={480}");
-    expect(hub).toContain("height={360}");
+    expect(hub).toContain("width={320}");
+    expect(hub).toContain("height={180}");
     expect(app).toContain("width={220}");
     expect(app).toContain("height={220}");
   });

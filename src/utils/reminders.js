@@ -3,7 +3,7 @@
  *
  * The Samithi asked for three notices per program — when a program is
  * updated, one week before, and one day before — plus a notice when the
- * blog or the YouTube channel publishes. The agreed split: a visitor with
+ * or the YouTube channel publishes. The agreed split: a visitor with
  * a browser tab open gets these IN THE TAB (this file); the installed PWA
  * gets real push later, from a server, on top of the same three triggers.
  *
@@ -15,7 +15,7 @@
  *  - date-driven (today / tomorrow / this week): recomputed on every load
  *    while the window is open, so a visitor who opens the site any day in
  *    the last week still hears about the program;
- *  - delta-driven (program moved, new post, new video): fire ONCE per
+ *  - delta-driven (program moved, new video): fire ONCE per
  *    change, against the snapshot this browser stored last time.
  */
 
@@ -41,7 +41,7 @@ export function seenDatesOf(programs = []) {
 
 /**
  * What is due, in the order it should be spoken: the program itself first
- * (soonest window wins), then a moved program, then the blog, then YouTube.
+ * (soonest window wins), then a moved program, then YouTube.
  *
  * `seen` is the stored snapshot; `dismissed` lives inside it. A reminder id
  * carries everything that identifies the notice (kind, subject, date), so
@@ -50,7 +50,6 @@ export function seenDatesOf(programs = []) {
 export function dueReminders({
   todayISO,
   programs = [],
-  post = null,
   video = null,
   seen = null,
 }) {
@@ -93,9 +92,6 @@ export function dueReminders({
     }
   }
 
-  if (post && post.id && store.blog && store.blog !== post.id) {
-    add({ id: `blog:${post.id}`, kind: "blog", priority: 4, title: post.title });
-  }
   if (video && video.id && store.video && store.video !== video.id) {
     add({ id: `video:${video.id}`, kind: "video", priority: 5, title: video.title });
   }
@@ -105,11 +101,10 @@ export function dueReminders({
 }
 
 /** The snapshot to store AFTER computing what is due: today becomes the baseline. */
-export function nextSeen({ programs = [], post = null, video = null, seen = null }) {
+export function nextSeen({ programs = [], video = null, seen = null }) {
   const store = seen && typeof seen === "object" ? seen : {};
   return {
     dates: seenDatesOf(programs),
-    blog: post && post.id ? post.id : store.blog || "",
     video: video && video.id ? video.id : store.video || "",
     dismissed: store.dismissed && typeof store.dismissed === "object" ? store.dismissed : {},
   };

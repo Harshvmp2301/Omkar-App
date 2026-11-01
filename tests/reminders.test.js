@@ -77,64 +77,58 @@ describe("a moved program is news exactly once", () => {
   });
 });
 
-describe("the blog and the channel announce themselves once per publication", () => {
-  const post = { id: "bl-2", title: "Deepavali at the temple" };
+describe("the channel announces itself once per publication", () => {
   const video = { id: "yt-9", title: "Naadamrutha highlights" };
 
   it("baselines a first visit without announcing anything", () => {
-    expect(dueReminders({ todayISO: "2026-10-10", post, video, seen: null })).toEqual([]);
+    expect(dueReminders({ todayISO: "2026-10-10", video, seen: null })).toEqual([]);
   });
 
-  it("announces a post or a video this browser has not seen", () => {
-    const seen = { blog: "bl-1", video: "yt-8" };
-    const due = dueReminders({ todayISO: "2026-10-10", post, video, seen });
-    expect(due.map((r) => r.kind)).toEqual(["blog", "video"]);
-    expect(due[0].title).toBe("Deepavali at the temple");
+  it("announces a video this browser has not seen", () => {
+    const seen = { video: "yt-8" };
+    const due = dueReminders({ todayISO: "2026-10-10", video, seen });
+    expect(due.map((r) => r.kind)).toEqual(["video"]);
+    expect(due[0].title).toBe("Naadamrutha highlights");
   });
 
   it("stays quiet for a feed it already knows", () => {
-    const seen = { blog: "bl-2", video: "yt-9" };
-    expect(dueReminders({ todayISO: "2026-10-10", post, video, seen })).toEqual([]);
+    const seen = { video: "yt-9" };
+    expect(dueReminders({ todayISO: "2026-10-10", video, seen })).toEqual([]);
   });
 });
 
 describe("due reminders speak in order of urgency", () => {
-  it("puts the program first, then a move, then the blog, then the channel", () => {
+  it("puts the program first, then a move, then the channel", () => {
     const programs = [EVENT, { ...EVENT, id: "x", title: "Omkar Naadamrutha", date: "2027-10-02" }];
     const seen = {
       dates: { "Omkar Naadamrutha": "2027-10-09" },
-      blog: "bl-1",
       video: "yt-8",
     };
     const due = dueReminders({
       todayISO: "2026-12-18",
       programs,
-      post: { id: "bl-2", title: "p" },
       video: { id: "yt-9", title: "v" },
       seen,
     });
-    expect(due.map((r) => r.kind)).toEqual(["today", "moved", "blog", "video"]);
+    expect(due.map((r) => r.kind)).toEqual(["today", "moved", "video"]);
   });
 });
 
 describe("the stored snapshot becomes tomorrow's baseline", () => {
   it("records every program date and keeps what it is not given", () => {
-    const seen = { blog: "bl-2", video: "yt-9", dismissed: { "blog:bl-1": 1 } };
-    const next = nextSeen({ programs: [EVENT], post: null, video: null, seen });
+    const seen = { video: "yt-9", dismissed: { "video:yt-8": 1 } };
+    const next = nextSeen({ programs: [EVENT], video: null, seen });
     expect(next.dates).toEqual({ "Sri Anjaneya Pooje": "2026-12-18" });
-    expect(next.blog).toBe("bl-2");
     expect(next.video).toBe("yt-9");
-    expect(next.dismissed).toEqual({ "blog:bl-1": 1 });
+    expect(next.dismissed).toEqual({ "video:yt-8": 1 });
   });
 
   it("adopts the freshest post and video ids", () => {
     const next = nextSeen({
       programs: [EVENT],
-      post: { id: "bl-3" },
       video: { id: "yt-4" },
       seen: null,
     });
-    expect(next.blog).toBe("bl-3");
     expect(next.video).toBe("yt-4");
     expect(seenDatesOf([EVENT])).toEqual({ "Sri Anjaneya Pooje": "2026-12-18" });
   });
@@ -146,7 +140,6 @@ describe("the reminder line speaks both languages, word for word", () => {
     "remindDay",
     "remindWeek",
     "remindMoved",
-    "remindBlog",
     "remindVideo",
     "remindDismiss",
   ];

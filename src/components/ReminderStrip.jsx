@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { dueReminders, nextSeen, readSeen, writeSeen } from "../utils/reminders.js";
-import { fetchLatestPostsDetailed } from "../utils/blogger.js";
 import { fetchLatestVideos } from "../utils/youtube.js";
 
 /**
@@ -8,7 +7,7 @@ import { fetchLatestVideos } from "../utils/youtube.js";
  *
  * A visitor with a tab open is told, in the tab, about the program that is
  * today / tomorrow / within the week, about a program whose date moved, and
- * about a new blog post or YouTube video. One notice at a time, highest
+ * about a new YouTube video. One notice at a time, highest
  * priority first; dismissing it reveals the next, and the dismissal sticks
  * in this browser. The installed PWA's real push arrives later on the same
  * triggers — this strip is what every visitor gets, no permission asked.
@@ -32,16 +31,12 @@ export default function ReminderStrip({ t, lang, programs }) {
     }
 
     (async () => {
-      const [postsRes, videos] = await Promise.all([
-        fetchLatestPostsDetailed(lang).catch(() => null),
-        fetchLatestVideos(lang).catch(() => null),
-      ]);
+      const videos = await fetchLatestVideos(lang).catch(() => null);
       if (!alive) return;
-      const post = postsRes && Array.isArray(postsRes.posts) ? postsRes.posts[0] || null : null;
       const video = Array.isArray(videos) ? videos[0] || null : null;
       const seen = readSeen();
-      setDue(dueReminders({ todayISO, programs, post, video, seen }));
-      writeSeen(nextSeen({ programs, post, video, seen }));
+      setDue(dueReminders({ todayISO, programs, video, seen }));
+      writeSeen(nextSeen({ programs, video, seen }));
     })();
 
     return () => {
@@ -64,7 +59,6 @@ export default function ReminderStrip({ t, lang, programs }) {
       case "day": return fill(t.remindDay);
       case "week": return fill(t.remindWeek);
       case "moved": return fill(t.remindMoved);
-      case "blog": return fill(t.remindBlog);
       case "video": return fill(t.remindVideo);
       default: return "";
     }

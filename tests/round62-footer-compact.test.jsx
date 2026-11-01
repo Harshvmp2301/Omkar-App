@@ -84,12 +84,11 @@ describe("round 62 — the footer stops eating the phone screen", () => {
       "https://www.youtube.com/@OmkarSamithi",
       "https://www.facebook.com/groups/omkarsamithi/",
       "https://www.instagram.com/omkarsamithi/",
-      "https://omkarsamithi.blogspot.com/",
       "https://omkarfeedback.blogspot.com/",
     ]) {
       expect(html).toContain(href);
     }
     // the three Explore buttons survive as buttons (seva retired, round 66)
-    expect((html.match(/class="footer-link"/g) || []).length).toBeGreaterThanOrEqual(10);
+    expect((html.match(/class="footer-link"/g) || []).length).toBeGreaterThanOrEqual(9);
   });
 });

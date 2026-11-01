@@ -46,18 +46,10 @@ export function programPush(data = {}) {
 }
 
 /**
- * A new blog post or YouTube video. Identical wording to the in-tab strip
- * (remindBlog / remindVideo), which the tests pin against content.js.
+ * A new YouTube video (round 70 retired the blog half). Identical wording
+ * to the in-tab strip (remindVideo), which the tests pin against content.js.
  */
 export function feedPush(kind, title = "") {
-  if (kind === "blog") {
-    return {
-      title_en: SITE_EN,
-      title_kn: SITE_KN,
-      body_en: `New on the blog: ${title}`,
-      body_kn: `ಹೊಸ ಬರಹ: ${title}`,
-    };
-  }
   return {
     title_en: SITE_EN,
     title_kn: SITE_KN,

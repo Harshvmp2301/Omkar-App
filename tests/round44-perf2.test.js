@@ -3,7 +3,9 @@ import { readFileSync } from "node:fs";
 
 const content = readFileSync(new URL("../src/data/content.js", import.meta.url), "utf8");
 const yt = readFileSync(new URL("../src/utils/youtube.js", import.meta.url), "utf8");
-const hub = readFileSync(new URL("../src/components/ContentHub.jsx", import.meta.url), "utf8");
+const hub =
+  readFileSync(new URL("../src/components/ContentHub.jsx", import.meta.url), "utf8") +
+  readFileSync(new URL("../src/components/WatchStacks.jsx", import.meta.url), "utf8");
 const app = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const sw = readFileSync(new URL("../public/sw.js", import.meta.url), "utf8");
@@ -11,7 +13,6 @@ const vercel = readFileSync(new URL("../vercel.json", import.meta.url), "utf8");
 
 describe("round 44 — the mobile report, answered", () => {
   it("fetches YouTube thumbs from the vi_webp ladder, with a jpg fallback", () => {
-    expect(content).toContain("https://i.ytimg.com/vi_webp/");
     expect(content).not.toContain("img.youtube.com/vi/");
     expect(yt).toContain("https://i.ytimg.com/vi_webp/");
     expect(hub).toContain('.replace("i.ytimg.com/vi_webp/", "img.youtube.com/vi/")');
