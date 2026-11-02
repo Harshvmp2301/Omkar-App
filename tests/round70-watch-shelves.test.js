@@ -76,6 +76,10 @@ describe("round 70 — the watch shelves, named and ordered", () => {
     expect(stacks).toContain("slice(0, 3)");
     expect(stacks).toContain("localeCompare");
     expect(css).toMatch(/\.stack-photo:nth-child\(1\) \{[^}]*z-index: 3;/);
+    // the deck stays inside the card's own box — nothing drools out
+    expect(css).toMatch(/\.stack-card \{[^}]*overflow: hidden;/);
+    expect(css).not.toContain("bottom: -14px");
+    expect(css).toMatch(/\.stack-photo:nth-child\(3\) \{ transform: rotate\(6deg\)/);
   });
 
   it("opens the dev-only key door in DEV alone, never in production", () => {
