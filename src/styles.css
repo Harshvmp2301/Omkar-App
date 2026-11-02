@@ -534,6 +534,8 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
   display: flex;
   justify-content: center;
   align-items: stretch;
+  flex-wrap: wrap;
+  gap: 26px; /* the cards stand apart, exactly like the mobile stack */
   padding: 10px 0 6px;
 }
 .stack-card {
@@ -555,7 +557,6 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
     border-color 0.3s ease,
     box-shadow 0.3s ease;
 }
-.stack-card + .stack-card { margin-left: -36px; }
 .stack-card:hover,
 .stack-card:focus-visible {
   transform: translateY(-14px) scale(1.04);
@@ -622,8 +623,7 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
   animation: shimmer 1.4s linear infinite;
 }
 @media (max-width: 767px) {
-  .watch-stacks { flex-direction: column; align-items: center; gap: 20px; }
-  .stack-card + .stack-card { margin-left: 0; }
+  .watch-stacks { flex-direction: column; align-items: center; }
 }
 @media (prefers-reduced-motion: reduce) {
   .stack-card,

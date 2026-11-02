@@ -127,7 +127,8 @@ describe("round 70 — the watch shelves replace the recordings grid", () => {
     expect(stacks).toContain("slice(0, 3)");
     expect(stacks).toContain("publishedAt");
     expect(stacks).not.toContain("watch-pill");
-    expect(css).toMatch(/\.stack-card \+ \.stack-card \{ margin-left: -36px; \}/);
+    expect(css).toMatch(/\.watch-stacks \{[^}]*gap: 26px;/);
+    expect(css).not.toContain("margin-left: -36px");
     expect(css).toMatch(/\.stack-card:hover,[\s\S]{0,40}?\{[^}]*translateY\(-14px\) scale\(1\.04\);/);
   });
 
