@@ -622,6 +622,12 @@ button, a, summary, label, input, select, textarea, [role="button"] { touch-acti
   background-size: 200% 100%;
   animation: shimmer 1.4s linear infinite;
 }
+/* Desktop keeps all three cards in one horizontal row, whatever the width:
+   they shrink gracefully instead of wrapping into a second line. */
+@media (min-width: 768px) {
+  .watch-stacks { flex-wrap: nowrap; }
+  .stack-card { width: auto; flex: 1 1 0; min-width: 0; max-width: 380px; }
+}
 @media (max-width: 767px) {
   .watch-stacks { flex-direction: column; align-items: center; }
 }

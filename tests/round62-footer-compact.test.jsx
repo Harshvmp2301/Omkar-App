@@ -84,6 +84,7 @@ describe("round 62 — the footer stops eating the phone screen", () => {
       "https://www.youtube.com/@OmkarSamithi",
       "https://www.facebook.com/groups/omkarsamithi/",
       "https://www.instagram.com/omkarsamithi/",
+      "https://omkarsamithi.blogspot.com/",
       "https://omkarfeedback.blogspot.com/",
     ]) {
       expect(html).toContain(href);

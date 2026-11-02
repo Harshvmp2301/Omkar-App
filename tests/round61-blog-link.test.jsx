@@ -62,11 +62,22 @@ describe("round 61 — the footer links to the Samithi's Instagram", () => {
   });
 });
 
-describe("round 70 — Omkar Sandesh has left the building", () => {
-  it("no footer link, no dictionary key, no structured-data mention", () => {
+describe("round 73 — the Samithi's own blogspot is back; Sandesh stays retired", () => {
+  it("links the Samithi blog in the footer, under the Samithi's own name", () => {
     const html = render();
-    expect(html).not.toContain("omkarsamithi.blogspot.com");
-    expect(translations.en.footerBlog).toBeUndefined();
-    expect(translations.kn.footerBlog).toBeUndefined();
+    const blogHref = 'href="https://omkarsamithi.blogspot.com/"';
+    expect(html).toContain(blogHref);
+    expect(translations.en.footerBlog).toBe("Omkar Samithi Blog");
+    expect(translations.kn.footerBlog).toBe("ಓಂಕಾರ ಸಮಿತಿ ಬ್ಲಾಗ್");
+    // it reads before the separate feedback property, after Instagram
+    const instagram = html.indexOf('href="https://www.instagram.com/omkarsamithi/"');
+    const blog = html.indexOf(blogHref);
+    const feedback = html.indexOf('href="https://omkarfeedback.blogspot.com/"');
+    expect(instagram).toBeLessThan(blog);
+    expect(blog).toBeLessThan(feedback);
+  });
+
+  it("never speaks the old brand name in any user-facing copy", () => {
+    expect(JSON.stringify(translations).includes("Sandesh")).toBe(false);
   });
 });
