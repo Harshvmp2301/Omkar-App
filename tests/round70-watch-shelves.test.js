@@ -80,6 +80,8 @@ describe("round 70 — the watch shelves, named and ordered", () => {
     expect(css).toMatch(/\.stack-card \{[^}]*overflow: hidden;/);
     expect(css).not.toContain("bottom: -14px");
     expect(css).toMatch(/\.stack-photo:nth-child\(3\) \{ transform: rotate\(6deg\)/);
+    expect(css).toMatch(/\.stack-photo \{[^}]*height: 100%;/);
+    expect(css).toMatch(/\.stack-fan \{[^}]*margin: 20px 14px 16px;/);
   });
 
   it("opens the dev-only key door in DEV alone, never in production", () => {
